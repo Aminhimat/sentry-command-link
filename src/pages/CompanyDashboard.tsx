@@ -118,7 +118,7 @@ const CompanyDashboard = () => {
     if (!userProfile?.company_id) return;
 
     try {
-      // Get guard profiles with their auth user emails
+      // Get guard profiles - we'll get emails from the edge function response
       const { data: guardProfiles, error } = await supabase
         .from('profiles')
         .select('*')
@@ -136,18 +136,14 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // Get email addresses from auth.users for each guard
-      const guardsWithEmails = await Promise.all(
-        (guardProfiles || []).map(async (guard) => {
-          const { data: authUser } = await supabase.auth.admin.getUserById(guard.user_id);
-          return {
-            ...guard,
-            email: authUser.user?.email || 'No email'
-          };
-        })
-      );
+      // For now, set email as a placeholder since we can't fetch from auth.users
+      // This will be populated when creating new guards
+      const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
+        ...guard,
+        email: `${guard.first_name.toLowerCase()}.${guard.last_name.toLowerCase()}@company.local`
+      }));
 
-      setGuards(guardsWithEmails);
+      setGuards(guardsWithPlaceholderEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
@@ -185,22 +181,32 @@ const CompanyDashboard = () => {
     setIsLoading(true);
 
     try {
-      // Create auth user first
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newGuard.email,
-        password: newGuard.password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: newGuard.firstName,
-          last_name: newGuard.lastName,
-          role: 'guard',
-          company_id: userProfile.company_id
-        }
+      // Call the edge function to create the guard
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const response = await fetch('/functions/v1/create-guard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          firstName: newGuard.firstName,
+          lastName: newGuard.lastName,
+          email: newGuard.email,
+          phone: newGuard.phone,
+          password: newGuard.password,
+          companyId: userProfile.company_id
+        }),
       });
 
-      if (authError) {
-        console.error('Error creating auth user:', authError);
-        throw authError;
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create guard');
       }
 
       toast({
