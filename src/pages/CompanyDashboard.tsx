@@ -25,7 +25,7 @@ interface Guard {
   first_name: string;
   last_name: string;
   phone: string;
-  email?: string;
+  email: string;
   is_active: boolean;
   created_at: string;
   company_id?: string;
@@ -118,7 +118,8 @@ const CompanyDashboard = () => {
     if (!userProfile?.company_id) return;
 
     try {
-      const { data, error } = await supabase
+      // Get guard profiles with their auth user emails
+      const { data: guardProfiles, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('company_id', userProfile.company_id)
@@ -135,7 +136,18 @@ const CompanyDashboard = () => {
         return;
       }
 
-      setGuards(data || []);
+      // Get email addresses from auth.users for each guard
+      const guardsWithEmails = await Promise.all(
+        (guardProfiles || []).map(async (guard) => {
+          const { data: authUser } = await supabase.auth.admin.getUserById(guard.user_id);
+          return {
+            ...guard,
+            email: authUser.user?.email || 'No email'
+          };
+        })
+      );
+
+      setGuards(guardsWithEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
@@ -452,6 +464,7 @@ const CompanyDashboard = () => {
                         <p className="font-medium">
                           {guard.first_name} {guard.last_name}
                         </p>
+                        <p className="text-sm text-muted-foreground">{guard.email}</p>
                         <p className="text-sm text-muted-foreground">{guard.phone}</p>
                         <p className="text-sm text-muted-foreground">
                           Created: {new Date(guard.created_at).toLocaleDateString()}
