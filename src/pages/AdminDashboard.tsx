@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3 } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Company {
@@ -194,6 +194,81 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to create company",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteCompany = async (companyId: string, companyName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${companyName}"?\n\nThis action will permanently delete:\n- The company record\n- All associated user profiles\n- All guard shifts\n- All incidents\n\nThis action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Delete all related data first
+      // Delete guard shifts
+      const { error: shiftsError } = await supabase
+        .from('guard_shifts')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (shiftsError) {
+        console.error('Error deleting guard shifts:', shiftsError);
+        throw new Error('Failed to delete guard shifts');
+      }
+
+      // Delete incidents
+      const { error: incidentsError } = await supabase
+        .from('incidents')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (incidentsError) {
+        console.error('Error deleting incidents:', incidentsError);
+        throw new Error('Failed to delete incidents');
+      }
+
+      // Delete profiles associated with this company
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (profilesError) {
+        console.error('Error deleting profiles:', profilesError);
+        throw new Error('Failed to delete user profiles');
+      }
+
+      // Finally delete the company
+      const { error: companyError } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', companyId);
+
+      if (companyError) {
+        console.error('Error deleting company:', companyError);
+        throw new Error('Failed to delete company');
+      }
+
+      toast({
+        title: "Success",
+        description: `Company "${companyName}" has been permanently deleted`,
+        variant: "default",
+      });
+
+      // Refresh the companies list
+      await fetchCompanies();
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete company",
         variant: "destructive",
       });
     } finally {
@@ -502,6 +577,15 @@ const AdminDashboard = () => {
                     </Button>
                     <Button variant="outline" size="sm">
                       View Details
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleDeleteCompany(company.id, company.name)}
+                      disabled={isLoading}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>
