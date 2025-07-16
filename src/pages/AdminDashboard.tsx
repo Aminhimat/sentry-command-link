@@ -41,7 +41,11 @@ const AdminDashboard = () => {
     phone: "",
     address: "",
     license_limit: 10,
-    status: "active" as "active" | "inactive" | "suspended"
+    status: "active" as "active" | "inactive" | "suspended",
+    adminFirstName: "",
+    adminLastName: "",
+    adminEmail: "",
+    adminPhone: ""
   });
   const { toast } = useToast();
 
@@ -124,23 +128,52 @@ const AdminDashboard = () => {
 
     try {
       console.log('Creating company with data:', newCompany);
-      const { data, error } = await supabase
+      
+      // Create company first
+      const { data: companyData, error: companyError } = await supabase
         .from('companies')
-        .insert([newCompany])
+        .insert([{
+          name: newCompany.name,
+          email: newCompany.email,
+          phone: newCompany.phone,
+          address: newCompany.address,
+          license_limit: newCompany.license_limit,
+          status: newCompany.status
+        }])
         .select()
         .single();
 
-      console.log('Supabase response:', { data, error });
-
-      if (error) {
-        console.error('Supabase error details:', error);
-        throw error;
+      if (companyError) {
+        console.error('Company creation error:', companyError);
+        throw companyError;
       }
+
+      // Create company admin user
+      const { data: adminData, error: adminError } = await supabase.functions.invoke('create-company-admin', {
+        body: {
+          companyId: companyData.id,
+          adminEmail: newCompany.adminEmail,
+          adminFirstName: newCompany.adminFirstName,
+          adminLastName: newCompany.adminLastName,
+          adminPhone: newCompany.adminPhone
+        }
+      });
+
+      if (adminError) {
+        console.error('Admin creation error:', adminError);
+        throw adminError;
+      }
+
+      const tempPassword = adminData.temporaryPassword;
 
       toast({
         title: "Success",
-        description: `Company "${data.name}" created successfully!`,
+        description: `Company "${companyData.name}" created successfully! Admin password: ${tempPassword}`,
+        duration: 10000,
       });
+
+      // Show success dialog with admin credentials
+      alert(`Company created successfully!\n\nAdmin Login Details:\nEmail: ${newCompany.adminEmail}\nTemporary Password: ${tempPassword}\n\nPlease save these credentials and share them with the company admin. They must change the password on first login.`);
 
       setNewCompany({
         name: "",
@@ -148,7 +181,11 @@ const AdminDashboard = () => {
         phone: "",
         address: "",
         license_limit: 10,
-        status: "active" as "active" | "inactive" | "suspended"
+        status: "active" as "active" | "inactive" | "suspended",
+        adminFirstName: "",
+        adminLastName: "",
+        adminEmail: "",
+        adminPhone: ""
       });
       setShowCreateForm(false);
       await fetchCompanies();
@@ -295,6 +332,11 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateCompany} className="grid md:grid-cols-2 gap-4">
+                {/* Company Information */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-semibold mb-4 text-primary">Company Information</h3>
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="name">Company Name</Label>
                   <Input
@@ -306,7 +348,7 @@ const AdminDashboard = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Company Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -317,7 +359,7 @@ const AdminDashboard = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Company Phone</Label>
                   <Input
                     id="phone"
                     value={newCompany.phone}
@@ -357,11 +399,56 @@ const AdminDashboard = () => {
                 </div>
                 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Company Address</Label>
                   <Input
                     id="address"
                     value={newCompany.address}
                     onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                  />
+                </div>
+
+                {/* Admin Information */}
+                <div className="md:col-span-2 mt-6">
+                  <h3 className="text-lg font-semibold mb-4 text-primary">Company Admin Details</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="adminFirstName">Admin First Name</Label>
+                  <Input
+                    id="adminFirstName"
+                    value={newCompany.adminFirstName}
+                    onChange={(e) => setNewCompany({ ...newCompany, adminFirstName: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="adminLastName">Admin Last Name</Label>
+                  <Input
+                    id="adminLastName"
+                    value={newCompany.adminLastName}
+                    onChange={(e) => setNewCompany({ ...newCompany, adminLastName: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">Admin Email</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    value={newCompany.adminEmail}
+                    onChange={(e) => setNewCompany({ ...newCompany, adminEmail: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="adminPhone">Admin Phone</Label>
+                  <Input
+                    id="adminPhone"
+                    value={newCompany.adminPhone}
+                    onChange={(e) => setNewCompany({ ...newCompany, adminPhone: e.target.value })}
                   />
                 </div>
                 
