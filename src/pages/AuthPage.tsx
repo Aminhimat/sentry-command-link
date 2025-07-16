@@ -32,12 +32,14 @@ const AuthPage = () => {
         // Handle redirect after authentication
         if (session?.user) {
           // Check if user needs to change password
-          if (session.user.user_metadata?.must_change_password) {
+          if (session.user.user_metadata?.must_change_password === true) {
             window.location.href = '/change-password';
           } else {
             // Redirect based on role
             const role = session.user.user_metadata?.role;
             if (role === 'platform_admin') {
+              window.location.href = '/admin';
+            } else if (role === 'company_admin') {
               window.location.href = '/admin';
             } else {
               window.location.href = '/';
@@ -55,12 +57,14 @@ const AuthPage = () => {
       // Handle redirect for existing session
       if (session?.user) {
         // Check if user needs to change password
-        if (session.user.user_metadata?.must_change_password) {
+        if (session.user.user_metadata?.must_change_password === true) {
           window.location.href = '/change-password';
         } else {
           // Redirect based on role
           const role = session.user.user_metadata?.role;
           if (role === 'platform_admin') {
+            window.location.href = '/admin';
+          } else if (role === 'company_admin') {
             window.location.href = '/admin';
           } else {
             window.location.href = '/';
