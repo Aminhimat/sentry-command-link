@@ -1,9 +1,12 @@
 import { Shield, Users, MapPin, FileText, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import securityHero from "@/assets/security-hero.jpg";
 
 const SecurityPlatformLanding = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -28,7 +31,7 @@ const SecurityPlatformLanding = () => {
               variant="hero" 
               size="xl" 
               className="animate-slide-in"
-              onClick={() => window.location.href = '/auth'}
+              onClick={() => navigate('/auth')}
             >
               Admin Login
             </Button>
@@ -215,7 +218,7 @@ const SecurityPlatformLanding = () => {
             <Button 
               variant="hero" 
               size="xl"
-              onClick={() => window.location.href = '/auth'}
+              onClick={() => navigate('/auth')}
             >
               Start Free Trial
             </Button>
