@@ -23,7 +23,7 @@ const sendWelcomeEmail = async (adminEmail: string, adminFirstName: string, temp
       to: [{ email: adminEmail, name: adminFirstName }],
       subject: "Welcome to SecureOps - Your Admin Account"
     }],
-    from: { email: "noreply@secureops.com", name: "SecureOps Platform" },
+    from: { email: "onboarding@resend.dev", name: "SecureOps Platform" },
     content: [{
       type: "text/html",
       value: `
