@@ -49,7 +49,7 @@ const AuthPage = () => {
             if (role === 'platform_admin') {
               window.location.href = '/admin';
             } else if (role === 'company_admin') {
-              window.location.href = '/admin';
+              window.location.href = '/company';
             } else {
               window.location.href = '/';
             }
@@ -83,7 +83,7 @@ const AuthPage = () => {
           if (role === 'platform_admin') {
             window.location.href = '/admin';
           } else if (role === 'company_admin') {
-            window.location.href = '/admin';
+            window.location.href = '/company';
           } else {
             window.location.href = '/';
           }
