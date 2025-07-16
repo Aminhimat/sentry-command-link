@@ -123,13 +123,17 @@ const AdminDashboard = () => {
     setIsLoading(true);
 
     try {
+      console.log('Creating company with data:', newCompany);
       const { data, error } = await supabase
         .from('companies')
         .insert([newCompany])
         .select()
         .single();
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
+        console.error('Supabase error details:', error);
         throw error;
       }
 
