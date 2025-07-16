@@ -190,7 +190,7 @@ const CompanyDashboard = () => {
         companyId: userProfile.company_id
       });
 
-      const response = await supabase.functions.invoke('create-guard', {
+      const { data, error } = await supabase.functions.invoke('create-guard', {
         body: {
           firstName: newGuard.firstName,
           lastName: newGuard.lastName,
@@ -201,8 +201,19 @@ const CompanyDashboard = () => {
         }
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to create guard');
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error(error.message || 'Failed to create guard');
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      if (!data?.success) {
+        console.error('Function did not return success:', data);
+        throw new Error('Failed to create guard - unknown response');
       }
 
       toast({

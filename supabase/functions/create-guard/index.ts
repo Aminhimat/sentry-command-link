@@ -24,26 +24,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('create-guard function called');
+
     // Get the authorization header to verify the request is from an authenticated user
     const authHeader = req.headers.get('authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header');
     }
 
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Create regular client to verify the requesting user
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
       global: {
         headers: {
           authorization: authHeader,
@@ -51,10 +47,15 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    // Verify the requesting user is a company admin
+    console.log('Getting user from token...');
+    
+    // Verify the requesting user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log('User lookup result:', { userId: user?.id, error: userError?.message });
+    
     if (userError || !user) {
-      throw new Error('Unauthorized: Invalid user');
+      console.error('User verification failed:', userError);
+      throw new Error(`Unauthorized: ${userError?.message || 'Invalid user'}`);
     }
 
     // Get the user's profile to verify they're a company admin
