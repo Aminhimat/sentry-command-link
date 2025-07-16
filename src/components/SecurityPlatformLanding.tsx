@@ -24,8 +24,13 @@ const SecurityPlatformLanding = () => {
             Manage teams, track patrols, and ensure compliance with real-time monitoring.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="xl" className="animate-slide-in">
-              Get Started
+            <Button 
+              variant="hero" 
+              size="xl" 
+              className="animate-slide-in"
+              onClick={() => window.location.href = '/auth'}
+            >
+              Admin Login
             </Button>
             <Button variant="outline" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20 animate-slide-in">
               View Demo
@@ -207,7 +212,11 @@ const SecurityPlatformLanding = () => {
             Join leading security companies using SecureOps to streamline operations and ensure compliance
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="xl">
+            <Button 
+              variant="hero" 
+              size="xl"
+              onClick={() => window.location.href = '/auth'}
+            >
               Start Free Trial
             </Button>
             <Button variant="outline" size="xl">
