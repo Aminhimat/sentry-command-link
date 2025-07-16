@@ -31,12 +31,21 @@ const AuthPage = () => {
         
         // Handle redirect after authentication
         if (session?.user) {
+          console.log('AuthPage: User session detected', {
+            email: session.user.email,
+            role: session.user.user_metadata?.role,
+            must_change_password: session.user.user_metadata?.must_change_password,
+            metadata: session.user.user_metadata
+          });
+          
           // Check if user needs to change password
           if (session.user.user_metadata?.must_change_password === true) {
+            console.log('AuthPage: Redirecting to change-password');
             window.location.href = '/change-password';
           } else {
             // Redirect based on role
             const role = session.user.user_metadata?.role;
+            console.log('AuthPage: Redirecting based on role:', role);
             if (role === 'platform_admin') {
               window.location.href = '/admin';
             } else if (role === 'company_admin') {
@@ -56,12 +65,21 @@ const AuthPage = () => {
       
       // Handle redirect for existing session
       if (session?.user) {
+        console.log('AuthPage: Existing session detected', {
+          email: session.user.email,
+          role: session.user.user_metadata?.role,
+          must_change_password: session.user.user_metadata?.must_change_password,
+          metadata: session.user.user_metadata
+        });
+        
         // Check if user needs to change password
         if (session.user.user_metadata?.must_change_password === true) {
+          console.log('AuthPage: Redirecting to change-password');
           window.location.href = '/change-password';
         } else {
           // Redirect based on role
           const role = session.user.user_metadata?.role;
+          console.log('AuthPage: Redirecting based on role:', role);
           if (role === 'platform_admin') {
             window.location.href = '/admin';
           } else if (role === 'company_admin') {
