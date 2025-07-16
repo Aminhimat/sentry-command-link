@@ -80,7 +80,7 @@ const AdminDashboard = () => {
         return;
       }
 
-      if (profile.role !== 'platform_admin') {
+      if (profile.role !== 'platform_admin' && profile.role !== 'company_admin') {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access this page",
