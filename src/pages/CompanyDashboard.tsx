@@ -182,31 +182,27 @@ const CompanyDashboard = () => {
 
     try {
       // Call the edge function to create the guard
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
-      }
+      console.log('Creating guard with data:', {
+        firstName: newGuard.firstName,
+        lastName: newGuard.lastName,
+        email: newGuard.email,
+        phone: newGuard.phone,
+        companyId: userProfile.company_id
+      });
 
-      const response = await fetch('/functions/v1/create-guard', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('create-guard', {
+        body: {
           firstName: newGuard.firstName,
           lastName: newGuard.lastName,
           email: newGuard.email,
           phone: newGuard.phone,
           password: newGuard.password,
           companyId: userProfile.company_id
-        }),
+        }
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create guard');
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create guard');
       }
 
       toast({

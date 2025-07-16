@@ -83,6 +83,22 @@ const handler = async (req: Request): Promise<Response> => {
       companyId
     });
 
+    // Validate input data
+    if (!firstName || !lastName || !email || !password || !companyId) {
+      throw new Error('Missing required fields');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+
     // Create the auth user using admin client
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
