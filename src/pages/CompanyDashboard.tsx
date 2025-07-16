@@ -181,6 +181,14 @@ const CompanyDashboard = () => {
     setIsLoading(true);
 
     try {
+      // Get current session for user token
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', !!session);
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       // Call the edge function to create the guard
       console.log('Creating guard with data:', {
         firstName: newGuard.firstName,
@@ -197,7 +205,8 @@ const CompanyDashboard = () => {
           email: newGuard.email,
           phone: newGuard.phone,
           password: newGuard.password,
-          companyId: userProfile.company_id
+          companyId: userProfile.company_id,
+          userToken: session.access_token
         }
       });
 

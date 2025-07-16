@@ -1,1 +1,4 @@
 project_id = "dzxkvzdwapaoeewqiyyq"
+
+[functions.create-guard]
+verify_jwt = false

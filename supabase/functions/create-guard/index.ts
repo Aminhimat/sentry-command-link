@@ -16,89 +16,91 @@ interface CreateGuardRequest {
   phone: string;
   password: string;
   companyId: string;
+  userToken?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('create-guard function called, method:', req.method);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('create-guard function called');
-
-    // Get the authorization header to verify the request is from an authenticated user
-    const authHeader = req.headers.get('authorization');
-    console.log('Auth header present:', !!authHeader);
+    console.log('Processing create-guard request...');
     
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      throw new Error('No authorization header');
-    }
-
-    // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Create regular client to verify the requesting user
-    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: {
-        headers: {
-          authorization: authHeader,
-        },
-      },
-    });
-
-    console.log('Getting user from token...');
+    // Parse the request body
+    const requestBody = await req.json();
+    console.log('Request body received:', { ...requestBody, password: '[REDACTED]' });
     
-    // Verify the requesting user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log('User lookup result:', { userId: user?.id, error: userError?.message });
-    
-    if (userError || !user) {
-      console.error('User verification failed:', userError);
-      throw new Error(`Unauthorized: ${userError?.message || 'Invalid user'}`);
-    }
-
-    // Get the user's profile to verify they're a company admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, company_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profileError || !profile || profile.role !== 'company_admin') {
-      throw new Error('Unauthorized: User is not a company admin');
-    }
-
-    const { firstName, lastName, email, phone, password, companyId }: CreateGuardRequest = await req.json();
-
-    // Verify the company belongs to the requesting admin
-    if (profile.company_id !== companyId) {
-      throw new Error('Unauthorized: Cannot create guard for different company');
-    }
-
-    console.log('Creating guard with data:', {
-      firstName,
-      lastName,
-      email,
-      phone,
-      companyId
-    });
+    const { firstName, lastName, email, phone, password, companyId, userToken }: CreateGuardRequest = requestBody;
 
     // Validate input data
     if (!firstName || !lastName || !email || !password || !companyId) {
+      console.error('Missing required fields:', { firstName: !!firstName, lastName: !!lastName, email: !!email, password: !!password, companyId: !!companyId });
       throw new Error('Missing required fields');
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.error('Invalid email format:', email);
       throw new Error('Invalid email format');
     }
 
     // Validate password strength
     if (password.length < 6) {
+      console.error('Password too short:', password.length);
       throw new Error('Password must be at least 6 characters long');
     }
+
+    console.log('Input validation passed');
+
+    // Create Supabase admin client
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('Supabase admin client created');
+
+    // If we have a user token, verify the user is a company admin
+    if (userToken) {
+      console.log('Verifying user token...');
+      const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: {
+          headers: {
+            authorization: `Bearer ${userToken}`,
+          },
+        },
+      });
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('User verification failed:', userError);
+        throw new Error(`Unauthorized: ${userError?.message || 'Invalid user'}`);
+      }
+
+      console.log('User verified:', user.email);
+
+      // Get the user's profile to verify they're a company admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile || profile.role !== 'company_admin') {
+        console.error('Profile verification failed:', profileError, profile);
+        throw new Error('Unauthorized: User is not a company admin');
+      }
+
+      // Verify the company belongs to the requesting admin
+      if (profile.company_id !== companyId) {
+        console.error('Company mismatch:', { profileCompanyId: profile.company_id, requestedCompanyId: companyId });
+        throw new Error('Unauthorized: Cannot create guard for different company');
+      }
+
+      console.log('Company admin verification passed');
+    }
+
+    console.log('Creating auth user...');
 
     // Create the auth user using admin client
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -119,12 +121,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!authUser.user) {
-      throw new Error('Failed to create user account');
+      console.error('No user returned from auth creation');
+      throw new Error('Failed to create user account - no user returned');
     }
 
     console.log('Auth user created successfully:', authUser.user.id);
 
-    // Update the profile that was automatically created by the trigger
+    // The profile should be created automatically by the trigger
+    // Let's update it with the phone and company_id
     const { error: profileUpdateError } = await supabaseAdmin
       .from('profiles')
       .update({
@@ -136,7 +140,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (profileUpdateError) {
       console.error('Error updating profile:', profileUpdateError);
       // Don't throw here as the user was created successfully
+    } else {
+      console.log('Profile updated successfully');
     }
+
+    console.log('Guard creation completed successfully');
 
     return new Response(
       JSON.stringify({
