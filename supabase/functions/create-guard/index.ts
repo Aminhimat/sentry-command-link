@@ -63,24 +63,22 @@ const handler = async (req: Request): Promise<Response> => {
     // If we have a user token, verify the user is a company admin
     if (userToken) {
       console.log('Verifying user token...');
-      const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-        global: {
-          headers: {
-            authorization: `Bearer ${userToken}`,
-          },
-        },
-      });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      // Create a simple client with the user token
+      const userSupabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
+      
+      // Try to verify the user with the provided token
+      const { data: { user }, error: userError } = await userSupabase.auth.getUser(userToken);
+      
       if (userError || !user) {
         console.error('User verification failed:', userError);
-        throw new Error(`Unauthorized: ${userError?.message || 'Invalid user'}`);
+        throw new Error(`Unauthorized: ${userError?.message || 'Invalid user token'}`);
       }
 
       console.log('User verified:', user.email);
 
       // Get the user's profile to verify they're a company admin
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await userSupabase
         .from('profiles')
         .select('role, company_id')
         .eq('user_id', user.id)
