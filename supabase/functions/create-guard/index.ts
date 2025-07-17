@@ -77,15 +77,20 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('User verified:', user.email);
 
-      // Get the user's profile to verify they're a company admin
-      const { data: profile, error: profileError } = await userSupabase
+      // Use admin client to get the user's profile to verify they're a company admin
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .select('role, company_id')
         .eq('user_id', user.id)
         .single();
 
-      if (profileError || !profile || profile.role !== 'company_admin') {
-        console.error('Profile verification failed:', profileError, profile);
+      if (profileError) {
+        console.error('Profile lookup error:', profileError);
+        throw new Error('Unauthorized: Cannot verify user role');
+      }
+
+      if (!profile || profile.role !== 'company_admin') {
+        console.error('Role verification failed:', profile);
         throw new Error('Unauthorized: User is not a company admin');
       }
 
