@@ -50,6 +50,8 @@ const AuthPage = () => {
               window.location.href = '/admin';
             } else if (role === 'company_admin') {
               window.location.href = '/company';
+            } else if (role === 'guard') {
+              window.location.href = '/guard';
             } else {
               window.location.href = '/';
             }
@@ -84,6 +86,8 @@ const AuthPage = () => {
             window.location.href = '/admin';
           } else if (role === 'company_admin') {
             window.location.href = '/company';
+          } else if (role === 'guard') {
+            window.location.href = '/guard';
           } else {
             window.location.href = '/';
           }
