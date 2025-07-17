@@ -210,8 +210,15 @@ const CompanyDashboard = () => {
         }
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
         console.error('Function invocation error:', error);
+        toast({
+          title: "Error",
+          description: `Function error: ${error.message}`,
+          variant: "destructive",
+        });
         throw new Error(error.message || 'Failed to create guard');
       }
 
