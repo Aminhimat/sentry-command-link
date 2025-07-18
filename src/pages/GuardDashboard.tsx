@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Clock, MapPin, FileText, LogOut, User as UserIcon } from "lucide-react";
+import { Shield, Clock, MapPin, FileText, LogOut, User as UserIcon, Camera } from "lucide-react";
+import HourlyReportForm from "@/components/HourlyReportForm";
 
 interface Profile {
   id: string;
@@ -36,11 +37,21 @@ interface Incident {
   location_address: string;
 }
 
+interface GuardReport {
+  id: string;
+  report_text: string;
+  image_url: string | null;
+  location_address: string | null;
+  created_at: string;
+}
+
 const GuardDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [activeShift, setActiveShift] = useState<ActiveShift | null>(null);
   const [recentIncidents, setRecentIncidents] = useState<Incident[]>([]);
+  const [recentReports, setRecentReports] = useState<GuardReport[]>([]);
+  const [showReportForm, setShowReportForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -77,6 +88,7 @@ const GuardDashboard = () => {
       setUserProfile(data);
       await fetchActiveShift(data.id);
       await fetchRecentIncidents(data.id);
+      await fetchRecentReports(data.id);
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
@@ -121,6 +133,33 @@ const GuardDashboard = () => {
       setRecentIncidents(data || []);
     } catch (error) {
       console.error('Error fetching incidents:', error);
+    }
+  };
+
+  const fetchRecentReports = async (guardId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('guard_reports')
+        .select('*')
+        .eq('guard_id', guardId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching reports:', error);
+        return;
+      }
+
+      setRecentReports(data || []);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    }
+  };
+
+  const handleReportSubmitted = () => {
+    setShowReportForm(false);
+    if (userProfile) {
+      fetchRecentReports(userProfile.id);
     }
   };
 
@@ -295,6 +334,70 @@ const GuardDashboard = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Recent Reports */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Recent Reports</h2>
+            <Button 
+              onClick={() => setShowReportForm(!showReportForm)}
+              variant={showReportForm ? "secondary" : "default"}
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              {showReportForm ? "Cancel" : "Submit Report"}
+            </Button>
+          </div>
+          
+          {showReportForm && (
+            <div className="mb-6">
+              <HourlyReportForm 
+                userProfile={userProfile}
+                activeShift={activeShift}
+                onReportSubmitted={handleReportSubmitted}
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentReports.length > 0 ? (
+              recentReports.map((report) => (
+                <Card key={report.id}>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      {new Date(report.created_at).toLocaleString()}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {report.report_text}
+                    </p>
+                    {report.image_url && (
+                      <img 
+                        src={report.image_url} 
+                        alt="Report" 
+                        className="w-full h-32 object-cover rounded mb-2"
+                      />
+                    )}
+                    {report.location_address && (
+                      <p className="text-xs text-muted-foreground flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {report.location_address}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card className="col-span-full">
+                <CardContent className="text-center py-8">
+                  <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No reports submitted yet</p>
+                  <p className="text-sm text-muted-foreground">Submit your first hourly report above</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Quick Actions */}

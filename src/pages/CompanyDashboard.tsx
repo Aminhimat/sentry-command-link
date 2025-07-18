@@ -51,6 +51,7 @@ const CompanyDashboard = () => {
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [activeShifts, setActiveShifts] = useState<GuardShift[]>([]);
+  const [guardReports, setGuardReports] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [newGuard, setNewGuard] = useState({
@@ -106,6 +107,7 @@ const CompanyDashboard = () => {
       setUserProfile(profile);
       await fetchGuards();
       await fetchActiveShifts();
+      await fetchGuardReports();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -171,6 +173,31 @@ const CompanyDashboard = () => {
       setActiveShifts(data || []);
     } catch (error) {
       console.error('Error fetching active shifts:', error);
+    }
+  };
+
+  const fetchGuardReports = async () => {
+    if (!userProfile?.company_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('guard_reports')
+        .select(`
+          *,
+          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+        `)
+        .eq('company_id', userProfile.company_id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching guard reports:', error);
+        return;
+      }
+
+      setGuardReports(data || []);
+    } catch (error) {
+      console.error('Error fetching guard reports:', error);
     }
   };
 
@@ -331,9 +358,9 @@ const CompanyDashboard = () => {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Coming Soon</div>
+              <div className="text-2xl font-bold">{guardReports.length}</div>
               <p className="text-xs text-muted-foreground">
-                Generate reports
+                Total guard reports
               </p>
             </CardContent>
           </Card>
@@ -375,6 +402,58 @@ const CompanyDashboard = () => {
                       </div>
                     </div>
                     <Badge variant="secondary">On Duty</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Guard Reports */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Recent Guard Reports
+            </CardTitle>
+            <CardDescription>
+              Latest reports submitted by your guards
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {guardReports.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">No reports yet</p>
+            ) : (
+              <div className="space-y-4">
+                {guardReports.map((report) => (
+                  <div key={report.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium">
+                          {report.guard?.first_name} {report.guard?.last_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(report.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      {report.location_address && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {report.location_address}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm mb-3">{report.report_text}</p>
+                    {report.image_url && (
+                      <div className="mt-2">
+                        <img 
+                          src={report.image_url} 
+                          alt="Report" 
+                          className="max-w-xs max-h-48 object-cover rounded cursor-pointer"
+                          onClick={() => window.open(report.image_url, '_blank')}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

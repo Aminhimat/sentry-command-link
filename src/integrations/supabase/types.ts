@@ -50,6 +50,70 @@ export type Database = {
         }
         Relationships: []
       }
+      guard_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          guard_id: string
+          id: string
+          image_url: string | null
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          report_text: string | null
+          shift_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          guard_id: string
+          id?: string
+          image_url?: string | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          report_text?: string | null
+          shift_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          guard_id?: string
+          id?: string
+          image_url?: string | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          report_text?: string | null
+          shift_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guard_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guard_reports_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guard_reports_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "guard_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guard_shifts: {
         Row: {
           check_in_time: string
