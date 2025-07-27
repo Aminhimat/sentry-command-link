@@ -20,6 +20,7 @@ const AuthPage = () => {
     lastName: "",
     role: "platform_admin"
   });
+  const [isGuardLogin, setIsGuardLogin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -103,8 +104,14 @@ const AuthPage = () => {
     setIsLoading(true);
 
     try {
+      // Check if input is username (no @ symbol) and convert to email format
+      let emailToUse = formData.email;
+      if (isGuardLogin && !formData.email.includes('@')) {
+        emailToUse = `${formData.email}@company.local`;
+      }
+      
       const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: emailToUse,
         password: formData.password,
       });
 
@@ -219,11 +226,13 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
           <CardTitle className="text-2xl">
-            {isSignUp ? "Create Admin Account" : "Admin Sign In"}
+            {isSignUp ? "Create Admin Account" : isGuardLogin ? "Guard Sign In" : "Admin Sign In"}
           </CardTitle>
           <CardDescription>
             {isSignUp 
               ? "Create your platform administrator account" 
+              : isGuardLogin
+              ? "Sign in with your username and password"
               : "Sign in to manage your security platform"
             }
           </CardDescription>
@@ -258,13 +267,13 @@ const AuthPage = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{isGuardLogin ? "Username" : "Email"}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="admin@example.com"
+                  type={isGuardLogin ? "text" : "email"}
+                  placeholder={isGuardLogin ? "username" : "admin@example.com"}
                   className="pl-10"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -301,18 +310,34 @@ const AuthPage = () => {
               }
             </Button>
             
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <Button
                 type="button"
                 variant="link"
-                onClick={() => setIsSignUp(!isSignUp)}
+                onClick={() => {
+                  if (!isSignUp) {
+                    setIsGuardLogin(!isGuardLogin);
+                    setFormData({ ...formData, email: "" });
+                  }
+                }}
                 className="text-sm"
               >
-                {isSignUp 
-                  ? "Already have an account? Sign in" 
-                  : "Need an admin account? Sign up"
-                }
+                {isGuardLogin ? "Admin Login" : "Guard Login"}
               </Button>
+              
+              {!isGuardLogin && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm block mx-auto"
+                >
+                  {isSignUp 
+                    ? "Already have an account? Sign in" 
+                    : "Need an admin account? Sign up"
+                  }
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>
