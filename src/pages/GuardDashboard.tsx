@@ -3,426 +3,279 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Clock, MapPin, FileText, LogOut, User as UserIcon, Camera } from "lucide-react";
-import HourlyReportForm from "@/components/HourlyReportForm";
-
-interface Profile {
-  id: string;
-  user_id: string;
-  company_id: string;
-  role: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  is_active: boolean;
-}
-
-interface ActiveShift {
-  id: string;
-  check_in_time: string;
-  check_out_time: string | null;
-  location_address: string;
-  notes: string;
-}
-
-interface Incident {
-  id: string;
-  title: string;
-  description: string;
-  severity: string;
-  status: string;
-  created_at: string;
-  location_address: string;
-}
-
-interface GuardReport {
-  id: string;
-  report_text: string;
-  image_url: string | null;
-  location_address: string | null;
-  created_at: string;
-}
+import { Shield, Camera, MapPin, ClipboardList } from "lucide-react";
 
 const GuardDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<Profile | null>(null);
-  const [activeShift, setActiveShift] = useState<ActiveShift | null>(null);
-  const [recentIncidents, setRecentIncidents] = useState<Incident[]>([]);
-  const [recentReports, setRecentReports] = useState<GuardReport[]>([]);
-  const [showReportForm, setShowReportForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [taskData, setTaskData] = useState({
+    taskType: "",
+    site: "",
+    description: "",
+    severity: "",
+    image: null as File | null
+  });
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        window.location.href = '/auth';
-        return;
-      }
-
-      setUser(session.user);
-      await fetchUserProfile(session.user.id);
-      setIsLoading(false);
-    };
-
     checkUser();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      window.location.href = '/auth';
+      return;
+    }
+
+    setUser(user);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setTaskData({ ...taskData, image: e.target.files[0] });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!taskData.taskType || !taskData.site || !taskData.description || !taskData.severity) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const { data, error } = await supabase
+      let imageUrl = null;
+
+      // Upload image if provided
+      if (taskData.image) {
+        const fileExt = taskData.image.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('guard-reports')
+          .upload(fileName, taskData.image);
+
+        if (uploadError) {
+          throw new Error(`Failed to upload image: ${uploadError.message}`);
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('guard-reports')
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
+      // Get user's profile for company_id
+      const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
+        .select('id, company_id')
+        .eq('user_id', user?.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
+      if (!profile) {
+        throw new Error('User profile not found');
       }
 
-      setUserProfile(data);
-      await fetchActiveShift(data.id);
-      await fetchRecentIncidents(data.id);
-      await fetchRecentReports(data.id);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    }
-  };
-
-  const fetchActiveShift = async (guardId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('guard_shifts')
-        .select('*')
-        .eq('guard_id', guardId)
-        .is('check_out_time', null)
-        .order('check_in_time', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching active shift:', error);
-        return;
-      }
-
-      setActiveShift(data);
-    } catch (error) {
-      console.error('Error fetching active shift:', error);
-    }
-  };
-
-  const fetchRecentIncidents = async (guardId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .eq('guard_id', guardId)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        console.error('Error fetching incidents:', error);
-        return;
-      }
-
-      setRecentIncidents(data || []);
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-    }
-  };
-
-  const fetchRecentReports = async (guardId: string) => {
-    try {
-      const { data, error } = await supabase
+      // Submit report
+      const { error: reportError } = await supabase
         .from('guard_reports')
-        .select('*')
-        .eq('guard_id', guardId)
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .insert({
+          guard_id: profile.id,
+          company_id: profile.company_id,
+          report_text: `Task: ${taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
+          image_url: imageUrl,
+          location_address: taskData.site
+        });
 
-      if (error) {
-        console.error('Error fetching reports:', error);
-        return;
+      if (reportError) {
+        throw new Error(`Failed to submit report: ${reportError.message}`);
       }
 
-      setRecentReports(data || []);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    }
-  };
+      toast({
+        title: "Success",
+        description: "Task submitted successfully!",
+      });
 
-  const handleReportSubmitted = () => {
-    setShowReportForm(false);
-    if (userProfile) {
-      fetchRecentReports(userProfile.id);
+      // Reset form
+      setTaskData({
+        taskType: "",
+        site: "",
+        description: "",
+        severity: "",
+        image: null
+      });
+
+      // Reset file input
+      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+
+    } catch (error: any) {
+      console.error('Error submitting task:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit task",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast({
-      title: "Success",
-      description: "Signed out successfully!",
-    });
-    window.location.href = '/auth';
+    window.location.href = '/';
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!userProfile) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Shield className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Unable to load your profile. Please contact your administrator.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleSignOut} variant="outline" className="w-full">
-              Sign Out
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Shield className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold">Guard Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, {userProfile.first_name}</p>
-              </div>
+      <div className="border-b bg-card">
+        <div className="flex h-16 items-center px-6">
+          <div className="flex items-center space-x-4">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-xl font-semibold">Guard Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Welcome, {user?.email}
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant={userProfile.is_active ? "default" : "destructive"}>
-                {userProfile.is_active ? "Active" : "Inactive"}
-              </Badge>
-              <Button onClick={handleSignOut} variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+          </div>
+          <div className="ml-auto">
+            <Button variant="outline" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Task Submission Form */}
+      <div className="flex-1 p-6">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center gap-2 justify-center">
+              <ClipboardList className="h-6 w-6" />
+              Submit Task Report
+            </CardTitle>
+            <CardDescription>
+              Fill out the form below to submit your task report
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Task Type */}
+              <div className="space-y-2">
+                <Label htmlFor="taskType">Choose Task *</Label>
+                <Select value={taskData.taskType} onValueChange={(value) => setTaskData({ ...taskData, taskType: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a task type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="security-patrol">Security Patrol</SelectItem>
+                    <SelectItem value="supervisor-visit">Supervisor Visit</SelectItem>
+                    <SelectItem value="maintenance-check">Maintenance Check</SelectItem>
+                    <SelectItem value="emergency-response">Emergency Response</SelectItem>
+                    <SelectItem value="access-control">Access Control</SelectItem>
+                    <SelectItem value="incident-report">Incident Report</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Site */}
+              <div className="space-y-2">
+                <Label htmlFor="site">Work Site *</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="site"
+                    placeholder="Enter the site location"
+                    className="pl-10"
+                    value={taskData.site}
+                    onChange={(e) => setTaskData({ ...taskData, site: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Issue Severity */}
+              <div className="space-y-2">
+                <Label htmlFor="severity">Type of Issue *</Label>
+                <Select value={taskData.severity} onValueChange={(value) => setTaskData({ ...taskData, severity: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select issue severity" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the task details, observations, or issues..."
+                  className="min-h-[100px]"
+                  value={taskData.description}
+                  onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
+                  required
+                />
+              </div>
+
+              {/* Photo Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="image-upload">Take Photo</Label>
+                <div className="relative">
+                  <Camera className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="pl-10"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+                {taskData.image && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {taskData.image.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit Task Report"}
               </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <UserIcon className="h-5 w-5 mr-2" />
-                Your Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground">Name</p>
-                <p className="font-medium">{userProfile.first_name} {userProfile.last_name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{user?.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Phone</p>
-                <p className="font-medium">{userProfile.phone || 'Not provided'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Role</p>
-                <Badge variant="secondary">{userProfile.role}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Active Shift Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="h-5 w-5 mr-2" />
-                Current Shift
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activeShift ? (
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Check-in Time</p>
-                    <p className="font-medium">
-                      {new Date(activeShift.check_in_time).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
-                    <p className="font-medium">{activeShift.location_address || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge variant="default">On Duty</Badge>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No active shift</p>
-                  <p className="text-sm text-muted-foreground">Check in to start your shift</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Incidents */}
-          <Card className="md:col-span-2 lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="h-5 w-5 mr-2" />
-                Recent Incidents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentIncidents.length > 0 ? (
-                <div className="space-y-3">
-                  {recentIncidents.map((incident) => (
-                    <div key={incident.id} className="border-l-4 border-primary pl-3">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-sm">{incident.title}</p>
-                        <Badge 
-                          variant={
-                            incident.severity === 'high' ? 'destructive' :
-                            incident.severity === 'medium' ? 'default' : 'secondary'
-                          }
-                          className="text-xs"
-                        >
-                          {incident.severity}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(incident.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No incidents reported</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Reports */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Recent Reports</h2>
-            <Button 
-              onClick={() => setShowReportForm(!showReportForm)}
-              variant={showReportForm ? "secondary" : "default"}
-            >
-              <Camera className="h-4 w-4 mr-2" />
-              {showReportForm ? "Cancel" : "Submit Report"}
-            </Button>
-          </div>
-          
-          {showReportForm && (
-            <div className="mb-6">
-              <HourlyReportForm 
-                userProfile={userProfile}
-                activeShift={activeShift}
-                onReportSubmitted={handleReportSubmitted}
-              />
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentReports.length > 0 ? (
-              recentReports.map((report) => (
-                <Card key={report.id}>
-                  <CardHeader>
-                    <CardTitle className="text-sm">
-                      {new Date(report.created_at).toLocaleString()}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {report.report_text}
-                    </p>
-                    {report.image_url && (
-                      <img 
-                        src={report.image_url} 
-                        alt="Report" 
-                        className="w-full h-32 object-cover rounded mb-2"
-                      />
-                    )}
-                    {report.location_address && (
-                      <p className="text-xs text-muted-foreground flex items-center">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {report.location_address}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card className="col-span-full">
-                <CardContent className="text-center py-8">
-                  <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No reports submitted yet</p>
-                  <p className="text-sm text-muted-foreground">Submit your first hourly report above</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col">
-              <Clock className="h-6 w-6 mb-2" />
-              Check In/Out
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <FileText className="h-6 w-6 mb-2" />
-              Report Incident
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <MapPin className="h-6 w-6 mb-2" />
-              Update Location
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <UserIcon className="h-6 w-6 mb-2" />
-              View Schedule
-            </Button>
-          </div>
-        </div>
-      </main>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
