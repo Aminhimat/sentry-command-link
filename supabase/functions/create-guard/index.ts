@@ -13,7 +13,7 @@ interface CreateGuardRequest {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
+  username?: string;
   password: string;
   companyId: string;
   userToken?: string;
@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
     const requestBody = await req.json();
     console.log('Request body received:', { ...requestBody, password: '[REDACTED]' });
     
-    const { firstName, lastName, email, phone, password, companyId, userToken }: CreateGuardRequest = requestBody;
+    const { firstName, lastName, email, username, password, companyId, userToken }: CreateGuardRequest = requestBody;
 
     // Validate input data
     if (!firstName || !lastName || !email || !password || !companyId) {
@@ -131,11 +131,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Auth user created successfully:', authUser.user.id);
 
     // The profile should be created automatically by the trigger
-    // Let's update it with the phone and company_id
+    // Let's update it with the company_id
     const { error: profileUpdateError } = await supabaseAdmin
       .from('profiles')
       .update({
-        phone: phone,
         company_id: companyId
       })
       .eq('user_id', authUser.user.id);
@@ -155,9 +154,9 @@ const handler = async (req: Request): Promise<Response> => {
         user: {
           id: authUser.user.id,
           email: authUser.user.email,
+          username: username || email,
           firstName,
-          lastName,
-          phone
+          lastName
         }
       }),
       {

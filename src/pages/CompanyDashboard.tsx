@@ -57,8 +57,7 @@ const CompanyDashboard = () => {
   const [newGuard, setNewGuard] = useState({
     firstName: "",
     lastName: "",
-    email: "",
-    phone: "",
+    username: "",
     password: "TempPass123!"
   });
   const { toast } = useToast();
@@ -216,12 +215,14 @@ const CompanyDashboard = () => {
         throw new Error('No active session');
       }
 
+      // Generate email from username
+      const email = `${newGuard.username}@company.local`;
+      
       // Call the edge function to create the guard
       console.log('Creating guard with data:', {
         firstName: newGuard.firstName,
         lastName: newGuard.lastName,
-        email: newGuard.email,
-        phone: newGuard.phone,
+        username: newGuard.username,
         companyId: userProfile.company_id
       });
 
@@ -229,8 +230,8 @@ const CompanyDashboard = () => {
         body: {
           firstName: newGuard.firstName,
           lastName: newGuard.lastName,
-          email: newGuard.email,
-          phone: newGuard.phone,
+          email: email,
+          username: newGuard.username,
           password: newGuard.password,
           companyId: userProfile.company_id,
           userToken: session.access_token
@@ -267,8 +268,7 @@ const CompanyDashboard = () => {
       setNewGuard({
         firstName: "",
         lastName: "",
-        email: "",
-        phone: "",
+        username: "",
         password: "TempPass123!"
       });
       setShowCreateGuardForm(false);
@@ -511,27 +511,18 @@ const CompanyDashboard = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="username">Username</Label>
                       <Input
-                        id="email"
-                        type="email"
-                        value={newGuard.email}
-                        onChange={(e) => setNewGuard({ ...newGuard, email: e.target.value })}
+                        id="username"
+                        value={newGuard.username}
+                        onChange={(e) => setNewGuard({ ...newGuard, username: e.target.value })}
                         required
+                        placeholder="e.g., john.smith"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={newGuard.phone}
-                        onChange={(e) => setNewGuard({ ...newGuard, phone: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Temporary Password</Label>
+                      <Label htmlFor="password">Password</Label>
                       <Input
                         id="password"
                         value={newGuard.password}
