@@ -187,12 +187,22 @@ const GuardDashboard = () => {
                   <SelectContent className="bg-background border shadow-lg z-50">
                     <SelectItem value="security-patrol">Security Patrol</SelectItem>
                     <SelectItem value="supervisor-visit">Supervisor Visit</SelectItem>
+                    <SelectItem value="perimeter-check">Perimeter Check</SelectItem>
+                    <SelectItem value="building-inspection">Building Inspection</SelectItem>
+                    <SelectItem value="alarm-response">Alarm Response</SelectItem>
+                    <SelectItem value="fire-safety-check">Fire Safety Check</SelectItem>
                     <SelectItem value="maintenance-check">Maintenance Check</SelectItem>
                     <SelectItem value="emergency-response">Emergency Response</SelectItem>
                     <SelectItem value="access-control">Access Control</SelectItem>
+                    <SelectItem value="visitor-management">Visitor Management</SelectItem>
+                    <SelectItem value="vehicle-inspection">Vehicle Inspection</SelectItem>
+                    <SelectItem value="equipment-check">Equipment Check</SelectItem>
                     <SelectItem value="incident-report">Incident Report</SelectItem>
                     <SelectItem value="parking-patrol">Parking Area Patrolling</SelectItem>
-                    <SelectItem value="warehouse">Warehouse</SelectItem>
+                    <SelectItem value="warehouse-patrol">Warehouse Patrol</SelectItem>
+                    <SelectItem value="night-watch">Night Watch</SelectItem>
+                    <SelectItem value="crowd-control">Crowd Control</SelectItem>
+                    <SelectItem value="lock-up-procedure">Lock-up Procedure</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
