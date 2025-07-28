@@ -203,6 +203,9 @@ const GuardDashboard = () => {
                     <SelectItem value="night-watch">Night Watch</SelectItem>
                     <SelectItem value="crowd-control">Crowd Control</SelectItem>
                     <SelectItem value="lock-up-procedure">Lock-up Procedure</SelectItem>
+                    <SelectItem value="burglar-theft">Burglar Theft</SelectItem>
+                    <SelectItem value="trespassing">Trespassing</SelectItem>
+                    <SelectItem value="vulgar-behavior">Vulgar Behavior</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
