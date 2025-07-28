@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square } from "lucide-react";
 
 const GuardDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentShift, setCurrentShift] = useState<any>(null);
+  const [shiftLoading, setShiftLoading] = useState(false);
   const [taskData, setTaskData] = useState({
     taskType: "",
     site: "",
@@ -25,6 +27,39 @@ const GuardDashboard = () => {
   useEffect(() => {
     checkUser();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      checkActiveShift();
+    }
+  }, [user]);
+
+  const checkActiveShift = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return;
+
+      const { data: activeShift } = await supabase
+        .from('guard_shifts')
+        .select('*')
+        .eq('guard_id', profile.id)
+        .is('check_out_time', null)
+        .order('check_in_time', { ascending: false })
+        .limit(1)
+        .single();
+
+      setCurrentShift(activeShift);
+    } catch (error) {
+      console.log('No active shift found');
+    }
+  };
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -136,6 +171,114 @@ const GuardDashboard = () => {
     }
   };
 
+  const getLocation = (): Promise<GeolocationPosition> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser.'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      });
+    });
+  };
+
+  const handleStartShift = async () => {
+    if (!user) return;
+    
+    setShiftLoading(true);
+    
+    try {
+      // Get location
+      const position = await getLocation();
+      const { latitude, longitude } = position.coords;
+      
+      // Get user's profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) {
+        throw new Error('User profile not found');
+      }
+
+      // Create new shift
+      const { data: newShift, error } = await supabase
+        .from('guard_shifts')
+        .insert({
+          guard_id: profile.id,
+          company_id: profile.company_id,
+          location_lat: latitude,
+          location_lng: longitude,
+          location_address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCurrentShift(newShift);
+      toast({
+        title: "Shift Started",
+        description: "Your shift has been started successfully with location tracking.",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start shift",
+        variant: "destructive",
+      });
+    } finally {
+      setShiftLoading(false);
+    }
+  };
+
+  const handleEndShift = async () => {
+    if (!currentShift || !user) return;
+    
+    setShiftLoading(true);
+    
+    try {
+      // Get current location
+      const position = await getLocation();
+      const { latitude, longitude } = position.coords;
+      
+      // Update shift with end time and location
+      const { error } = await supabase
+        .from('guard_shifts')
+        .update({
+          check_out_time: new Date().toISOString(),
+          location_lat: latitude,
+          location_lng: longitude,
+          location_address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+        })
+        .eq('id', currentShift.id);
+
+      if (error) throw error;
+
+      setCurrentShift(null);
+      toast({
+        title: "Shift Ended",
+        description: "Your shift has been ended successfully.",
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to end shift",
+        variant: "destructive",
+      });
+    } finally {
+      setShiftLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
@@ -163,8 +306,52 @@ const GuardDashboard = () => {
         </div>
       </div>
 
+      {/* Shift Management */}
+      <div className="p-6 pb-0">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center gap-2 justify-center">
+              <Clock className="h-6 w-6" />
+              Shift Management
+            </CardTitle>
+            <CardDescription>
+              {currentShift 
+                ? `Shift started at ${new Date(currentShift.check_in_time).toLocaleString()}`
+                : "Start your shift to begin tracking your work hours"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 justify-center">
+              {!currentShift ? (
+                <Button 
+                  onClick={handleStartShift}
+                  disabled={shiftLoading}
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  {shiftLoading ? "Starting..." : "Start Shift"}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handleEndShift}
+                  disabled={shiftLoading}
+                  variant="destructive"
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <Square className="h-4 w-4" />
+                  {shiftLoading ? "Ending..." : "End Shift"}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Task Submission Form */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 pt-4">
         <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
