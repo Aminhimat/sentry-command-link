@@ -191,6 +191,8 @@ const GuardDashboard = () => {
                     <SelectItem value="emergency-response">Emergency Response</SelectItem>
                     <SelectItem value="access-control">Access Control</SelectItem>
                     <SelectItem value="incident-report">Incident Report</SelectItem>
+                    <SelectItem value="parking-patrol">Parking Area Patrolling</SelectItem>
+                    <SelectItem value="warehouse">Warehouse</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
