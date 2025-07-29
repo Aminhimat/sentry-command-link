@@ -39,6 +39,8 @@ interface GuardShift {
   check_in_time: string;
   check_out_time: string | null;
   location_address: string;
+  location_lat: number | null;
+  location_lng: number | null;
   notes: string;
   guard: {
     first_name: string;
@@ -65,6 +67,48 @@ const CompanyDashboard = () => {
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Set up real-time subscriptions for shifts and reports
+  useEffect(() => {
+    if (!userProfile?.company_id) return;
+
+    const shiftsChannel = supabase
+      .channel('guard-shifts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'guard_shifts',
+          filter: `company_id=eq.${userProfile.company_id}`
+        },
+        () => {
+          fetchActiveShifts();
+        }
+      )
+      .subscribe();
+
+    const reportsChannel = supabase
+      .channel('guard-reports-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'guard_reports',
+          filter: `company_id=eq.${userProfile.company_id}`
+        },
+        () => {
+          fetchGuardReports();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(shiftsChannel);
+      supabase.removeChannel(reportsChannel);
+    };
+  }, [userProfile?.company_id]);
 
   const checkUser = async () => {
     try {
@@ -382,28 +426,51 @@ const CompanyDashboard = () => {
               <p className="text-muted-foreground text-center py-4">No active shifts</p>
             ) : (
               <div className="space-y-4">
-                {activeShifts.map((shift) => (
-                  <div key={shift.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium">
-                          {shift.guard?.first_name} {shift.guard?.last_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Started: {new Date(shift.check_in_time).toLocaleString()}
-                        </p>
-                        {shift.location_address && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {shift.location_address}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant="secondary">On Duty</Badge>
-                  </div>
-                ))}
+                 {activeShifts.map((shift) => (
+                   <div key={shift.id} className="flex items-center justify-between p-4 border rounded-lg">
+                     <div className="flex items-center space-x-4">
+                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                       <div className="flex-1">
+                         <p className="font-medium">
+                           {shift.guard?.first_name} {shift.guard?.last_name}
+                         </p>
+                         <p className="text-sm text-muted-foreground">
+                           Started: {new Date(shift.check_in_time).toLocaleString()}
+                         </p>
+                         <div className="flex items-center gap-4 mt-1">
+                           {shift.location_address && (
+                             <p className="text-sm text-muted-foreground flex items-center gap-1">
+                               <MapPin className="h-3 w-3" />
+                               {shift.location_address}
+                             </p>
+                           )}
+                           {shift.location_lat && shift.location_lng && (
+                             <button
+                               onClick={() => window.open(`https://maps.google.com/?q=${shift.location_lat},${shift.location_lng}`, '_blank')}
+                               className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                             >
+                               <Eye className="h-3 w-3" />
+                               View on Map
+                             </button>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+                     <div className="flex flex-col items-end gap-2">
+                       <Badge variant="secondary" className="bg-green-100 text-green-800">
+                         On Duty
+                       </Badge>
+                       <span className="text-xs text-muted-foreground">
+                         {(() => {
+                           const duration = Date.now() - new Date(shift.check_in_time).getTime();
+                           const hours = Math.floor(duration / (1000 * 60 * 60));
+                           const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                           return `${hours}h ${minutes}m`;
+                         })()}
+                       </span>
+                     </div>
+                   </div>
+                 ))}
               </div>
             )}
           </CardContent>
