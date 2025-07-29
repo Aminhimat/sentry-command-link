@@ -38,10 +38,18 @@ const GuardDashboard = () => {
     if (!user) return;
     
     try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return;
+
       const { data: activeShift } = await supabase
         .from('guard_shifts')
         .select('*')
-        .eq('guard_id', user.id)
+        .eq('guard_id', profile.id)
         .is('check_out_time', null)
         .order('check_in_time', { ascending: false })
         .limit(1)
@@ -203,7 +211,7 @@ const GuardDashboard = () => {
       const { data: newShift, error } = await supabase
         .from('guard_shifts')
         .insert({
-          guard_id: user.id,
+          guard_id: profile.id,
           company_id: profile.company_id,
           location_lat: latitude,
           location_lng: longitude,
