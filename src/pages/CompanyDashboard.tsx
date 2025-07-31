@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Users, Activity, FileText, Eye, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -373,13 +372,17 @@ const CompanyDashboard = () => {
           <div className="flex items-center space-x-4">
             <Shield className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-xl font-semibold">Company Dashboard</h1>
+              <h1 className="text-xl font-semibold tracking-wide">COMPANY DASHBOARD</h1>
               <p className="text-sm text-muted-foreground">
                 Welcome, {userProfile?.first_name} {userProfile?.last_name}
               </p>
             </div>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <Button variant="outline" onClick={() => setShowCreateGuardForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Guard
+            </Button>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
@@ -387,288 +390,329 @@ const CompanyDashboard = () => {
         </div>
       </div>
 
-      <div className="flex-1 space-y-6 p-6">
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Guards</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{guards.length}</div>
-              <p className="text-xs text-muted-foreground">
-                {guards.filter(g => g.is_active).length} active
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Shifts</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeShifts.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Currently on duty
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reports</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{guardReports.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Total guard reports
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Active Shifts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Active Shifts
-            </CardTitle>
-            <CardDescription>
-              Guards currently on duty
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {activeShifts.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No active shifts</p>
-            ) : (
-              <div className="space-y-4">
-                 {activeShifts.map((shift) => (
-                   <div key={shift.id} className="flex items-center justify-between p-4 border rounded-lg">
-                     <div className="flex items-center space-x-4">
-                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                       <div className="flex-1">
-                         <p className="font-medium">
-                           {shift.guard?.first_name} {shift.guard?.last_name}
-                         </p>
-                         <p className="text-sm text-muted-foreground">
-                           Started: {new Date(shift.check_in_time).toLocaleString()}
-                         </p>
-                         <div className="flex items-center gap-4 mt-1">
-                           {shift.location_address && (
-                             <p className="text-sm text-muted-foreground flex items-center gap-1">
-                               <MapPin className="h-3 w-3" />
-                               {shift.location_address}
-                             </p>
-                           )}
-                           {shift.location_lat && shift.location_lng && (
-                             <button
-                               onClick={() => window.open(`https://maps.google.com/?q=${shift.location_lat},${shift.location_lng}`, '_blank')}
-                               className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                             >
-                               <Eye className="h-3 w-3" />
-                               View on Map
-                             </button>
-                           )}
-                         </div>
-                       </div>
-                     </div>
-                     <div className="flex flex-col items-end gap-2">
-                       <Badge variant="secondary" className="bg-green-100 text-green-800">
-                         On Duty
-                       </Badge>
-                       <span className="text-xs text-muted-foreground">
-                         {(() => {
-                           const duration = Date.now() - new Date(shift.check_in_time).getTime();
-                           const hours = Math.floor(duration / (1000 * 60 * 60));
-                           const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-                           return `${hours}h ${minutes}m`;
-                         })()}
-                       </span>
-                     </div>
-                   </div>
-                 ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Guard Reports */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Recent Guard Reports
-            </CardTitle>
-            <CardDescription>
-              Latest reports submitted by your guards
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {guardReports.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No reports yet</p>
-            ) : (
-              <div className="space-y-4">
-                {guardReports.map((report) => (
-                  <div key={report.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="font-medium">
-                          {report.guard?.first_name} {report.guard?.last_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(report.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      {report.location_address && (
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {report.location_address}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm mb-3">{report.report_text}</p>
-                    {report.image_url && (
-                      <div className="mt-2">
-                        <img 
-                          src={report.image_url} 
-                          alt="Report" 
-                          className="max-w-xs max-h-48 object-cover rounded cursor-pointer"
-                          onClick={() => window.open(report.image_url, '_blank')}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Guards Management */}
-        <Card>
-          <CardHeader>
+      <div className="flex-1 p-6">
+        {/* Stats Bar */}
+        <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <div className="bg-card p-4 rounded-lg border">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Guards Management
-                </CardTitle>
-                <CardDescription>
-                  Manage your security guards
-                </CardDescription>
+                <p className="text-sm text-muted-foreground">Total Guards</p>
+                <p className="text-2xl font-bold">{guards.length}</p>
               </div>
-              <Button onClick={() => setShowCreateGuardForm(!showCreateGuardForm)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Guard
-              </Button>
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <div className="bg-card p-4 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Guards</p>
+                <p className="text-2xl font-bold">{guards.filter(g => g.is_active).length}</p>
+              </div>
+              <Activity className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+          <div className="bg-card p-4 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Shifts</p>
+                <p className="text-2xl font-bold">{activeShifts.length}</p>
+              </div>
+              <Shield className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+          <div className="bg-card p-4 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Reports Today</p>
+                <p className="text-2xl font-bold">{guardReports.length}</p>
+              </div>
+              <FileText className="h-8 w-8 text-orange-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Create Guard Form */}
+        {showCreateGuardForm && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Create New Guard</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(false)}>
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateGuard} className="grid gap-4 md:grid-cols-4">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    value={newGuard.firstName}
+                    onChange={(e) => setNewGuard({...newGuard, firstName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    value={newGuard.lastName}
+                    onChange={(e) => setNewGuard({...newGuard, lastName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={newGuard.username}
+                    onChange={(e) => setNewGuard({...newGuard, username: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" disabled={isLoading} className="w-full">
+                    {isLoading ? "Creating..." : "Create Guard"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Guards Table */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold tracking-wide">GUARDS MONITOR</CardTitle>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Total: {guards.length}</span>
+                <span>•</span>
+                <span>Active: {guards.filter(g => g.is_active).length}</span>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Create Guard Form */}
-            {showCreateGuardForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Create New Guard</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCreateGuard} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input
-                          id="firstName"
-                          value={newGuard.firstName}
-                          onChange={(e) => setNewGuard({ ...newGuard, firstName: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          value={newGuard.lastName}
-                          onChange={(e) => setNewGuard({ ...newGuard, lastName: e.target.value })}
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        value={newGuard.username}
-                        onChange={(e) => setNewGuard({ ...newGuard, username: e.target.value })}
-                        required
-                        placeholder="e.g., john.smith"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        value={newGuard.password}
-                        onChange={(e) => setNewGuard({ ...newGuard, password: e.target.value })}
-                        required
-                      />
-                    </div>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="text-left p-4 font-medium text-sm">Guard ID</th>
+                    <th className="text-left p-4 font-medium text-sm">Name</th>
+                    <th className="text-left p-4 font-medium text-sm">Email</th>
+                    <th className="text-left p-4 font-medium text-sm">Phone</th>
+                    <th className="text-left p-4 font-medium text-sm">Status</th>
+                    <th className="text-left p-4 font-medium text-sm">Created Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guards.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No guards found. Create your first guard above.
+                      </td>
+                    </tr>
+                  ) : (
+                    guards.map((guard) => (
+                      <tr key={guard.id} className="border-b hover:bg-muted/25 transition-colors">
+                        <td className="p-4 font-mono text-sm text-blue-600">
+                          {guard.id.split('-')[0].toUpperCase()}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
+                                {guard.first_name?.[0]}{guard.last_name?.[0]}
+                              </span>
+                            </div>
+                            <span className="font-medium">
+                              {guard.first_name} {guard.last_name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm">{guard.email}</td>
+                        <td className="p-4 text-sm">{guard.phone || '-'}</td>
+                        <td className="p-4">
+                          <Badge 
+                            variant={guard.is_active ? "default" : "secondary"}
+                            className={guard.is_active ? "bg-green-100 text-green-800 border-green-200" : ""}
+                          >
+                            {guard.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-sm text-muted-foreground">
+                          {new Date(guard.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
-                    <div className="flex space-x-2">
-                      <Button type="submit" disabled={isLoading}>
-                        {isLoading ? "Creating..." : "Create Guard"}
-                      </Button>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setShowCreateGuardForm(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+        {/* Active Shifts Table */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold tracking-wide">ACTIVE SHIFTS MONITOR</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="text-left p-4 font-medium text-sm">Shift ID</th>
+                    <th className="text-left p-4 font-medium text-sm">Guard Name</th>
+                    <th className="text-left p-4 font-medium text-sm">Check-in Time</th>
+                    <th className="text-left p-4 font-medium text-sm">Duration</th>
+                    <th className="text-left p-4 font-medium text-sm">Location</th>
+                    <th className="text-left p-4 font-medium text-sm">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeShifts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No active shifts
+                      </td>
+                    </tr>
+                  ) : (
+                    activeShifts.map((shift) => (
+                      <tr key={shift.id} className="border-b hover:bg-muted/25 transition-colors">
+                        <td className="p-4 font-mono text-sm text-blue-600">
+                          {shift.id.split('-')[0].toUpperCase()}
+                        </td>
+                        <td className="p-4 font-medium">
+                          {shift.guard?.first_name} {shift.guard?.last_name}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {new Date(shift.check_in_time).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {(() => {
+                            const duration = Date.now() - new Date(shift.check_in_time).getTime();
+                            const hours = Math.floor(duration / (1000 * 60 * 60));
+                            const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                            return `${hours}h ${minutes}m`;
+                          })()}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {shift.location_address || '-'}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <Badge className="bg-green-100 text-green-800 border-green-200">On Duty</Badge>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Guards List */}
-            <div className="space-y-4">
-              {guards.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  No guards found. Create your first guard above.
-                </p>
-              ) : (
-                guards.map((guard) => (
-                  <div key={guard.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <Shield className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">
-                          {guard.first_name} {guard.last_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{guard.email}</p>
-                        <p className="text-sm text-muted-foreground">{guard.phone}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Created: {new Date(guard.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={guard.is_active ? "default" : "secondary"}>
-                        {guard.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
+        {/* Recent Reports Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold tracking-wide">RECENT REPORTS MONITOR</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="text-left p-4 font-medium text-sm">Report ID</th>
+                    <th className="text-left p-4 font-medium text-sm">Guard Name</th>
+                    <th className="text-left p-4 font-medium text-sm">Report Summary</th>
+                    <th className="text-left p-4 font-medium text-sm">Location</th>
+                    <th className="text-left p-4 font-medium text-sm">Created Date</th>
+                    <th className="text-left p-4 font-medium text-sm">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {guardReports.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No reports yet
+                      </td>
+                    </tr>
+                  ) : (
+                    guardReports.map((report) => (
+                      <tr key={report.id} className="border-b hover:bg-muted/25 transition-colors">
+                        <td className="p-4 font-mono text-sm text-blue-600">
+                          {report.id.split('-')[0].toUpperCase()}
+                        </td>
+                        <td className="p-4 font-medium">
+                          {report.guard?.first_name} {report.guard?.last_name}
+                        </td>
+                        <td className="p-4 text-sm max-w-xs truncate">
+                          {report.report_text || 'No description'}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {report.location_address || '-'}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {new Date(report.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-1">
+                            {report.image_url && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.open(report.image_url, '_blank')}
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {report.location_lat && report.location_lng && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(`https://maps.google.com/?q=${report.location_lat},${report.location_lng}`, '_blank')}
+                              >
+                                <MapPin className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
