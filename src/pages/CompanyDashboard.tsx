@@ -148,9 +148,12 @@ const CompanyDashboard = () => {
       }
 
       setUserProfile(profile);
-      await fetchGuards();
-      await fetchActiveShifts();
-      await fetchGuardReports();
+      
+      // Fetch data after setting profile, passing the profile directly to avoid state delay
+      console.log('Profile set, now fetching data for company:', profile.company_id);
+      await fetchGuardsForCompany(profile.company_id);
+      await fetchActiveShiftsForCompany(profile.company_id);
+      await fetchGuardReportsForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -159,17 +162,19 @@ const CompanyDashboard = () => {
     }
   };
 
-  const fetchGuards = async () => {
-    if (!userProfile?.company_id) return;
+  const fetchGuardsForCompany = async (companyId: string) => {
+    console.log('Fetching guards for company:', companyId);
 
     try {
       // Get guard profiles - we'll get emails from the edge function response
       const { data: guardProfiles, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('company_id', userProfile.company_id)
+        .eq('company_id', companyId)
         .eq('role', 'guard')
         .order('created_at', { ascending: false });
+
+      console.log('Guards query result:', { guardProfiles, error });
 
       if (error) {
         console.error('Error fetching guards:', error);
@@ -185,18 +190,25 @@ const CompanyDashboard = () => {
       // This will be populated when creating new guards
       const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
         ...guard,
-        email: `${guard.first_name.toLowerCase()}.${guard.last_name.toLowerCase()}@company.local`
+        email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`
       }));
 
+      console.log('Setting guards:', guardsWithPlaceholderEmails);
       setGuards(guardsWithPlaceholderEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
   };
 
-  const fetchActiveShifts = async () => {
-    if (!userProfile?.company_id) return;
+  const fetchGuards = async () => {
+    if (!userProfile?.company_id) {
+      console.log('No company_id available for fetching guards');
+      return;
+    }
+    await fetchGuardsForCompany(userProfile.company_id);
+  };
 
+  const fetchActiveShiftsForCompany = async (companyId: string) => {
     try {
       const { data, error } = await supabase
         .from('guard_shifts')
@@ -204,7 +216,7 @@ const CompanyDashboard = () => {
           *,
           guard:profiles!guard_shifts_guard_id_fkey(first_name, last_name)
         `)
-        .eq('company_id', userProfile.company_id)
+        .eq('company_id', companyId)
         .is('check_out_time', null)
         .order('check_in_time', { ascending: false });
 
@@ -219,9 +231,12 @@ const CompanyDashboard = () => {
     }
   };
 
-  const fetchGuardReports = async () => {
+  const fetchActiveShifts = async () => {
     if (!userProfile?.company_id) return;
+    await fetchActiveShiftsForCompany(userProfile.company_id);
+  };
 
+  const fetchGuardReportsForCompany = async (companyId: string) => {
     try {
       const { data, error } = await supabase
         .from('guard_reports')
@@ -229,7 +244,7 @@ const CompanyDashboard = () => {
           *,
           guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
         `)
-        .eq('company_id', userProfile.company_id)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -242,6 +257,11 @@ const CompanyDashboard = () => {
     } catch (error) {
       console.error('Error fetching guard reports:', error);
     }
+  };
+
+  const fetchGuardReports = async () => {
+    if (!userProfile?.company_id) return;
+    await fetchGuardReportsForCompany(userProfile.company_id);
   };
 
   const handleCreateGuard = async (e: React.FormEvent) => {
