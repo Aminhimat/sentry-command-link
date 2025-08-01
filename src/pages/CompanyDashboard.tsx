@@ -49,6 +49,7 @@ interface Incident {
   };
 }
 
+// CompanyDashboard component - Fixed activeShifts error
 const CompanyDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -63,6 +64,9 @@ const CompanyDashboard = () => {
     password: "TempPass123!"
   });
   const { toast } = useToast();
+
+  // Debug: Log all state variables to check for any issues
+  console.log('Dashboard state:', { guards: guards.length, incidents: incidents.length, isLoading, userProfile });
 
   useEffect(() => {
     checkUser();
