@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, Activity, FileText, Eye, MapPin } from "lucide-react";
+import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Profile {
@@ -32,15 +32,17 @@ interface Guard {
   updated_at?: string;
 }
 
-interface GuardShift {
+interface Incident {
   id: string;
   guard_id: string;
-  check_in_time: string;
-  check_out_time: string | null;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
   location_address: string;
   location_lat: number | null;
   location_lng: number | null;
-  notes: string;
+  created_at: string;
   guard: {
     first_name: string;
     last_name: string;
@@ -51,8 +53,7 @@ const CompanyDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [guards, setGuards] = useState<Guard[]>([]);
-  const [activeShifts, setActiveShifts] = useState<GuardShift[]>([]);
-  const [guardReports, setGuardReports] = useState<any[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [newGuard, setNewGuard] = useState({
@@ -67,45 +68,28 @@ const CompanyDashboard = () => {
     checkUser();
   }, []);
 
-  // Set up real-time subscriptions for shifts and reports
+  // Set up real-time subscriptions for incidents
   useEffect(() => {
     if (!userProfile?.company_id) return;
 
-    const shiftsChannel = supabase
-      .channel('guard-shifts-changes')
+    const incidentsChannel = supabase
+      .channel('incidents-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'guard_shifts',
+          table: 'incidents',
           filter: `company_id=eq.${userProfile.company_id}`
         },
         () => {
-          fetchActiveShifts();
-        }
-      )
-      .subscribe();
-
-    const reportsChannel = supabase
-      .channel('guard-reports-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'guard_reports',
-          filter: `company_id=eq.${userProfile.company_id}`
-        },
-        () => {
-          fetchGuardReports();
+          fetchIncidents();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(shiftsChannel);
-      supabase.removeChannel(reportsChannel);
+      supabase.removeChannel(incidentsChannel);
     };
   }, [userProfile?.company_id]);
 
@@ -151,8 +135,7 @@ const CompanyDashboard = () => {
       // Fetch data after setting profile, passing the profile directly to avoid state delay
       console.log('Profile set, now fetching data for company:', profile.company_id);
       await fetchGuardsForCompany(profile.company_id);
-      await fetchActiveShiftsForCompany(profile.company_id);
-      await fetchGuardReportsForCompany(profile.company_id);
+      await fetchIncidentsForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -207,60 +190,32 @@ const CompanyDashboard = () => {
     await fetchGuardsForCompany(userProfile.company_id);
   };
 
-  const fetchActiveShiftsForCompany = async (companyId: string) => {
+  const fetchIncidentsForCompany = async (companyId: string) => {
     try {
       const { data, error } = await supabase
-        .from('guard_shifts')
+        .from('incidents')
         .select(`
           *,
-          guard:profiles!guard_shifts_guard_id_fkey(first_name, last_name)
-        `)
-        .eq('company_id', companyId)
-        .is('check_out_time', null)
-        .order('check_in_time', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching active shifts:', error);
-        return;
-      }
-
-      setActiveShifts(data || []);
-    } catch (error) {
-      console.error('Error fetching active shifts:', error);
-    }
-  };
-
-  const fetchActiveShifts = async () => {
-    if (!userProfile?.company_id) return;
-    await fetchActiveShiftsForCompany(userProfile.company_id);
-  };
-
-  const fetchGuardReportsForCompany = async (companyId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('guard_reports')
-        .select(`
-          *,
-          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+          guard:profiles!incidents_guard_id_fkey(first_name, last_name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) {
-        console.error('Error fetching guard reports:', error);
+        console.error('Error fetching incidents:', error);
         return;
       }
 
-      setGuardReports(data || []);
+      setIncidents(data || []);
     } catch (error) {
-      console.error('Error fetching guard reports:', error);
+      console.error('Error fetching incidents:', error);
     }
   };
 
-  const fetchGuardReports = async () => {
+  const fetchIncidents = async () => {
     if (!userProfile?.company_id) return;
-    await fetchGuardReportsForCompany(userProfile.company_id);
+    await fetchIncidentsForCompany(userProfile.company_id);
   };
 
   const handleCreateGuard = async (e: React.FormEvent) => {
@@ -353,6 +308,18 @@ const CompanyDashboard = () => {
     window.location.href = '/';
   };
 
+  const getSeverityBadge = (severity: string) => {
+    const severityConfig = {
+      'low': { className: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Low' },
+      'medium': { className: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Medium' },
+      'high': { className: 'bg-red-100 text-red-800 border-red-200', label: 'High' },
+      'none': { className: 'bg-gray-100 text-gray-800 border-gray-200', label: 'None' }
+    };
+    
+    const config = severityConfig[severity as keyof typeof severityConfig] || severityConfig.none;
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -414,19 +381,19 @@ const CompanyDashboard = () => {
           <div className="bg-card p-4 rounded-lg border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Shifts</p>
-                <p className="text-2xl font-bold">{activeShifts.length}</p>
+                <p className="text-sm text-muted-foreground">Total Incidents</p>
+                <p className="text-2xl font-bold">{incidents.length}</p>
               </div>
-              <Shield className="h-8 w-8 text-blue-600" />
+              <AlertTriangle className="h-8 w-8 text-orange-600" />
             </div>
           </div>
           <div className="bg-card p-4 rounded-lg border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Reports Today</p>
-                <p className="text-2xl font-bold">{guardReports.length}</p>
+                <p className="text-sm text-muted-foreground">Open Issues</p>
+                <p className="text-2xl font-bold">{incidents.filter(i => i.status === 'open').length}</p>
               </div>
-              <FileText className="h-8 w-8 text-orange-600" />
+              <FileText className="h-8 w-8 text-red-600" />
             </div>
           </div>
         </div>
@@ -564,42 +531,53 @@ const CompanyDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Active Shifts Table */}
-        <Card className="mb-6">
+        {/* Incidents Monitor */}
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold tracking-wide">ACTIVE SHIFTS MONITOR</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Total: {incidents.length}</span>
+                <span>•</span>
+                <span>Open: {incidents.filter(i => i.status === 'open').length}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr className="border-b">
-                    <th className="text-left p-4 font-medium text-sm">Shift ID</th>
-                    <th className="text-left p-4 font-medium text-sm">Guard Name</th>
-                    <th className="text-left p-4 font-medium text-sm">Check-in Time</th>
-                    <th className="text-left p-4 font-medium text-sm">Duration</th>
-                    <th className="text-left p-4 font-medium text-sm">Location</th>
-                    <th className="text-left p-4 font-medium text-sm">Status</th>
+                    <th className="text-left p-4 font-medium text-sm">Issue ID</th>
+                    <th className="text-left p-4 font-medium text-sm">Property/Site</th>
+                    <th className="text-left p-4 font-medium text-sm">Reported Issue</th>
+                    <th className="text-left p-4 font-medium text-sm">Created Date</th>
+                    <th className="text-left p-4 font-medium text-sm">Created By</th>
+                    <th className="text-left p-4 font-medium text-sm">Severity</th>
+                    <th className="text-left p-4 font-medium text-sm">Assigned To</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {activeShifts.length === 0 ? (
+                  {incidents.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No active shifts
+                      <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No incidents reported yet
                       </td>
                     </tr>
                   ) : (
-                    activeShifts.map((shift) => (
-                      <tr key={shift.id} className="border-b hover:bg-muted/25 transition-colors">
-                        <td className="p-4 font-mono text-sm text-blue-600">
-                          {shift.id.split('-')[0].toUpperCase()}
+                    incidents.map((incident) => (
+                      <tr key={incident.id} className="border-b hover:bg-muted/25 transition-colors">
+                        <td className="p-4 font-mono text-sm text-red-600">
+                          {incident.id.split('-')[0].toUpperCase()}
                         </td>
-                        <td className="p-4 font-medium">
-                          {shift.guard?.first_name} {shift.guard?.last_name}
+                        <td className="p-4 text-sm font-medium">
+                          {incident.location_address || 'Unknown Site'}
                         </td>
                         <td className="p-4 text-sm">
-                          {new Date(shift.check_in_time).toLocaleDateString('en-US', {
+                          {incident.title || 'Security Patrol'}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {new Date(incident.created_at).toLocaleDateString('en-US', {
                             weekday: 'short',
                             month: 'numeric',
                             day: 'numeric',
@@ -610,21 +588,13 @@ const CompanyDashboard = () => {
                           })}
                         </td>
                         <td className="p-4 text-sm">
-                          {(() => {
-                            const duration = Date.now() - new Date(shift.check_in_time).getTime();
-                            const hours = Math.floor(duration / (1000 * 60 * 60));
-                            const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-                            return `${hours}h ${minutes}m`;
-                          })()}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {shift.location_address || '-'}
+                          {incident.guard?.first_name} {incident.guard?.last_name}
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <Badge className="bg-green-100 text-green-800 border-green-200">On Duty</Badge>
-                          </div>
+                          {getSeverityBadge(incident.severity)}
+                        </td>
+                        <td className="p-4 text-sm">
+                          {incident.guard?.first_name} {incident.guard?.last_name}
                         </td>
                       </tr>
                     ))
