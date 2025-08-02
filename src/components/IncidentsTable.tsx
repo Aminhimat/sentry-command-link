@@ -90,13 +90,13 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                         })}
                       </td>
                       <td className="p-4 text-sm">
-                        {incident.guard?.first_name} {incident.guard?.last_name}
+                        {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
                       </td>
                       <td className="p-4">
                         {getSeverityBadge(incident.severity)}
                       </td>
                       <td className="p-4 text-sm">
-                        {incident.guard?.first_name} {incident.guard?.last_name}
+                        {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
                       </td>
                     </tr>
                   ))

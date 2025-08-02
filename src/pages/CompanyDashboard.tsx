@@ -45,7 +45,9 @@ interface Incident {
   location_lat: number | null;
   location_lng: number | null;
   created_at: string;
-  guard: {
+  company_id: string;
+  updated_at: string;
+  guard?: {
     first_name: string;
     last_name: string;
   };
@@ -197,22 +199,50 @@ const CompanyDashboard = () => {
   };
 
   const fetchIncidentsForCompany = async (companyId: string) => {
+    console.log('Fetching incidents for company:', companyId);
     try {
+      // First, let's try a simpler query to see if there are any incidents
+      const { data: allIncidents, error: allError } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('company_id', companyId);
+
+      console.log('All incidents for company:', { allIncidents, allError });
+
+      // Now try the query with the join
       const { data, error } = await supabase
         .from('incidents')
         .select(`
           *,
-          guard:profiles!incidents_guard_id_fkey(first_name, last_name)
+          guard:profiles!inner(first_name, last_name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
+
+      console.log('Incidents query result:', { data, error });
 
       if (error) {
         console.error('Error fetching incidents:', error);
+        // Fallback to incidents without guard info if join fails
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('incidents')
+          .select('*')
+          .eq('company_id', companyId)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          return;
+        }
+
+        console.log('Using fallback data:', fallbackData);
+        setIncidents(fallbackData || []);
         return;
       }
 
+      console.log('Setting incidents:', data);
       setIncidents(data || []);
     } catch (error) {
       console.error('Error fetching incidents:', error);

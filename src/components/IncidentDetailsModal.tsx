@@ -87,19 +87,23 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
               <p className="text-sm font-medium">Submitted By</p>
             </div>
             <div className="bg-muted/50 p-3 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-primary">
-                    {incident.guard?.first_name?.[0]}{incident.guard?.last_name?.[0]}
-                  </span>
+              {incident.guard ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary">
+                      {incident.guard?.first_name?.[0]}{incident.guard?.last_name?.[0]}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">
+                      {incident.guard?.first_name} {incident.guard?.last_name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Security Guard</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">
-                    {incident.guard?.first_name} {incident.guard?.last_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Security Guard</p>
-                </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Guard information not available</p>
+              )}
             </div>
           </div>
 
