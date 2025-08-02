@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import StatsCards from "@/components/StatsCards";
+import IncidentsTable from "@/components/IncidentsTable";
 
 interface Profile {
   id: string;
@@ -362,45 +364,7 @@ const CompanyDashboard = () => {
       </div>
 
       <div className="flex-1 p-6">
-        {/* Stats Bar */}
-        <div className="grid gap-4 md:grid-cols-4 mb-6">
-          <div className="bg-card p-4 rounded-lg border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Guards</p>
-                <p className="text-2xl font-bold">{guards.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <div className="bg-card p-4 rounded-lg border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Guards</p>
-                <p className="text-2xl font-bold">{guards.filter(g => g.is_active).length}</p>
-              </div>
-              <Activity className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-          <div className="bg-card p-4 rounded-lg border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Incidents</p>
-                <p className="text-2xl font-bold">{incidents.length}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-orange-600" />
-            </div>
-          </div>
-          <div className="bg-card p-4 rounded-lg border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Open Issues</p>
-                <p className="text-2xl font-bold">{incidents.filter(i => i.status === 'open').length}</p>
-              </div>
-              <FileText className="h-8 w-8 text-red-600" />
-            </div>
-          </div>
-        </div>
+        <StatsCards guards={guards} incidents={incidents} />
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
@@ -455,79 +419,7 @@ const CompanyDashboard = () => {
           </Card>
         )}
 
-        {/* Incidents Monitor */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Total: {incidents.length}</span>
-                <span>•</span>
-                <span>Open: {incidents.filter(i => i.status === 'open').length}</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium text-sm">Issue ID</th>
-                    <th className="text-left p-4 font-medium text-sm">Property/Site</th>
-                    <th className="text-left p-4 font-medium text-sm">Reported Issue</th>
-                    <th className="text-left p-4 font-medium text-sm">Created Date</th>
-                    <th className="text-left p-4 font-medium text-sm">Created By</th>
-                    <th className="text-left p-4 font-medium text-sm">Severity</th>
-                    <th className="text-left p-4 font-medium text-sm">Assigned To</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {incidents.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No incidents reported yet
-                      </td>
-                    </tr>
-                  ) : (
-                    incidents.map((incident) => (
-                      <tr key={incident.id} className="border-b hover:bg-muted/25 transition-colors">
-                        <td className="p-4 font-mono text-sm text-red-600">
-                          {incident.id.split('-')[0].toUpperCase()}
-                        </td>
-                        <td className="p-4 text-sm font-medium">
-                          {incident.location_address || 'Unknown Site'}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {incident.title || 'Security Patrol'}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {new Date(incident.created_at).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'numeric',
-                            day: 'numeric',
-                            year: '2-digit',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {incident.guard?.first_name} {incident.guard?.last_name}
-                        </td>
-                        <td className="p-4">
-                          {getSeverityBadge(incident.severity)}
-                        </td>
-                        <td className="p-4 text-sm">
-                          {incident.guard?.first_name} {incident.guard?.last_name}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <IncidentsTable incidents={incidents} />
 
 
       </div>
