@@ -455,88 +455,8 @@ const CompanyDashboard = () => {
           </Card>
         )}
 
-        {/* Guards Table */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold tracking-wide">GUARDS MONITOR</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Total: {guards.length}</span>
-                <span>•</span>
-                <span>Active: {guards.filter(g => g.is_active).length}</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium text-sm">Guard ID</th>
-                    <th className="text-left p-4 font-medium text-sm">Name</th>
-                    <th className="text-left p-4 font-medium text-sm">Email</th>
-                    <th className="text-left p-4 font-medium text-sm">Phone</th>
-                    <th className="text-left p-4 font-medium text-sm">Status</th>
-                    <th className="text-left p-4 font-medium text-sm">Created Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guards.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No guards found. Create your first guard above.
-                      </td>
-                    </tr>
-                  ) : (
-                    guards.map((guard) => (
-                      <tr key={guard.id} className="border-b hover:bg-muted/25 transition-colors">
-                        <td className="p-4 font-mono text-sm text-blue-600">
-                          {guard.id.split('-')[0].toUpperCase()}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                              <span className="text-xs font-medium text-primary">
-                                {guard.first_name?.[0]}{guard.last_name?.[0]}
-                              </span>
-                            </div>
-                            <span className="font-medium">
-                              {guard.first_name} {guard.last_name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm">{guard.email}</td>
-                        <td className="p-4 text-sm">{guard.phone || '-'}</td>
-                        <td className="p-4">
-                          <Badge 
-                            variant={guard.is_active ? "default" : "secondary"}
-                            className={guard.is_active ? "bg-green-100 text-green-800 border-green-200" : ""}
-                          >
-                            {guard.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(guard.created_at).toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'numeric',
-                            day: 'numeric',
-                            year: '2-digit',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Incidents Monitor */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
@@ -608,6 +528,7 @@ const CompanyDashboard = () => {
             </div>
           </CardContent>
         </Card>
+
 
       </div>
     </div>
