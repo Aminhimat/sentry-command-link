@@ -342,17 +342,6 @@ const CompanyDashboard = () => {
     window.location.href = '/';
   };
 
-  const getSeverityBadge = (severity: string) => {
-    const severityConfig = {
-      'low': { className: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Low' },
-      'medium': { className: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Medium' },
-      'high': { className: 'bg-red-100 text-red-800 border-red-200', label: 'High' },
-      'none': { className: 'bg-gray-100 text-gray-800 border-gray-200', label: 'None' }
-    };
-    
-    const config = severityConfig[severity as keyof typeof severityConfig] || severityConfig.none;
-    return <Badge className={config.className}>{config.label}</Badge>;
-  };
 
   if (isLoading) {
     return (
