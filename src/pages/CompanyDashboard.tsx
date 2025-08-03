@@ -214,7 +214,7 @@ const CompanyDashboard = () => {
         .from('incidents')
         .select(`
           *,
-          guard:profiles!inner(first_name, last_name)
+          profiles!incidents_guard_id_fkey(first_name, last_name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
