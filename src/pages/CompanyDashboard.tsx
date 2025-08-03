@@ -34,18 +34,16 @@ interface Guard {
   updated_at?: string;
 }
 
-interface Incident {
+interface Report {
   id: string;
   guard_id: string;
-  title: string;
-  description: string;
-  severity: string;
-  status: string;
-  location_address: string;
+  company_id: string;
+  report_text: string;
+  image_url: string | null;
+  location_address: string | null;
   location_lat: number | null;
   location_lng: number | null;
   created_at: string;
-  company_id: string;
   updated_at: string;
   guard?: {
     first_name: string;
@@ -58,7 +56,7 @@ const CompanyDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [guards, setGuards] = useState<Guard[]>([]);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [newGuard, setNewGuard] = useState({
@@ -70,34 +68,34 @@ const CompanyDashboard = () => {
   const { toast } = useToast();
 
   // Debug: Log all state variables to check for any issues
-  console.log('Dashboard state:', { guards: guards.length, incidents: incidents.length, isLoading, userProfile });
+  console.log('Dashboard state:', { guards: guards.length, reports: reports.length, isLoading, userProfile });
 
   useEffect(() => {
     checkUser();
   }, []);
 
-  // Set up real-time subscriptions for incidents
+  // Set up real-time subscriptions for reports
   useEffect(() => {
     if (!userProfile?.company_id) return;
 
-    const incidentsChannel = supabase
-      .channel('incidents-changes')
+    const reportsChannel = supabase
+      .channel('reports-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'incidents',
+          table: 'guard_reports',
           filter: `company_id=eq.${userProfile.company_id}`
         },
         () => {
-          fetchIncidents();
+          fetchReports();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(incidentsChannel);
+      supabase.removeChannel(reportsChannel);
     };
   }, [userProfile?.company_id]);
 
@@ -143,7 +141,7 @@ const CompanyDashboard = () => {
       // Fetch data after setting profile, passing the profile directly to avoid state delay
       console.log('Profile set, now fetching data for company:', profile.company_id);
       await fetchGuardsForCompany(profile.company_id);
-      await fetchIncidentsForCompany(profile.company_id);
+      await fetchReportsForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -198,35 +196,35 @@ const CompanyDashboard = () => {
     await fetchGuardsForCompany(userProfile.company_id);
   };
 
-  const fetchIncidentsForCompany = async (companyId: string) => {
-    console.log('Fetching incidents for company:', companyId);
+  const fetchReportsForCompany = async (companyId: string) => {
+    console.log('Fetching reports for company:', companyId);
     try {
-      // First, let's try a simpler query to see if there are any incidents
-      const { data: allIncidents, error: allError } = await supabase
-        .from('incidents')
+      // First, let's try a simpler query to see if there are any reports
+      const { data: allReports, error: allError } = await supabase
+        .from('guard_reports')
         .select('*')
         .eq('company_id', companyId);
 
-      console.log('All incidents for company:', { allIncidents, allError });
+      console.log('All reports for company:', { allReports, allError });
 
       // Now try the query with the join
       const { data, error } = await supabase
-        .from('incidents')
+        .from('guard_reports')
         .select(`
           *,
-          profiles!incidents_guard_id_fkey(first_name, last_name)
+          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      console.log('Incidents query result:', { data, error });
+      console.log('Reports query result:', { data, error });
 
       if (error) {
-        console.error('Error fetching incidents:', error);
-        // Fallback to incidents without guard info if join fails
+        console.error('Error fetching reports:', error);
+        // Fallback to reports without guard info if join fails
         const { data: fallbackData, error: fallbackError } = await supabase
-          .from('incidents')
+          .from('guard_reports')
           .select('*')
           .eq('company_id', companyId)
           .order('created_at', { ascending: false })
@@ -238,20 +236,20 @@ const CompanyDashboard = () => {
         }
 
         console.log('Using fallback data:', fallbackData);
-        setIncidents(fallbackData || []);
+        setReports(fallbackData || []);
         return;
       }
 
-      console.log('Setting incidents:', data);
-      setIncidents(data || []);
+      console.log('Setting reports:', data);
+      setReports(data || []);
     } catch (error) {
-      console.error('Error fetching incidents:', error);
+      console.error('Error fetching reports:', error);
     }
   };
 
-  const fetchIncidents = async () => {
+  const fetchReports = async () => {
     if (!userProfile?.company_id) return;
-    await fetchIncidentsForCompany(userProfile.company_id);
+    await fetchReportsForCompany(userProfile.company_id);
   };
 
   const handleCreateGuard = async (e: React.FormEvent) => {
@@ -394,7 +392,7 @@ const CompanyDashboard = () => {
       </div>
 
       <div className="flex-1 p-6">
-        <StatsCards guards={guards} incidents={incidents} />
+        <StatsCards guards={guards} incidents={reports} />
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
@@ -449,7 +447,7 @@ const CompanyDashboard = () => {
           </Card>
         )}
 
-        <IncidentsTable incidents={incidents} />
+        <IncidentsTable incidents={reports} />
 
         {/* Guards List */}
         <Card className="mt-6">

@@ -29,7 +29,7 @@ const StatsCards = ({ guards, incidents }: StatsCardsProps) => {
       <div className="bg-card p-4 rounded-lg border">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Total Incidents</p>
+            <p className="text-sm text-muted-foreground">Total Reports</p>
             <p className="text-2xl font-bold">{incidents.length}</p>
           </div>
           <AlertTriangle className="h-8 w-8 text-orange-600" />
@@ -38,8 +38,11 @@ const StatsCards = ({ guards, incidents }: StatsCardsProps) => {
       <div className="bg-card p-4 rounded-lg border">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Open Issues</p>
-            <p className="text-2xl font-bold">{incidents.filter(i => i.status === 'open').length}</p>
+            <p className="text-sm text-muted-foreground">Today's Reports</p>
+            <p className="text-2xl font-bold">{incidents.filter(i => {
+              const today = new Date().toDateString();
+              return new Date(i.created_at).toDateString() === today;
+            }).length}</p>
           </div>
           <FileText className="h-8 w-8 text-red-600" />
         </div>

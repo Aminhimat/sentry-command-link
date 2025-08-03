@@ -37,7 +37,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Total: {incidents.length}</span>
               <span>•</span>
-              <span>Open: {incidents.filter(i => i.status === 'open').length}</span>
+              <span>Reports: {incidents.length}</span>
             </div>
           </div>
         </CardHeader>
@@ -76,7 +76,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                         {incident.location_address || 'Unknown Site'}
                       </td>
                       <td className="p-4 text-sm">
-                        {incident.title || 'Security Patrol'}
+                        {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
                       </td>
                       <td className="p-4 text-sm">
                         {new Date(incident.created_at).toLocaleDateString('en-US', {
@@ -93,7 +93,8 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                         {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
                       </td>
                       <td className="p-4">
-                        {getSeverityBadge(incident.severity)}
+                        {getSeverityBadge(incident.report_text?.includes('Severity: ') ? 
+                          incident.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none')}
                       </td>
                       <td className="p-4 text-sm">
                         {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
