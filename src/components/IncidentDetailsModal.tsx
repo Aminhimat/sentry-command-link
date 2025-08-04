@@ -25,131 +25,61 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-600" />
-            Incident Details
+            Incident Photo - {incident.id.split('-')[0].toUpperCase()}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
-          {/* Header Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Issue ID</p>
-              <p className="font-mono text-red-600 font-medium">
-                {incident.id.split('-')[0].toUpperCase()}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Severity</p>
-              {getSeverityBadge(incident.severity)}
-            </div>
-          </div>
-
-          {/* Location */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-medium">Property/Site</p>
-            </div>
-            <p className="text-sm bg-muted/50 p-3 rounded-lg">
-              {incident.location_address || 'Location not specified'}
-            </p>
-            {incident.location_lat && incident.location_lng && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Coordinates: {incident.location_lat}, {incident.location_lng}
-              </p>
-            )}
-          </div>
-
-          {/* Issue Description */}
-          <div>
-            <p className="text-sm font-medium mb-2">Reported Issue</p>
-            <p className="text-sm bg-muted/50 p-3 rounded-lg">
-              {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
-            </p>
-            {incident.report_text && incident.report_text.includes('\n') && (
-              <div className="mt-2">
-                <p className="text-sm font-medium mb-1">Description</p>
-                <p className="text-sm bg-muted/50 p-3 rounded-lg whitespace-pre-wrap">
-                  {incident.report_text.split('\n').slice(1).join('\n')}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Image */}
-          {incident.image_url && (
-            <div>
-              <p className="text-sm font-medium mb-2">Submitted Photo</p>
-              <div className="bg-muted/50 p-3 rounded-lg">
-                <img 
-                  src={incident.image_url} 
-                  alt="Incident report" 
-                  className="w-full max-w-md mx-auto rounded-lg border"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Guard Information */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-medium">Submitted By</p>
-            </div>
-            <div className="bg-muted/50 p-3 rounded-lg">
-              {incident.guard ? (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-primary">
-                      {incident.guard?.first_name?.[0]}{incident.guard?.last_name?.[0]}
-                    </span>
-                  </div>
+        <div className="space-y-4">
+          {incident.image_url ? (
+            <div className="relative bg-black rounded-lg overflow-hidden">
+              <img 
+                src={incident.image_url} 
+                alt="Incident report" 
+                className="w-full h-auto max-h-[70vh] object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              
+              {/* Watermark overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="font-medium text-sm">
-                      {incident.guard?.first_name} {incident.guard?.last_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Security Guard</p>
+                    <div className="font-medium">
+                      {new Date(incident.created_at).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
+                    <div className="text-xs opacity-90">
+                      Guard: {incident.guard ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown'}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      Security Report
+                    </div>
+                    <div className="text-xs opacity-90">
+                      Location: {incident.location_address || 'Unknown Site'}
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Guard information not available</p>
-              )}
+              </div>
             </div>
-          </div>
-
-          {/* Date Information */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-medium">Created Date</p>
+          ) : (
+            <div className="flex items-center justify-center h-64 bg-muted/50 rounded-lg">
+              <p className="text-muted-foreground">No photo available for this incident</p>
             </div>
-            <p className="text-sm bg-muted/50 p-3 rounded-lg">
-              {new Date(incident.created_at).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
-            </p>
-          </div>
-
-          {/* Status */}
-          <div>
-            <p className="text-sm font-medium mb-2">Status</p>
-            <Badge variant={incident.status === 'open' ? 'destructive' : 'default'}>
-              {incident.status?.toUpperCase() || 'OPEN'}
-            </Badge>
-          </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
