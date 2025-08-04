@@ -68,17 +68,34 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
           <div>
             <p className="text-sm font-medium mb-2">Reported Issue</p>
             <p className="text-sm bg-muted/50 p-3 rounded-lg">
-              {incident.title || 'Security Patrol'}
+              {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
             </p>
-            {incident.description && (
+            {incident.report_text && incident.report_text.includes('\n') && (
               <div className="mt-2">
                 <p className="text-sm font-medium mb-1">Description</p>
-                <p className="text-sm bg-muted/50 p-3 rounded-lg">
-                  {incident.description}
+                <p className="text-sm bg-muted/50 p-3 rounded-lg whitespace-pre-wrap">
+                  {incident.report_text.split('\n').slice(1).join('\n')}
                 </p>
               </div>
             )}
           </div>
+
+          {/* Image */}
+          {incident.image_url && (
+            <div>
+              <p className="text-sm font-medium mb-2">Submitted Photo</p>
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <img 
+                  src={incident.image_url} 
+                  alt="Incident report" 
+                  className="w-full max-w-md mx-auto rounded-lg border"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Guard Information */}
           <div>

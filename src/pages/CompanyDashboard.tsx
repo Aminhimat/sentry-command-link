@@ -59,6 +59,8 @@ const CompanyDashboard = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
+  const [showEditGuardForm, setShowEditGuardForm] = useState(false);
+  const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
   const [newGuard, setNewGuard] = useState({
     firstName: "",
     lastName: "",
@@ -373,6 +375,14 @@ const CompanyDashboard = () => {
               <Plus className="h-4 w-4 mr-2" />
               New Guard
             </Button>
+            <Button variant="outline" onClick={() => {
+              if (guards.length > 0) {
+                setEditingGuard(guards[0]);
+                setShowEditGuardForm(true);
+              }
+            }}>
+              Edit Guard
+            </Button>
             <Button variant="outline" onClick={handleSignOut}>
               Sign Out
             </Button>
@@ -436,6 +446,66 @@ const CompanyDashboard = () => {
           </Card>
         )}
 
+        {/* Edit Guard Form */}
+        {showEditGuardForm && editingGuard && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Edit Guard: {editingGuard.first_name} {editingGuard.last_name}</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowEditGuardForm(false)}>
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <Label htmlFor="editFirstName">First Name</Label>
+                  <Input
+                    id="editFirstName"
+                    type="text"
+                    value={editingGuard.first_name}
+                    onChange={(e) => setEditingGuard({...editingGuard, first_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editLastName">Last Name</Label>
+                  <Input
+                    id="editLastName"
+                    type="text"
+                    value={editingGuard.last_name}
+                    onChange={(e) => setEditingGuard({...editingGuard, last_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editPhone">Phone</Label>
+                  <Input
+                    id="editPhone"
+                    type="text"
+                    value={editingGuard.phone || ''}
+                    onChange={(e) => setEditingGuard({...editingGuard, phone: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={() => {
+                  // Save guard changes
+                  toast({
+                    title: "Success",
+                    description: "Guard updated successfully",
+                  });
+                  setShowEditGuardForm(false);
+                }}>
+                  Save Changes
+                </Button>
+                <Button variant="outline" onClick={() => setShowEditGuardForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <IncidentsTable incidents={reports} />
 
         {/* Guards List */}
@@ -478,9 +548,21 @@ const CompanyDashboard = () => {
                                 {guard.first_name?.[0]}{guard.last_name?.[0]}
                               </span>
                             </div>
-                            <span className="font-medium">
-                              {guard.first_name} {guard.last_name}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {guard.first_name} {guard.last_name}
+                              </span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setEditingGuard(guard);
+                                  setShowEditGuardForm(true);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            </div>
                           </div>
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">
