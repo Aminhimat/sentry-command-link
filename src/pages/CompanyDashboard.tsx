@@ -6,8 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle } from "lucide-react";
+import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
 
@@ -60,12 +65,19 @@ const CompanyDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [showEditGuardForm, setShowEditGuardForm] = useState(false);
+  const [showGenerateReportForm, setShowGenerateReportForm] = useState(false);
   const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
   const [newGuard, setNewGuard] = useState({
     firstName: "",
     lastName: "",
     username: "",
     password: "TempPass123!"
+  });
+  const [reportFilters, setReportFilters] = useState({
+    startDate: new Date(),
+    endDate: new Date(),
+    guardId: "all",
+    reportType: "daily"
   });
   const { toast } = useToast();
 
@@ -339,6 +351,113 @@ const CompanyDashboard = () => {
     }
   };
 
+  const handleGenerateReport = async () => {
+    if (!userProfile?.company_id) return;
+
+    try {
+      let query = supabase
+        .from('guard_reports')
+        .select(`
+          *,
+          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+        `)
+        .eq('company_id', userProfile.company_id);
+
+      // Apply date filters
+      if (reportFilters.reportType === 'daily') {
+        const startOfDay = new Date(reportFilters.startDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(reportFilters.startDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        query = query
+          .gte('created_at', startOfDay.toISOString())
+          .lte('created_at', endOfDay.toISOString());
+      } else {
+        query = query
+          .gte('created_at', reportFilters.startDate.toISOString())
+          .lte('created_at', reportFilters.endDate.toISOString());
+      }
+
+      // Apply guard filter
+      if (reportFilters.guardId !== 'all') {
+        query = query.eq('guard_id', reportFilters.guardId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Generate report content
+      const reportContent = generateReportContent(data || []);
+      downloadReport(reportContent);
+
+      toast({
+        title: "Success",
+        description: "Report generated successfully!",
+      });
+
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateReportContent = (reportData: Report[]) => {
+    const guardName = reportFilters.guardId === 'all' 
+      ? 'All Guards' 
+      : guards.find(g => g.id === reportFilters.guardId)?.first_name + ' ' + guards.find(g => g.id === reportFilters.guardId)?.last_name;
+    
+    const dateRange = reportFilters.reportType === 'daily' 
+      ? format(reportFilters.startDate, 'PPP')
+      : `${format(reportFilters.startDate, 'PPP')} - ${format(reportFilters.endDate, 'PPP')}`;
+
+    let content = `SECURITY REPORT\n`;
+    content += `Company: ${userProfile?.company_id}\n`;
+    content += `Guard: ${guardName}\n`;
+    content += `Period: ${dateRange}\n`;
+    content += `Generated: ${format(new Date(), 'PPP pp')}\n`;
+    content += `\n${'='.repeat(50)}\n\n`;
+
+    if (reportData.length === 0) {
+      content += 'No reports found for the selected period.\n';
+    } else {
+      content += `Total Reports: ${reportData.length}\n\n`;
+      
+      reportData.forEach((report, index) => {
+        content += `Report #${index + 1}\n`;
+        content += `Date: ${format(new Date(report.created_at), 'PPP pp')}\n`;
+        content += `Guard: ${report.guard?.first_name} ${report.guard?.last_name}\n`;
+        content += `Location: ${report.location_address || 'Not specified'}\n`;
+        content += `Description: ${report.report_text || 'No description'}\n`;
+        if (report.image_url) {
+          content += `Photo: Yes\n`;
+        }
+        content += `\n${'-'.repeat(30)}\n\n`;
+      });
+    }
+
+    return content;
+  };
+
+  const downloadReport = (content: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `security-report-${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
@@ -371,6 +490,10 @@ const CompanyDashboard = () => {
             </div>
           </div>
           <div className="ml-auto flex gap-2">
+            <Button variant="outline" onClick={() => setShowGenerateReportForm(true)}>
+              <Download className="h-4 w-4 mr-2" />
+              Generate Report
+            </Button>
             <Button variant="outline" onClick={() => setShowCreateGuardForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Guard
@@ -442,6 +565,121 @@ const CompanyDashboard = () => {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Generate Report Form */}
+        {showGenerateReportForm && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Generate Security Report</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(false)}>
+                  ×
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <Label>Report Type</Label>
+                  <Select 
+                    value={reportFilters.reportType} 
+                    onValueChange={(value) => setReportFilters({...reportFilters, reportType: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily Report</SelectItem>
+                      <SelectItem value="range">Date Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Guard</Label>
+                  <Select 
+                    value={reportFilters.guardId} 
+                    onValueChange={(value) => setReportFilters({...reportFilters, guardId: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select guard" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Guards</SelectItem>
+                      {guards.map((guard) => (
+                        <SelectItem key={guard.id} value={guard.id}>
+                          {guard.first_name} {guard.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{reportFilters.reportType === 'daily' ? 'Date' : 'Start Date'}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !reportFilters.startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {reportFilters.startDate ? format(reportFilters.startDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={reportFilters.startDate}
+                        onSelect={(date) => date && setReportFilters({...reportFilters, startDate: date})}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {reportFilters.reportType === 'range' && (
+                  <div>
+                    <Label>End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !reportFilters.endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {reportFilters.endDate ? format(reportFilters.endDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={reportFilters.endDate}
+                          onSelect={(date) => date && setReportFilters({...reportFilters, endDate: date})}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 mt-4">
+                <Button onClick={handleGenerateReport} className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Generate & Download Report
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
