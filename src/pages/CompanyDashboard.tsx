@@ -515,20 +515,32 @@ const CompanyDashboard = () => {
           const imageData = canvas.toDataURL('image/jpeg', 0.8);
           
           pdf.addImage(imageData, 'JPEG', pageWidth - 75, yPosition, 50, 35);
+          
+          // Add report ID at the top of the image
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(255, 255, 255);
+          pdf.text(reportId, pageWidth - 50, yPosition + 8, { align: 'center' });
+          pdf.setTextColor(0, 0, 0);
         } catch (error) {
           console.error('Error loading image:', error);
           // Add placeholder if image fails to load
           pdf.setFillColor(200, 200, 200);
           pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
           pdf.setFontSize(8);
-          pdf.text('Image', pageWidth - 50, yPosition + 20, { align: 'center' });
+          pdf.setTextColor(100, 100, 100);
+          pdf.text('Image', pageWidth - 50, yPosition + 15, { align: 'center' });
+          pdf.text('Unavailable', pageWidth - 50, yPosition + 22, { align: 'center' });
+          pdf.setTextColor(0, 0, 0);
         }
       } else {
         // Add placeholder for no image
         pdf.setFillColor(240, 240, 240);
         pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
         pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
         pdf.text('No Image', pageWidth - 50, yPosition + 20, { align: 'center' });
+        pdf.setTextColor(0, 0, 0);
       }
 
       yPosition += 60;
