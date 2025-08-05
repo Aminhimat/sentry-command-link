@@ -572,15 +572,28 @@ const CompanyDashboard = () => {
             img.src = report.image_url;
           });
 
-          // Convert image to base64 and add to PDF
+          // Convert image to base64 and add to PDF with better quality
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          canvas.width = 60;
-          canvas.height = 40;
-          ctx?.drawImage(img, 0, 0, 60, 40);
-          const imageData = canvas.toDataURL('image/jpeg', 0.8);
           
-          pdf.addImage(imageData, 'JPEG', pageWidth - 75, yPosition, 50, 35);
+          // Use higher resolution for better quality
+          const scaleFactor = 2;
+          canvas.width = 60 * scaleFactor;
+          canvas.height = 40 * scaleFactor;
+          
+          if (ctx) {
+            // Enable image smoothing for better quality
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Draw image with anti-aliasing
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Use PNG format to preserve quality and avoid compression artifacts
+          const imageData = canvas.toDataURL('image/png');
+          
+          pdf.addImage(imageData, 'PNG', pageWidth - 75, yPosition, 50, 35);
           
           // Add report ID at the top of the image
           pdf.setFontSize(8);
