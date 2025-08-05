@@ -390,9 +390,8 @@ const CompanyDashboard = () => {
         throw error;
       }
 
-      // Generate report content
-      const reportContent = generateReportContent(data || []);
-      downloadReport(reportContent);
+      // Generate PDF report
+      await generatePDFReport(data || []);
 
       toast({
         title: "Success",
@@ -409,53 +408,139 @@ const CompanyDashboard = () => {
     }
   };
 
-  const generateReportContent = (reportData: Report[]) => {
-    const guardName = reportFilters.guardId === 'all' 
-      ? 'All Guards' 
-      : guards.find(g => g.id === reportFilters.guardId)?.first_name + ' ' + guards.find(g => g.id === reportFilters.guardId)?.last_name;
+  const generatePDFReport = async (reportData: Report[]) => {
+    const { jsPDF } = await import('jspdf');
+    const html2canvas = (await import('html2canvas')).default;
     
-    const dateRange = reportFilters.reportType === 'daily' 
-      ? format(reportFilters.startDate, 'PPP')
-      : `${format(reportFilters.startDate, 'PPP')} - ${format(reportFilters.endDate, 'PPP')}`;
+    const pdf = new jsPDF();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let yPosition = 30;
 
-    let content = `SECURITY REPORT\n`;
-    content += `Company: ${userProfile?.company_id}\n`;
-    content += `Guard: ${guardName}\n`;
-    content += `Period: ${dateRange}\n`;
-    content += `Generated: ${format(new Date(), 'PPP pp')}\n`;
-    content += `\n${'='.repeat(50)}\n\n`;
+    // Add company logo placeholder (you can replace this with actual logo)
+    pdf.setFillColor(0, 100, 200);
+    pdf.circle(30, 25, 10, 'F');
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('COMPANY', 45, 25);
+    pdf.text('LOGO', 45, 32);
 
-    if (reportData.length === 0) {
-      content += 'No reports found for the selected period.\n';
-    } else {
-      content += `Total Reports: ${reportData.length}\n\n`;
+    // Title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Daily Activity Report', pageWidth / 2, 30, { align: 'center' });
+
+    // Company name
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Security Force', pageWidth / 2, 45, { align: 'center' });
+
+    // Date range
+    const startDate = reportFilters.reportType === 'daily' 
+      ? format(reportFilters.startDate, 'MMM dd, yyyy HH:mm a')
+      : format(reportFilters.startDate, 'MMM dd, yyyy HH:mm a');
+    const endDate = reportFilters.reportType === 'daily' 
+      ? format(new Date(reportFilters.startDate.getTime() + 24 * 60 * 60 * 1000), 'MMM dd, yyyy HH:mm a')
+      : format(reportFilters.endDate, 'MMM dd, yyyy HH:mm a');
+
+    pdf.setFontSize(10);
+    pdf.text(`Start: ${startDate}`, pageWidth - 20, 25, { align: 'right' });
+    pdf.text(`End: ${endDate}`, pageWidth - 20, 35, { align: 'right' });
+
+    yPosition = 70;
+
+    // Process each report
+    for (const report of reportData) {
+      // Check if we need a new page
+      if (yPosition > pageHeight - 80) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+
+      const reportDate = format(new Date(report.created_at), 'EEE MMM dd, yyyy h:mm a');
+      const guardName = `${report.guard?.first_name || ''} ${report.guard?.last_name || ''}`.trim();
+      const location = report.location_address || 'Default Location';
+
+      // Date and location box
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(20, yPosition - 5, 120, 25, 'F');
       
-      reportData.forEach((report, index) => {
-        content += `Report #${index + 1}\n`;
-        content += `Date: ${format(new Date(report.created_at), 'PPP pp')}\n`;
-        content += `Guard: ${report.guard?.first_name} ${report.guard?.last_name}\n`;
-        content += `Location: ${report.location_address || 'Not specified'}\n`;
-        content += `Description: ${report.report_text || 'No description'}\n`;
-        if (report.image_url) {
-          content += `Photo: Yes\n`;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(reportDate, 25, yPosition + 2);
+      pdf.text(location, 25, yPosition + 8);
+      pdf.text(`Location: Default`, 25, yPosition + 14);
+      pdf.text(`Unit:`, 25, yPosition + 20);
+      
+      // Guard name
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(guardName, 25, yPosition + 30);
+
+      // Security Patrol badge
+      pdf.setFillColor(34, 197, 94);
+      pdf.rect(25, yPosition + 35, 60, 8, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(8);
+      pdf.text('(S) Level 3', 28, yPosition + 40);
+      pdf.setTextColor(0, 0, 0);
+
+      // Activity type and ID
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text('(S) Security Patrol', pageWidth / 2, yPosition + 2, { align: 'center' });
+      
+      // Generate report ID
+      const reportId = Math.floor(Math.random() * 10000000000).toString();
+      pdf.text(reportId, pageWidth - 20, yPosition + 2, { align: 'right' });
+
+      // Add image if available
+      if (report.image_url) {
+        try {
+          // Create a temporary image element to load the image
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = report.image_url;
+          });
+
+          // Convert image to base64 and add to PDF
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = 60;
+          canvas.height = 40;
+          ctx?.drawImage(img, 0, 0, 60, 40);
+          const imageData = canvas.toDataURL('image/jpeg', 0.8);
+          
+          pdf.addImage(imageData, 'JPEG', pageWidth - 75, yPosition, 50, 35);
+        } catch (error) {
+          console.error('Error loading image:', error);
+          // Add placeholder if image fails to load
+          pdf.setFillColor(200, 200, 200);
+          pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
+          pdf.setFontSize(8);
+          pdf.text('Image', pageWidth - 50, yPosition + 20, { align: 'center' });
         }
-        content += `\n${'-'.repeat(30)}\n\n`;
-      });
+      } else {
+        // Add placeholder for no image
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
+        pdf.setFontSize(8);
+        pdf.text('No Image', pageWidth - 50, yPosition + 20, { align: 'center' });
+      }
+
+      yPosition += 60;
     }
 
-    return content;
+    // Save the PDF
+    const fileName = `daily-activity-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+    pdf.save(fileName);
   };
 
   const downloadReport = (content: string) => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `security-report-${format(new Date(), 'yyyy-MM-dd')}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    // This function is now handled by generatePDFReport
   };
 
   const handleSignOut = async () => {
