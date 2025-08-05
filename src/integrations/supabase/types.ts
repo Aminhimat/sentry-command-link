@@ -21,6 +21,7 @@ export type Database = {
           email: string | null
           id: string
           license_limit: number
+          logo_url: string | null
           name: string
           phone: string | null
           status: Database["public"]["Enums"]["company_status"]
@@ -32,6 +33,7 @@ export type Database = {
           email?: string | null
           id?: string
           license_limit?: number
+          logo_url?: string | null
           name: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
@@ -43,6 +45,7 @@ export type Database = {
           email?: string | null
           id?: string
           license_limit?: number
+          logo_url?: string | null
           name?: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]

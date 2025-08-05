@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar } from "lucide-react";
+import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar, Upload, ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -56,16 +56,29 @@ interface Report {
   };
 }
 
+interface Company {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // CompanyDashboard component - Fixed activeShifts error
 const CompanyDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [showEditGuardForm, setShowEditGuardForm] = useState(false);
   const [showGenerateReportForm, setShowGenerateReportForm] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
   const [newGuard, setNewGuard] = useState({
     firstName: "",
@@ -154,6 +167,7 @@ const CompanyDashboard = () => {
       
       // Fetch data after setting profile, passing the profile directly to avoid state delay
       console.log('Profile set, now fetching data for company:', profile.company_id);
+      await fetchCompany(profile.company_id);
       await fetchGuardsForCompany(profile.company_id);
       await fetchReportsForCompany(profile.company_id);
     } catch (error) {
@@ -258,6 +272,25 @@ const CompanyDashboard = () => {
       setReports(data || []);
     } catch (error) {
       console.error('Error fetching reports:', error);
+    }
+  };
+
+  const fetchCompany = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching company:', error);
+        return;
+      }
+
+      setCompany(data);
+    } catch (error) {
+      console.error('Error fetching company:', error);
     }
   };
 
@@ -417,13 +450,46 @@ const CompanyDashboard = () => {
     const pageHeight = pdf.internal.pageSize.getHeight();
     let yPosition = 30;
 
-    // Add company logo placeholder (you can replace this with actual logo)
-    pdf.setFillColor(0, 100, 200);
-    pdf.circle(30, 25, 10, 'F');
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('COMPANY', 45, 25);
-    pdf.text('LOGO', 45, 32);
+    // Add company logo
+    if (company?.logo_url) {
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = reject;
+          logoImg.src = company.logo_url;
+        });
+
+        // Convert logo to base64 and add to PDF
+        const logoCanvas = document.createElement('canvas');
+        const logoCtx = logoCanvas.getContext('2d');
+        logoCanvas.width = 40;
+        logoCanvas.height = 30;
+        logoCtx?.drawImage(logoImg, 0, 0, 40, 30);
+        const logoData = logoCanvas.toDataURL('image/jpeg', 0.8);
+        
+        pdf.addImage(logoData, 'JPEG', 20, 15, 40, 30);
+      } catch (error) {
+        console.error('Error loading company logo:', error);
+        // Add fallback placeholder
+        pdf.setFillColor(0, 100, 200);
+        pdf.circle(30, 25, 10, 'F');
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('COMPANY', 45, 25);
+        pdf.text('LOGO', 45, 32);
+      }
+    } else {
+      // Add placeholder for no logo
+      pdf.setFillColor(0, 100, 200);
+      pdf.circle(30, 25, 10, 'F');
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('COMPANY', 45, 25);
+      pdf.text('LOGO', 45, 32);
+    }
 
     // Title
     pdf.setFontSize(20);
@@ -555,6 +621,81 @@ const CompanyDashboard = () => {
     // This function is now handled by generatePDFReport
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !company) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast({
+        title: "Error", 
+        description: "Logo file size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+
+    try {
+      // Upload to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${company.id}/logo.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('guard-reports')
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('guard-reports')
+        .getPublicUrl(fileName);
+
+      // Update company with logo URL
+      const { error: updateError } = await supabase
+        .from('companies')
+        .update({ logo_url: publicUrl })
+        .eq('id', company.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update local state
+      setCompany({ ...company, logo_url: publicUrl });
+
+      toast({
+        title: "Success",
+        description: "Company logo uploaded successfully!",
+      });
+
+    } catch (error: any) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload logo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/';
@@ -611,6 +752,63 @@ const CompanyDashboard = () => {
       </div>
 
       <div className="flex-1 p-6">
+        {/* Company Logo Upload Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Company Logo
+            </CardTitle>
+            <CardDescription>
+              Upload your company logo to be displayed in reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
+                {company?.logo_url ? (
+                  <div className="w-20 h-20 border rounded-lg overflow-hidden bg-muted">
+                    <img 
+                      src={company.logo_url} 
+                      alt="Company Logo" 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium">
+                    {company?.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG up to 5MB
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  id="logo-upload"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                  disabled={isUploadingLogo}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <StatsCards guards={guards} incidents={reports} />
 
         {/* Create Guard Form */}
