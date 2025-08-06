@@ -132,12 +132,20 @@ export class PDFReportGenerator {
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 20);
     }
     
-    // Report Content
+    // Report Content - Parse and clean the text
     if (report.report_text) {
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'normal');
-      const lines = this.doc.splitTextToSize(report.report_text, 100);
-      this.doc.text(lines.slice(0, 3), leftColumnX, contentY + 38); // Show first 3 lines
+      
+      // Parse the structured report text and display only the description
+      const lines = report.report_text.split('\n');
+      const descriptionLine = lines.find(line => line.startsWith('Description:'));
+      const cleanDescription = descriptionLine ? descriptionLine.replace('Description:', '').trim() : report.report_text;
+      
+      if (cleanDescription) {
+        const textLines = this.doc.splitTextToSize(cleanDescription, 100);
+        this.doc.text(textLines.slice(0, 3), leftColumnX, contentY + 28); // Show first 3 lines
+      }
     }
     
     // Right side - Issue ID directly attached to image
