@@ -107,52 +107,56 @@ export class PDFReportGenerator {
     this.doc.setFillColor(245, 245, 245);
     this.doc.rect(this.margin, this.currentY - 2, this.pageWidth - (this.margin * 2), entryHeight - 10, 'F');
     
-    // Left column - Date and location info
+    // Left column - Date/time, Security Patrol, and Issue ID in one label
     const leftColumnX = this.margin + 5;
-    const leftColumnWidth = 60;
     
-    // Date and time
+    // Combined label with date, time, security patrol, and issue ID
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
-    this.doc.text(`${reportDate.toDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, this.currentY + 5);
+    const dateTimeText = `${reportDate.toDateString()} ${reportDate.toLocaleTimeString()}`;
+    this.doc.text(dateTimeText, leftColumnX, this.currentY + 5);
+    
+    // Security Patrol and Issue ID on same line
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    const patrolAndIdText = `(S) Security Patrol - ${report.id.substring(0, 10)}`;
+    this.doc.text(patrolAndIdText, leftColumnX, this.currentY + 12);
     
     // Location venue name
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(report.location_address || 'Location Not Specified', leftColumnX, this.currentY + 12);
+    this.doc.text(report.location_address || 'Location Not Specified', leftColumnX, this.currentY + 19);
     
-    // Address
+    // Address and Unit
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Location: Default', leftColumnX, this.currentY + 18);
-    this.doc.text('Unit:', leftColumnX, this.currentY + 24);
+    this.doc.text('Location: Default', leftColumnX, this.currentY + 25);
+    this.doc.text('Unit:', leftColumnX, this.currentY + 31);
     
     // Guard name
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text(guardName, leftColumnX, this.currentY + 32);
+    this.doc.text(guardName, leftColumnX, this.currentY + 37);
     
-    // Center column - Activity type with colored badge
-    const centerColumnX = leftColumnX + leftColumnWidth + 10;
-    this.doc.text('(S) Security Patrol', centerColumnX, this.currentY + 5);
-    
-    // Green status badge
+    // Green status badge (moved to center)
+    const badgeX = leftColumnX + 100;
     this.doc.setFillColor(76, 175, 80);
-    this.doc.rect(centerColumnX, this.currentY + 8, 25, 6, 'F');
+    this.doc.rect(badgeX, this.currentY + 10, 25, 6, 'F');
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('(S) Level 3', centerColumnX + 1, this.currentY + 12);
+    this.doc.text('(S) Level 3', badgeX + 1, this.currentY + 14);
     
-    // Right column - Report ID and image
-    const rightColumnX = this.pageWidth - this.margin - 40;
+    // Right column - Image with Issue ID at top
+    const rightColumnX = this.pageWidth - this.margin - 35;
+    
+    // Issue ID at top of image area
     this.doc.setTextColor(0, 0, 255);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(report.id.substring(0, 10), rightColumnX, this.currentY + 5);
+    this.doc.text(report.id.substring(0, 10), rightColumnX, this.currentY + 3);
     
-    // Add image if available
+    // Add image below the issue ID
     if (report.image_url) {
-      await this.addImageToEntry(report.image_url, rightColumnX - 30, this.currentY + 8, 25, 25);
+      await this.addImageToEntry(report.image_url, rightColumnX - 5, this.currentY + 6, 30, 30);
     }
     
     this.currentY += entryHeight;
