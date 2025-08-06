@@ -56,6 +56,24 @@ interface Report {
   };
 }
 
+interface Shift {
+  id: string;
+  guard_id: string;
+  company_id: string;
+  check_in_time: string;
+  check_out_time: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
+  location_address: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  guard?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
 interface Company {
   id: string;
   name: string;
@@ -74,6 +92,7 @@ const CompanyDashboard = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [showEditGuardForm, setShowEditGuardForm] = useState(false);
@@ -170,6 +189,7 @@ const CompanyDashboard = () => {
       await fetchCompany(profile.company_id);
       await fetchGuardsForCompany(profile.company_id);
       await fetchReportsForCompany(profile.company_id);
+      await fetchShiftsForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -297,6 +317,43 @@ const CompanyDashboard = () => {
   const fetchReports = async () => {
     if (!userProfile?.company_id) return;
     await fetchReportsForCompany(userProfile.company_id);
+  };
+
+  const fetchShiftsForCompany = async (companyId: string) => {
+    console.log('Fetching shifts for company:', companyId);
+    try {
+      const { data, error } = await supabase
+        .from('guard_shifts')
+        .select(`
+          *,
+          guard:profiles!guard_shifts_guard_id_fkey(first_name, last_name)
+        `)
+        .eq('company_id', companyId)
+        .order('check_in_time', { ascending: false })
+        .limit(20);
+
+      console.log('Shifts query result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching shifts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch shift data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Setting shifts:', data);
+      setShifts(data || []);
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
+    }
+  };
+
+  const fetchShifts = async () => {
+    if (!userProfile?.company_id) return;
+    await fetchShiftsForCompany(userProfile.company_id);
   };
 
   const handleCreateGuard = async (e: React.FormEvent) => {
@@ -1055,6 +1112,116 @@ const CompanyDashboard = () => {
         )}
 
         <IncidentsTable incidents={reports} />
+
+        {/* Guard Shifts */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Guard Shifts
+            </CardTitle>
+            <CardDescription>
+              Monitor guard check-in and check-out times with locations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left p-4 font-medium">Guard</th>
+                    <th className="text-left p-4 font-medium">Check In</th>
+                    <th className="text-left p-4 font-medium">Check Out</th>
+                    <th className="text-left p-4 font-medium">Duration</th>
+                    <th className="text-left p-4 font-medium">Location</th>
+                    <th className="text-left p-4 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shifts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="text-center p-8 text-muted-foreground">
+                        No shift data found
+                      </td>
+                    </tr>
+                  ) : (
+                    shifts.map((shift) => {
+                      const checkInTime = new Date(shift.check_in_time);
+                      const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
+                      const duration = checkOutTime 
+                        ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
+                        : null;
+                      const isActive = !shift.check_out_time;
+                      
+                      return (
+                        <tr key={shift.id} className="border-b border-border/50 hover:bg-muted/50">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {shift.guard?.first_name?.[0]}{shift.guard?.last_name?.[0]}
+                                </span>
+                              </div>
+                              <span className="font-medium">
+                                {shift.guard?.first_name} {shift.guard?.last_name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              <div className="font-medium">
+                                {checkInTime.toLocaleDateString()}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {checkInTime.toLocaleTimeString()}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            {checkOutTime ? (
+                              <div className="text-sm">
+                                <div className="font-medium">
+                                  {checkOutTime.toLocaleDateString()}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {checkOutTime.toLocaleTimeString()}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Still active</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            {duration ? (
+                              <span className="text-sm font-medium">
+                                {duration}h
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate max-w-32">
+                                {shift.location_address || 'Location not available'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <Badge variant={isActive ? "default" : "secondary"}>
+                              {isActive ? 'Active' : 'Completed'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Guards List */}
         <Card className="mt-6">
