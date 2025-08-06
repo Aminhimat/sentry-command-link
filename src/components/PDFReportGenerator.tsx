@@ -12,6 +12,7 @@ interface Report {
   location_lng: number | null;
   created_at: string;
   updated_at: string;
+  incident_type?: string;
   guard?: {
     first_name: string;
     last_name: string;
@@ -136,14 +137,17 @@ export class PDFReportGenerator {
     // Guard name
     this.doc.text(guardName, leftColumnX, this.currentY + 37);
     
-    // Green status badge (moved to center)
+    // Incident type badge (moved to center) - show actual incident type instead of Level 3
     const badgeX = leftColumnX + 100;
+    const incidentType = report.incident_type || 'Security Patrol';
+    const badgeWidth = Math.max(30, this.doc.getTextWidth(incidentType) + 4);
+    
     this.doc.setFillColor(76, 175, 80);
-    this.doc.rect(badgeX, this.currentY + 10, 25, 6, 'F');
+    this.doc.rect(badgeX, this.currentY + 10, badgeWidth, 6, 'F');
     this.doc.setTextColor(255, 255, 255);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text('(S) Level 3', badgeX + 1, this.currentY + 14);
+    this.doc.text(incidentType, badgeX + 1, this.currentY + 14);
     
     // Right column - Image with Issue ID at top
     const rightColumnX = this.pageWidth - this.margin - 35;
