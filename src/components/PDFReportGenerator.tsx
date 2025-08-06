@@ -63,11 +63,21 @@ export class PDFReportGenerator {
     }
   }
 
-  private drawHeader(company: Company | null, reportFilters: any) {
-    // Company name on the left
+  private async drawHeader(company: Company | null, reportFilters: any) {
+    // Company logo on the left (if available)
+    if (company?.logo_url) {
+      try {
+        await this.addImageToEntry(company.logo_url, this.margin, this.currentY - 5, 20, 15);
+      } catch (error) {
+        console.error('Error loading company logo:', error);
+      }
+    }
+
+    // Company name next to logo or on left if no logo
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(company?.name || 'Security Company', this.margin, this.currentY);
+    const companyNameX = company?.logo_url ? this.margin + 25 : this.margin;
+    this.doc.text(company?.name || 'Security Company', companyNameX, this.currentY);
 
     // Title centered
     this.doc.setFontSize(18);
@@ -235,7 +245,7 @@ export class PDFReportGenerator {
 
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
     // Add header
-    this.drawHeader(company, reportFilters);
+    await this.drawHeader(company, reportFilters);
 
     // Add each report
     for (let i = 0; i < reports.length; i++) {
