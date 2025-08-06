@@ -98,7 +98,7 @@ export class PDFReportGenerator {
   }
 
   private async addReportEntry(report: Report, index: number) {
-    const entryHeight = 80;
+    const entryHeight = 50; // Reduced from 80 to fit 5 reports per page
     this.addPageIfNeeded(entryHeight);
 
     const reportDate = new Date(report.created_at);
@@ -106,61 +106,62 @@ export class PDFReportGenerator {
     
     // Clean white background with subtle border
     this.doc.setFillColor(255, 255, 255);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 5, 'F');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'F');
     this.doc.setDrawColor(220, 220, 220);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 5, 'S');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
     
-    // Main content area
-    const contentY = this.currentY + 8;
-    const leftColumnX = this.margin + 8;
-    const rightColumnX = this.pageWidth - this.margin - 45;
+    // Main content area - more compact
+    const contentY = this.currentY + 4;
+    const leftColumnX = this.margin + 5;
+    const rightColumnX = this.pageWidth - this.margin - 30;
     
-    // Header: Date and Time (prominent)
-    this.doc.setFontSize(12);
+    // Header: Date and Time (smaller font)
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
-    this.doc.text(`${reportDate.toLocaleDateString()} at ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
+    this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
     
-    // Guard Information
+    // Guard Information (more compact)
     this.doc.setTextColor(60, 60, 60);
-    this.doc.setFontSize(10);
+    this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 12);
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 8);
     
-    // Location Information
+    // Location Information (compact)
     if (report.location_address) {
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 20);
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
     }
     
-    // Report Content - Display Task, Site, Severity without extra spacing
+    // Report Content - Display Task, Site, Severity in one line
     if (report.report_text) {
-      this.doc.setFontSize(9);
+      this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       
-      // Split the report text by lines and remove empty lines
+      // Split and join with separators for compact display
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
-      const compactLines = this.doc.splitTextToSize(lines.join(' | '), 100);
-      this.doc.text(compactLines.slice(0, 2), leftColumnX, contentY + 28);
+      const compactText = lines.join(' | ');
+      const textLines = this.doc.splitTextToSize(compactText, 90);
+      this.doc.text(textLines.slice(0, 2), leftColumnX, contentY + 20);
     }
     
-    // Right side - Issue ID directly attached to image
+    // Right side - Issue ID directly attached to smaller image
     if (report.image_url) {
-      // Issue ID positioned directly above image
-      this.doc.setTextColor(220, 20, 60); // Deep pink for visibility
-      this.doc.setFontSize(8);
+      // Issue ID positioned directly above image (smaller)
+      this.doc.setTextColor(220, 20, 60);
+      this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'bold');
       const issueIdText = `ID: ${report.id.substring(0, 8)}`;
       const issueIdWidth = this.doc.getTextWidth(issueIdText);
-      this.doc.text(issueIdText, rightColumnX + (35 - issueIdWidth) / 2, contentY - 2);
+      this.doc.text(issueIdText, rightColumnX + (25 - issueIdWidth) / 2, contentY - 1);
       
-      // Image positioned right below the ID
-      await this.addImageToEntry(report.image_url, rightColumnX, contentY, 35, 35);
+      // Smaller image positioned right below the ID
+      await this.addImageToEntry(report.image_url, rightColumnX, contentY + 2, 25, 25);
     } else {
       // Show issue ID even without image
       this.doc.setTextColor(100, 100, 100);
-      this.doc.setFontSize(10);
+      this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'normal');
-      this.doc.text(`Report ID: ${report.id.substring(0, 10)}`, rightColumnX, contentY + 15);
+      this.doc.text(`Report ID: ${report.id.substring(0, 10)}`, rightColumnX, contentY + 10);
     }
     
     this.currentY += entryHeight;
