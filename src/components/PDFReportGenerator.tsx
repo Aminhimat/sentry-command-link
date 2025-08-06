@@ -121,27 +121,15 @@ export class PDFReportGenerator {
     this.doc.setTextColor(0, 0, 0);
     this.doc.text(`${reportDate.toLocaleDateString()} at ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
     
-    // Incident Type Badge
-    const incidentType = report.incident_type || 'Security Patrol';
-    const badgeY = contentY + 8;
-    const badgeWidth = Math.max(35, this.doc.getTextWidth(incidentType) + 8);
-    
-    this.doc.setFillColor(52, 152, 219); // Blue background
-    this.doc.rect(leftColumnX, badgeY - 4, badgeWidth, 8, 'F');
-    this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(9);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(incidentType, leftColumnX + 2, badgeY + 1);
-    
     // Guard Information
     this.doc.setTextColor(60, 60, 60);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 20);
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 12);
     
     // Location Information
     if (report.location_address) {
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 28);
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 20);
     }
     
     // Report Content
