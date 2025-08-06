@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
+import { generatePDFReport } from "@/components/PDFReportGenerator";
 
 interface Profile {
   id: string;
@@ -480,8 +481,8 @@ const CompanyDashboard = () => {
         throw error;
       }
 
-      // Generate PDF report
-      await generatePDFReport(data || []);
+      // Generate PDF report using the new generator
+      await generatePDFReport(data || [], company, reportFilters);
 
       toast({
         title: "Success",
@@ -498,200 +499,6 @@ const CompanyDashboard = () => {
     }
   };
 
-  const generatePDFReport = async (reportData: Report[]) => {
-    const { jsPDF } = await import('jspdf');
-    const html2canvas = (await import('html2canvas')).default;
-    
-    const pdf = new jsPDF();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 30;
-
-    // Add company logo
-    if (company?.logo_url) {
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-          logoImg.onload = resolve;
-          logoImg.onerror = reject;
-          logoImg.src = company.logo_url;
-        });
-
-        // Convert logo to base64 and add to PDF
-        const logoCanvas = document.createElement('canvas');
-        const logoCtx = logoCanvas.getContext('2d');
-        logoCanvas.width = 40;
-        logoCanvas.height = 30;
-        logoCtx?.drawImage(logoImg, 0, 0, 40, 30);
-        const logoData = logoCanvas.toDataURL('image/jpeg', 0.8);
-        
-        pdf.addImage(logoData, 'JPEG', 20, 15, 40, 30);
-      } catch (error) {
-        console.error('Error loading company logo:', error);
-        // Add fallback placeholder
-        pdf.setFillColor(0, 100, 200);
-        pdf.circle(30, 25, 10, 'F');
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('COMPANY', 45, 25);
-        pdf.text('LOGO', 45, 32);
-      }
-    } else {
-      // Add placeholder for no logo
-      pdf.setFillColor(0, 100, 200);
-      pdf.circle(30, 25, 10, 'F');
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('COMPANY', 45, 25);
-      pdf.text('LOGO', 45, 32);
-    }
-
-    // Title
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Daily Activity Report', pageWidth / 2, 30, { align: 'center' });
-
-    // Company name
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Security Force', pageWidth / 2, 45, { align: 'center' });
-
-    // Date range
-    const startDate = reportFilters.reportType === 'daily' 
-      ? format(reportFilters.startDate, 'MMM dd, yyyy HH:mm a')
-      : format(reportFilters.startDate, 'MMM dd, yyyy HH:mm a');
-    const endDate = reportFilters.reportType === 'daily' 
-      ? format(new Date(reportFilters.startDate.getTime() + 24 * 60 * 60 * 1000), 'MMM dd, yyyy HH:mm a')
-      : format(reportFilters.endDate, 'MMM dd, yyyy HH:mm a');
-
-    pdf.setFontSize(10);
-    pdf.text(`Start: ${startDate}`, pageWidth - 20, 25, { align: 'right' });
-    pdf.text(`End: ${endDate}`, pageWidth - 20, 35, { align: 'right' });
-
-    yPosition = 70;
-
-    // Process each report
-    for (const report of reportData) {
-      // Check if we need a new page
-      if (yPosition > pageHeight - 80) {
-        pdf.addPage();
-        yPosition = 30;
-      }
-
-      const reportDate = format(new Date(report.created_at), 'EEE MMM dd, yyyy h:mm a');
-      const guardName = `${report.guard?.first_name || ''} ${report.guard?.last_name || ''}`.trim();
-      const location = report.location_address || 'Default Location';
-
-      // Date and location box
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(20, yPosition - 5, 120, 25, 'F');
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(reportDate, 25, yPosition + 2);
-      pdf.text(location, 25, yPosition + 8);
-      pdf.text(`Location: Default`, 25, yPosition + 14);
-      pdf.text(`Unit:`, 25, yPosition + 20);
-      
-      // Guard name
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(guardName, 25, yPosition + 30);
-
-      // Security Patrol badge
-      pdf.setFillColor(34, 197, 94);
-      pdf.rect(25, yPosition + 35, 60, 8, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(8);
-      pdf.text('(S) Level 3', 28, yPosition + 40);
-      pdf.setTextColor(0, 0, 0);
-
-      // Activity type and ID
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.text('(S) Security Patrol', pageWidth / 2, yPosition + 2, { align: 'center' });
-      
-      // Generate report ID
-      const reportId = Math.floor(Math.random() * 10000000000).toString();
-
-      // Add image if available
-      if (report.image_url) {
-        try {
-          // Create a temporary image element to load the image
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-            img.src = report.image_url;
-          });
-
-          // Convert image to base64 and add to PDF with high quality
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Use original image dimensions for maximum quality
-          canvas.width = img.naturalWidth || 300;
-          canvas.height = img.naturalHeight || 200;
-          
-          if (ctx) {
-            // Set high quality rendering settings
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            
-            // Fill with white background to prevent transparency issues
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw image at original resolution
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          }
-          
-          // Use maximum quality PNG without compression
-          const imageData = canvas.toDataURL('image/png', 1.0);
-          
-          pdf.addImage(imageData, 'PNG', pageWidth - 75, yPosition, 50, 35);
-          
-          // Add report ID at the top of the image
-          pdf.setFontSize(8);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setTextColor(255, 255, 255);
-          pdf.text(reportId, pageWidth - 50, yPosition + 8, { align: 'center' });
-          pdf.setTextColor(0, 0, 0);
-        } catch (error) {
-          console.error('Error loading image:', error);
-          // Add placeholder if image fails to load
-          pdf.setFillColor(200, 200, 200);
-          pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
-          pdf.setFontSize(8);
-          pdf.setTextColor(100, 100, 100);
-          pdf.text('Image', pageWidth - 50, yPosition + 15, { align: 'center' });
-          pdf.text('Unavailable', pageWidth - 50, yPosition + 22, { align: 'center' });
-          pdf.setTextColor(0, 0, 0);
-        }
-      } else {
-        // Add placeholder for no image
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(pageWidth - 75, yPosition, 50, 35, 'F');
-        pdf.setFontSize(8);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text('No Image', pageWidth - 50, yPosition + 20, { align: 'center' });
-        pdf.setTextColor(0, 0, 0);
-      }
-
-      yPosition += 60;
-    }
-
-    // Save the PDF
-    const fileName = `daily-activity-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-    pdf.save(fileName);
-  };
-
-  const downloadReport = (content: string) => {
-    // This function is now handled by generatePDFReport
-  };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
