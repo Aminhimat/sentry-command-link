@@ -132,20 +132,15 @@ export class PDFReportGenerator {
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 20);
     }
     
-    // Report Content - Parse and clean the text
+    // Report Content - Display Task, Site, Severity without extra spacing
     if (report.report_text) {
       this.doc.setFontSize(9);
       this.doc.setFont('helvetica', 'normal');
       
-      // Parse the structured report text and display only the description
-      const lines = report.report_text.split('\n');
-      const descriptionLine = lines.find(line => line.startsWith('Description:'));
-      const cleanDescription = descriptionLine ? descriptionLine.replace('Description:', '').trim() : report.report_text;
-      
-      if (cleanDescription) {
-        const textLines = this.doc.splitTextToSize(cleanDescription, 100);
-        this.doc.text(textLines.slice(0, 3), leftColumnX, contentY + 28); // Show first 3 lines
-      }
+      // Split the report text by lines and remove empty lines
+      const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
+      const compactLines = this.doc.splitTextToSize(lines.join(' | '), 100);
+      this.doc.text(compactLines.slice(0, 2), leftColumnX, contentY + 28);
     }
     
     // Right side - Issue ID directly attached to image
