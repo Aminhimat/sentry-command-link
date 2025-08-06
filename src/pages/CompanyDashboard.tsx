@@ -557,7 +557,6 @@ const CompanyDashboard = () => {
       
       // Generate report ID
       const reportId = Math.floor(Math.random() * 10000000000).toString();
-      pdf.text(reportId, pageWidth - 20, yPosition + 2, { align: 'right' });
 
       // Add image if available
       if (report.image_url) {
@@ -572,26 +571,29 @@ const CompanyDashboard = () => {
             img.src = report.image_url;
           });
 
-          // Convert image to base64 and add to PDF with better quality
+          // Convert image to base64 and add to PDF with high quality
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
-          // Use higher resolution for better quality
-          const scaleFactor = 2;
-          canvas.width = 60 * scaleFactor;
-          canvas.height = 40 * scaleFactor;
+          // Use original image dimensions for maximum quality
+          canvas.width = img.naturalWidth || 300;
+          canvas.height = img.naturalHeight || 200;
           
           if (ctx) {
-            // Enable image smoothing for better quality
+            // Set high quality rendering settings
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             
-            // Draw image with anti-aliasing
+            // Fill with white background to prevent transparency issues
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw image at original resolution
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           }
           
-          // Use PNG format to preserve quality and avoid compression artifacts
-          const imageData = canvas.toDataURL('image/png');
+          // Use maximum quality PNG without compression
+          const imageData = canvas.toDataURL('image/png', 1.0);
           
           pdf.addImage(imageData, 'PNG', pageWidth - 75, yPosition, 50, 35);
           
