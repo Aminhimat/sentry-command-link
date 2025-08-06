@@ -192,12 +192,28 @@ export class PDFReportGenerator {
             return;
           }
 
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          ctx.drawImage(img, 0, 0);
+          // Set smaller canvas size for compression
+          const maxWidth = 400;
+          const maxHeight = 400;
           
-          const imageData = canvas.toDataURL('image/png');
-          this.doc.addImage(imageData, 'PNG', x, y, width, height);
+          let { width: imgWidth, height: imgHeight } = img;
+          
+          // Calculate scaled dimensions
+          if (imgWidth > maxWidth || imgHeight > maxHeight) {
+            const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+            imgWidth = imgWidth * ratio;
+            imgHeight = imgHeight * ratio;
+          }
+
+          canvas.width = imgWidth;
+          canvas.height = imgHeight;
+          
+          // Draw and compress image
+          ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
+          
+          // Convert to JPEG with 0.3 quality for significant compression
+          const imageData = canvas.toDataURL('image/jpeg', 0.3);
+          this.doc.addImage(imageData, 'JPEG', x, y, width, height);
           
         } catch (error) {
           console.error('Error processing image:', error);
