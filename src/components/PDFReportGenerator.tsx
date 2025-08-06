@@ -98,69 +98,78 @@ export class PDFReportGenerator {
   }
 
   private async addReportEntry(report: Report, index: number) {
-    const entryHeight = 50;
+    const entryHeight = 80;
     this.addPageIfNeeded(entryHeight);
 
     const reportDate = new Date(report.created_at);
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
     
-    // Gray background for entry
-    this.doc.setFillColor(245, 245, 245);
-    this.doc.rect(this.margin, this.currentY - 2, this.pageWidth - (this.margin * 2), entryHeight - 10, 'F');
+    // Clean white background with subtle border
+    this.doc.setFillColor(255, 255, 255);
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 5, 'F');
+    this.doc.setDrawColor(220, 220, 220);
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 5, 'S');
     
-    // Left column - Date/time, Security Patrol, and Issue ID in one label
-    const leftColumnX = this.margin + 5;
+    // Main content area
+    const contentY = this.currentY + 8;
+    const leftColumnX = this.margin + 8;
+    const rightColumnX = this.pageWidth - this.margin - 45;
     
-    // Combined label with date, time, security patrol, and issue ID
-    this.doc.setFontSize(10);
+    // Header: Date and Time (prominent)
+    this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
-    const dateTimeText = `${reportDate.toDateString()} ${reportDate.toLocaleTimeString()}`;
-    this.doc.text(dateTimeText, leftColumnX, this.currentY + 5);
+    this.doc.text(`${reportDate.toLocaleDateString()} at ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
     
-    // Security Patrol and Issue ID on same line
-    this.doc.setFontSize(9);
-    this.doc.setFont('helvetica', 'normal');
-    const patrolAndIdText = `(S) Security Patrol - ${report.id.substring(0, 10)}`;
-    this.doc.text(patrolAndIdText, leftColumnX, this.currentY + 12);
-    
-    // Location venue name
-    this.doc.setFontSize(9);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.text(report.location_address || 'Location Not Specified', leftColumnX, this.currentY + 19);
-    
-    // Address and Unit
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text('Location: Default', leftColumnX, this.currentY + 25);
-    this.doc.text('Unit:', leftColumnX, this.currentY + 31);
-    
-    // Guard name
-    this.doc.text(guardName, leftColumnX, this.currentY + 37);
-    
-    // Incident type badge (moved to center) - show actual incident type instead of Level 3
-    const badgeX = leftColumnX + 100;
+    // Incident Type Badge
     const incidentType = report.incident_type || 'Security Patrol';
-    const badgeWidth = Math.max(30, this.doc.getTextWidth(incidentType) + 4);
+    const badgeY = contentY + 8;
+    const badgeWidth = Math.max(35, this.doc.getTextWidth(incidentType) + 8);
     
-    this.doc.setFillColor(76, 175, 80);
-    this.doc.rect(badgeX, this.currentY + 10, badgeWidth, 6, 'F');
+    this.doc.setFillColor(52, 152, 219); // Blue background
+    this.doc.rect(leftColumnX, badgeY - 4, badgeWidth, 8, 'F');
     this.doc.setTextColor(255, 255, 255);
-    this.doc.setFontSize(8);
+    this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(incidentType, badgeX + 1, this.currentY + 14);
+    this.doc.text(incidentType, leftColumnX + 2, badgeY + 1);
     
-    // Right column - Image with Issue ID at top
-    const rightColumnX = this.pageWidth - this.margin - 35;
-    
-    // Issue ID at top of image area
-    this.doc.setTextColor(0, 0, 255);
+    // Guard Information
+    this.doc.setTextColor(60, 60, 60);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(report.id.substring(0, 10), rightColumnX, this.currentY + 3);
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 20);
     
-    // Add image below the issue ID
+    // Location Information
+    if (report.location_address) {
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 28);
+    }
+    
+    // Report Content
+    if (report.report_text) {
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'normal');
+      const lines = this.doc.splitTextToSize(report.report_text, 100);
+      this.doc.text(lines.slice(0, 3), leftColumnX, contentY + 38); // Show first 3 lines
+    }
+    
+    // Right side - Issue ID directly attached to image
     if (report.image_url) {
-      await this.addImageToEntry(report.image_url, rightColumnX - 5, this.currentY + 6, 30, 30);
+      // Issue ID positioned directly above image
+      this.doc.setTextColor(220, 20, 60); // Deep pink for visibility
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'bold');
+      const issueIdText = `ID: ${report.id.substring(0, 8)}`;
+      const issueIdWidth = this.doc.getTextWidth(issueIdText);
+      this.doc.text(issueIdText, rightColumnX + (35 - issueIdWidth) / 2, contentY - 2);
+      
+      // Image positioned right below the ID
+      await this.addImageToEntry(report.image_url, rightColumnX, contentY, 35, 35);
+    } else {
+      // Show issue ID even without image
+      this.doc.setTextColor(100, 100, 100);
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.text(`Report ID: ${report.id.substring(0, 10)}`, rightColumnX, contentY + 15);
     }
     
     this.currentY += entryHeight;
@@ -240,9 +249,6 @@ export class PDFReportGenerator {
     for (let i = 0; i < reports.length; i++) {
       await this.addReportEntry(reports[i], i);
     }
-
-    // Add summary
-    this.addSummary(reports);
 
     // Generate filename
     const dateStr = reportFilters.reportType === 'daily' 
