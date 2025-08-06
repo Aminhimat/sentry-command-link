@@ -63,91 +63,102 @@ export class PDFReportGenerator {
   }
 
   private drawHeader(company: Company | null, reportFilters: any) {
-    // Company logo and header
-    this.doc.setFontSize(20);
+    // Company name on the left
+    this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text(company?.name || 'Security Company', this.margin, this.currentY);
-    this.currentY += 10;
 
-    // Report title
-    this.doc.setFontSize(16);
-    this.doc.text('Security Guard Reports', this.margin, this.currentY);
+    // Title centered
+    this.doc.setFontSize(18);
+    const title = 'Daily Activity Report';
+    const titleWidth = this.doc.getTextWidth(title);
+    const titleX = (this.pageWidth - titleWidth) / 2;
+    this.doc.text(title, titleX, this.currentY);
+
+    // Start/End times on the right
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    const startText = `Start: ${reportFilters.startDate.toLocaleDateString()} ${reportFilters.startDate.toLocaleTimeString()}`;
+    const endText = `End: ${reportFilters.endDate.toLocaleDateString()} ${reportFilters.endDate.toLocaleTimeString()}`;
+    
+    this.doc.text(startText, this.pageWidth - this.margin - this.doc.getTextWidth(startText), this.currentY - 6);
+    this.doc.text(endText, this.pageWidth - this.margin - this.doc.getTextWidth(endText), this.currentY);
+
     this.currentY += 8;
 
-    // Date range
+    // Company subtitle centered
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'normal');
-    const dateText = reportFilters.reportType === 'daily' 
-      ? `Date: ${reportFilters.startDate.toLocaleDateString()}`
-      : `Period: ${reportFilters.startDate.toLocaleDateString()} - ${reportFilters.endDate.toLocaleDateString()}`;
-    this.doc.text(dateText, this.margin, this.currentY);
-    this.currentY += 6;
-
-    // Generated timestamp
-    this.doc.text(`Generated: ${new Date().toLocaleString()}`, this.margin, this.currentY);
-    this.currentY += 10;
-
-    // Line separator
-    this.doc.line(this.margin, this.currentY, this.pageWidth - this.margin, this.currentY);
-    this.currentY += 5;
+    const subtitle = company?.name || 'Security Company';
+    const subtitleWidth = this.doc.getTextWidth(subtitle);
+    const subtitleX = (this.pageWidth - subtitleWidth) / 2;
+    this.doc.text(subtitle, subtitleX, this.currentY);
+    this.currentY += 15;
   }
 
   private async addReportEntry(report: Report, index: number) {
-    this.addPageIfNeeded(40);
+    const entryHeight = 50;
+    this.addPageIfNeeded(entryHeight);
 
-    // Report header
-    this.doc.setFontSize(14);
+    const reportDate = new Date(report.created_at);
+    const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
+    
+    // Gray background for entry
+    this.doc.setFillColor(245, 245, 245);
+    this.doc.rect(this.margin, this.currentY - 2, this.pageWidth - (this.margin * 2), entryHeight - 10, 'F');
+    
+    // Left column - Date and location info
+    const leftColumnX = this.margin + 5;
+    const leftColumnWidth = 60;
+    
+    // Date and time
+    this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.text(`Report #${index + 1}`, this.margin, this.currentY);
-    this.currentY += 8;
-
-    // Guard info
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.text(`${reportDate.toDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, this.currentY + 5);
+    
+    // Location venue name
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text(report.location_address || 'Location Not Specified', leftColumnX, this.currentY + 12);
+    
+    // Address
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text('Location: Default', leftColumnX, this.currentY + 18);
+    this.doc.text('Unit:', leftColumnX, this.currentY + 24);
+    
+    // Guard name
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(guardName, leftColumnX, this.currentY + 32);
+    
+    // Center column - Activity type with colored badge
+    const centerColumnX = leftColumnX + leftColumnWidth + 10;
+    this.doc.text('(S) Security Patrol', centerColumnX, this.currentY + 5);
+    
+    // Green status badge
+    this.doc.setFillColor(76, 175, 80);
+    this.doc.rect(centerColumnX, this.currentY + 8, 25, 6, 'F');
+    this.doc.setTextColor(255, 255, 255);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.text('(S) Level 3', centerColumnX + 1, this.currentY + 12);
+    
+    // Right column - Report ID and image
+    const rightColumnX = this.pageWidth - this.margin - 40;
+    this.doc.setTextColor(0, 0, 255);
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
-    const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
-    this.doc.text(`Guard: ${guardName}`, this.margin, this.currentY);
-    this.currentY += this.lineHeight;
-
-    // Date and time
-    const reportDate = new Date(report.created_at);
-    this.doc.text(`Date: ${reportDate.toLocaleDateString()}`, this.margin, this.currentY);
-    this.doc.text(`Time: ${reportDate.toLocaleTimeString()}`, this.margin + 60, this.currentY);
-    this.currentY += this.lineHeight;
-
-    // Location
-    if (report.location_address) {
-      this.doc.text(`Location: ${report.location_address}`, this.margin, this.currentY);
-      this.currentY += this.lineHeight;
-    }
-
-    // Report ID
-    this.doc.text(`ID: ${report.id}`, this.margin, this.currentY);
-    this.currentY += this.lineHeight + 2;
-
-    // Report text
-    if (report.report_text) {
-      this.doc.setFont('helvetica', 'bold');
-      this.doc.text('Report:', this.margin, this.currentY);
-      this.currentY += this.lineHeight;
-
-      this.doc.setFont('helvetica', 'normal');
-      const splitText = this.doc.splitTextToSize(report.report_text, this.pageWidth - (this.margin * 2));
-      this.doc.text(splitText, this.margin, this.currentY);
-      this.currentY += splitText.length * this.lineHeight + 5;
-    }
-
+    this.doc.text(report.id.substring(0, 10), rightColumnX, this.currentY + 5);
+    
     // Add image if available
     if (report.image_url) {
-      await this.addImage(report.image_url);
+      await this.addImageToEntry(report.image_url, rightColumnX - 30, this.currentY + 8, 25, 25);
     }
-
-    // Separator line
-    this.currentY += 5;
-    this.doc.line(this.margin, this.currentY, this.pageWidth - this.margin, this.currentY);
-    this.currentY += 8;
+    
+    this.currentY += entryHeight;
   }
 
-  private async addImage(imageUrl: string): Promise<void> {
+  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number): Promise<void> {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -162,30 +173,12 @@ export class PDFReportGenerator {
             return;
           }
 
-          // Use original image dimensions for better quality
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
-          
           ctx.drawImage(img, 0, 0);
           
           const imageData = canvas.toDataURL('image/png');
-          
-          // Calculate dimensions to fit in PDF
-          const maxWidth = this.pageWidth - (this.margin * 2);
-          const maxHeight = 80;
-          
-          let imgWidth = maxWidth;
-          let imgHeight = (img.naturalHeight / img.naturalWidth) * maxWidth;
-          
-          if (imgHeight > maxHeight) {
-            imgHeight = maxHeight;
-            imgWidth = (img.naturalWidth / img.naturalHeight) * maxHeight;
-          }
-
-          this.addPageIfNeeded(imgHeight + 10);
-          
-          this.doc.addImage(imageData, 'PNG', this.margin, this.currentY, imgWidth, imgHeight);
-          this.currentY += imgHeight + 5;
+          this.doc.addImage(imageData, 'PNG', x, y, width, height);
           
         } catch (error) {
           console.error('Error processing image:', error);
