@@ -166,9 +166,31 @@ export class PDFReportGenerator {
       // Display Site, Severity, Description at the bottom with reduced spacing
       let bottomY = contentY + 14;
       lines.forEach((line) => {
-        if (line.startsWith('Site:') || line.startsWith('Severity:') || line.startsWith('Description:')) {
+        if (line.startsWith('Site:') || line.startsWith('Description:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
           bottomY += 3;
+        } else if (line.startsWith('Severity:')) {
+          // Extract severity value and set color
+          const severityValue = line.replace('Severity:', '').trim().toLowerCase();
+          
+          // Set color based on severity level
+          if (severityValue === 'none' || severityValue === 'low') {
+            this.doc.setTextColor(0, 128, 0); // Green
+          } else if (severityValue === 'medium') {
+            this.doc.setTextColor(255, 193, 7); // Yellow
+          } else if (severityValue === 'high') {
+            this.doc.setTextColor(255, 140, 0); // Orange
+          } else if (severityValue === 'critical') {
+            this.doc.setTextColor(255, 0, 0); // Red
+          } else {
+            this.doc.setTextColor(0, 0, 0); // Default black
+          }
+          
+          this.doc.text(line.trim(), leftColumnX, bottomY);
+          bottomY += 3;
+          
+          // Reset color to black for other text
+          this.doc.setTextColor(0, 0, 0);
         }
       });
     }
