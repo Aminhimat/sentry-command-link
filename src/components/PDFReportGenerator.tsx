@@ -78,11 +78,13 @@ export class PDFReportGenerator {
     // Company name next to logo or on left if no logo
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(0, 0, 0);
     const companyNameX = company?.logo_url ? this.margin + 25 : this.margin;
     this.doc.text(company?.name || 'Security Company', companyNameX, this.currentY);
 
     // Title centered
     this.doc.setFontSize(18);
+    this.doc.setTextColor(0, 0, 0);
     const title = 'Daily Activity Report';
     const titleWidth = this.doc.getTextWidth(title);
     const titleX = (this.pageWidth - titleWidth) / 2;
@@ -91,6 +93,7 @@ export class PDFReportGenerator {
     // Start/End times on the right
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(0, 0, 0);
     const startText = `Start: ${reportFilters.startDate.toLocaleDateString()} ${reportFilters.startDate.toLocaleTimeString()}`;
     const endText = `End: ${reportFilters.endDate.toLocaleDateString()} ${reportFilters.endDate.toLocaleTimeString()}`;
     
@@ -128,13 +131,14 @@ export class PDFReportGenerator {
     this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
     
     // Guard Information (more compact)
-    this.doc.setTextColor(60, 60, 60);
+    this.doc.setTextColor(0, 0, 0);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
     this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 8);
     
     // Location Information (compact)
     if (report.location_address) {
+      this.doc.setTextColor(0, 0, 0);
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
     }
     
@@ -142,6 +146,7 @@ export class PDFReportGenerator {
     if (report.report_text) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(0, 0, 0);
       
       // Split and join with separators for compact display
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
@@ -153,7 +158,7 @@ export class PDFReportGenerator {
     // Right side - Issue ID directly attached to smaller image
     if (report.image_url) {
       // Issue ID positioned directly above image (smaller)
-      this.doc.setTextColor(220, 20, 60);
+      this.doc.setTextColor(0, 0, 0);
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'bold');
       const issueIdText = `${report.id.substring(0, 8)}`;
@@ -164,7 +169,7 @@ export class PDFReportGenerator {
       await this.addImageToEntry(report.image_url, rightColumnX, contentY + 2, 25, 25);
     } else {
       // Show issue ID even without image
-      this.doc.setTextColor(100, 100, 100);
+      this.doc.setTextColor(0, 0, 0);
       this.doc.setFontSize(8);
       this.doc.setFont('helvetica', 'normal');
       this.doc.text(`Report ID: ${report.id.substring(0, 10)}`, rightColumnX, contentY + 10);
@@ -234,11 +239,13 @@ export class PDFReportGenerator {
 
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(0, 0, 0);
     this.doc.text('Summary', this.margin, this.currentY);
     this.currentY += 10;
 
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(0, 0, 0);
     this.doc.text(`Total Reports: ${reports.length}`, this.margin, this.currentY);
     this.currentY += this.lineHeight;
 
