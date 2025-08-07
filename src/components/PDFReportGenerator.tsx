@@ -160,7 +160,7 @@ export class PDFReportGenerator {
       this.doc.setTextColor(220, 20, 60);
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'bold');
-      const issueIdText = `ID: ${report.id.substring(0, 8)}`;
+      const issueIdText = `${report.id.substring(0, 8)}`;
       const issueIdWidth = this.doc.getTextWidth(issueIdText);
       this.doc.text(issueIdText, rightColumnX + (25 - issueIdWidth) / 2, contentY - 1);
       
