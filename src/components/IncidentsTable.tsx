@@ -8,7 +8,8 @@ interface IncidentsTableProps {
 }
 
 const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
-  const [selectedIncident, setSelectedIncident] = useState<any>(null);
+const [selectedIncident, setSelectedIncident] = useState<any>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const getSeverityBadge = (severity: string) => {
@@ -23,9 +24,26 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const handleIncidentClick = (incident: any) => {
-    setSelectedIncident(incident);
+const handleIncidentClick = (index: number) => {
+    setSelectedIndex(index);
+    setSelectedIncident(incidents[index]);
     setIsModalOpen(true);
+  };
+
+  const handleNext = () => {
+    if (selectedIndex < incidents.length - 1) {
+      const next = selectedIndex + 1;
+      setSelectedIndex(next);
+      setSelectedIncident(incidents[next]);
+    }
+  };
+
+  const handlePrev = () => {
+    if (selectedIndex > 0) {
+      const prev = selectedIndex - 1;
+      setSelectedIndex(prev);
+      setSelectedIncident(incidents[prev]);
+    }
   };
 
   return (
@@ -63,11 +81,11 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                     </td>
                   </tr>
                 ) : (
-                  incidents.map((incident) => (
+incidents.map((incident, idx) => (
                     <tr 
                       key={incident.id} 
                       className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
-                      onClick={() => handleIncidentClick(incident)}
+                      onClick={() => handleIncidentClick(idx)}
                     >
                       <td className="p-4 font-mono text-sm text-red-600">
                         {incident.id.split('-')[0].toUpperCase()}
@@ -108,10 +126,14 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
         </CardContent>
       </Card>
 
-      <IncidentDetailsModal
+<IncidentDetailsModal
         incident={selectedIncident}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        hasNext={selectedIndex < incidents.length - 1}
+        hasPrev={selectedIndex > 0}
       />
     </>
   );

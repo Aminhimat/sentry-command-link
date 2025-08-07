@@ -1,14 +1,19 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, User, Calendar, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, User, Calendar, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface IncidentDetailsModalProps {
   incident: any;
   isOpen: boolean;
   onClose: () => void;
+  onNext?: () => void;
+  onPrev?: () => void;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
-const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModalProps) => {
+const IncidentDetailsModal = ({ incident, isOpen, onClose, onNext, onPrev, hasNext, hasPrev }: IncidentDetailsModalProps) => {
   if (!incident) return null;
 
   const getSeverityBadge = (severity: string) => {
@@ -33,7 +38,7 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+<div className="space-y-4">
           {incident.image_url ? (
             <div className="relative bg-black rounded-lg overflow-hidden">
               <img 
@@ -80,6 +85,18 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
               <p className="text-muted-foreground">No photo available for this incident</p>
             </div>
           )}
+
+          <div className="flex items-center justify-between pt-2">
+            <Button variant="outline" onClick={onPrev} disabled={!hasPrev}>
+              <ChevronLeft className="h-4 w-4 mr-2" /> Previous
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              Use Next/Previous to navigate incidents
+            </div>
+            <Button variant="outline" onClick={onNext} disabled={!hasNext}>
+              Next <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
