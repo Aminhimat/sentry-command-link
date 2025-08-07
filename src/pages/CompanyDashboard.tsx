@@ -653,9 +653,13 @@ const CompanyDashboard = () => {
                 {company?.logo_url ? (
                   <div className="w-20 h-20 border rounded-lg overflow-hidden bg-muted">
                     <img 
-                      src={company.logo_url} 
+                      src={`${company.logo_url}?t=${Date.now()}`}
                       alt="Company Logo" 
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error('Logo failed to load:', company.logo_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   </div>
                 ) : (

@@ -99,13 +99,7 @@ export class PDFReportGenerator {
 
     this.currentY += 8;
 
-    // Company subtitle centered
-    this.doc.setFontSize(12);
-    this.doc.setFont('helvetica', 'normal');
-    const subtitle = company?.name || 'Security Company';
-    const subtitleWidth = this.doc.getTextWidth(subtitle);
-    const subtitleX = (this.pageWidth - subtitleWidth) / 2;
-    this.doc.text(subtitle, subtitleX, this.currentY);
+    // Remove duplicate company name - it's already shown next to logo
     this.currentY += 15;
   }
 
@@ -190,6 +184,7 @@ export class PDFReportGenerator {
           const ctx = canvas.getContext('2d');
           
           if (!ctx) {
+            console.warn('Canvas context not available');
             resolve();
             return;
           }
@@ -218,17 +213,19 @@ export class PDFReportGenerator {
           this.doc.addImage(imageData, 'JPEG', x, y, width, height);
           
         } catch (error) {
-          console.error('Error processing image:', error);
+          console.error('Error processing image:', imageUrl, error);
         }
         resolve();
       };
 
-      img.onerror = () => {
-        console.error('Failed to load image:', imageUrl);
+      img.onerror = (error) => {
+        console.error('Failed to load image:', imageUrl, error);
         resolve();
       };
 
-      img.src = imageUrl;
+      // Add timestamp to avoid cache issues
+      const separator = imageUrl.includes('?') ? '&' : '?';
+      img.src = `${imageUrl}${separator}t=${Date.now()}`;
     });
   }
 
