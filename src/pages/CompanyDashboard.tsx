@@ -525,15 +525,17 @@ const CompanyDashboard = () => {
     setIsUploadingLogo(true);
 
     try {
-      // Upload to Supabase storage
+      // Upload to Supabase storage with better file naming
       const fileExt = file.name.split('.').pop();
-      const fileName = `${company.id}/logo.${fileExt}`;
+      const timestamp = Date.now();
+      const fileName = `${company.id}/logo_${timestamp}.${fileExt}`;
       
       const { data, error } = await supabase.storage
         .from('guard-reports')
         .upload(fileName, file, { 
           upsert: true,
-          contentType: file.type 
+          contentType: file.type,
+          duplex: 'half'
         });
 
       if (error) {
@@ -555,8 +557,11 @@ const CompanyDashboard = () => {
         throw updateError;
       }
 
-      // Update local state
+      // Update local state and refresh from database
       setCompany({ ...company, logo_url: publicUrl });
+      
+      // Refresh company data from database to ensure consistency
+      await fetchCompany(company.id);
 
       toast({
         title: "Success",
