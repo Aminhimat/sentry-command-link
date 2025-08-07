@@ -152,11 +152,15 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Task in middle column (remove "Task:" prefix)
+      // Display Task in middle column (remove "Task:" prefix) - make it bold
       const taskLine = lines.find(line => line.startsWith('Task:'));
       if (taskLine) {
         const taskValue = taskLine.replace('Task:', '').trim();
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setFontSize(8);
         this.doc.text(taskValue, middleColumnX, contentY + 2);
+        this.doc.setFont('helvetica', 'normal'); // Reset to normal
+        this.doc.setFontSize(7);
       }
       
       // Display Site, Severity, Description at the bottom with reduced spacing
