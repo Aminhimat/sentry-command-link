@@ -111,6 +111,8 @@ const CompanyDashboard = () => {
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(),
     endDate: new Date(),
+    startTime: "00:00",
+    endTime: "23:59",
     guardId: "all",
     reportType: "daily"
   });
@@ -458,21 +460,21 @@ const { toast } = useToast();
         `)
         .eq('company_id', userProfile.company_id);
 
-      // Apply date filters
+      // Apply date & time filters
+      let startDateTime = new Date(reportFilters.startDate);
+      let endDateTime = new Date(reportFilters.endDate);
       if (reportFilters.reportType === 'daily') {
-        const startOfDay = new Date(reportFilters.startDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(reportFilters.startDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        query = query
-          .gte('created_at', startOfDay.toISOString())
-          .lte('created_at', endOfDay.toISOString());
-      } else {
-        query = query
-          .gte('created_at', reportFilters.startDate.toISOString())
-          .lte('created_at', reportFilters.endDate.toISOString());
+        // Merge selected times with the chosen date
+        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
+        startDateTime = new Date(reportFilters.startDate);
+        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
+        endDateTime = new Date(reportFilters.startDate);
+        endDateTime.setHours(eh || 23, em || 59, 59, 999);
       }
+      query = query
+        .gte('created_at', startDateTime.toISOString())
+        .lte('created_at', endDateTime.toISOString());
 
       // Apply guard filter
       if (reportFilters.guardId !== 'all') {
@@ -486,7 +488,7 @@ const { toast } = useToast();
       }
 
       // Generate PDF report using the new generator
-      await generatePDFReport(data || [], company, reportFilters);
+      await generatePDFReport(data || [], company, { ...reportFilters, startDate: startDateTime, endDate: endDateTime });
 
       toast({
         title: "Success",
@@ -896,6 +898,27 @@ const { toast } = useToast();
                       </PopoverContent>
                     </Popover>
                   </div>
+                )}
+
+                {reportFilters.reportType === 'daily' && (
+                  <>
+                    <div>
+                      <Label>From (Time)</Label>
+                      <Input
+                        type="time"
+                        value={reportFilters.startTime}
+                        onChange={(e) => setReportFilters({ ...reportFilters, startTime: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>To (Time)</Label>
+                      <Input
+                        type="time"
+                        value={reportFilters.endTime}
+                        onChange={(e) => setReportFilters({ ...reportFilters, endTime: e.target.value })}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
               <div className="flex gap-2 mt-4">
