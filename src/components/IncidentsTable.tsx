@@ -1,16 +1,34 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import IncidentDetailsModal from "./IncidentDetailsModal";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
 
 interface IncidentsTableProps {
   incidents: any[];
 }
 
 const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
-const [selectedIncident, setSelectedIncident] = useState<any>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+
+  const sortedIncidents = useMemo(() => {
+    return [...incidents].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [incidents]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedIncidents.length / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const visibleIncidents = sortedIncidents.slice(startIndex, startIndex + pageSize);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const getSeverityBadge = (severity: string) => {
     const severityConfig = {
@@ -23,27 +41,9 @@ const [selectedIncident, setSelectedIncident] = useState<any>(null);
     const config = severityConfig[severity as keyof typeof severityConfig] || severityConfig.none;
     return <Badge className={config.className}>{config.label}</Badge>;
   };
-
-const handleIncidentClick = (index: number) => {
-    setSelectedIndex(index);
-    setSelectedIncident(incidents[index]);
+  const handleIncidentClick = (incident: any) => {
+    setSelectedIncident(incident);
     setIsModalOpen(true);
-  };
-
-  const handleNext = () => {
-    if (selectedIndex < incidents.length - 1) {
-      const next = selectedIndex + 1;
-      setSelectedIndex(next);
-      setSelectedIncident(incidents[next]);
-    }
-  };
-
-  const handlePrev = () => {
-    if (selectedIndex > 0) {
-      const prev = selectedIndex - 1;
-      setSelectedIndex(prev);
-      setSelectedIncident(incidents[prev]);
-    }
   };
 
   return (
@@ -81,11 +81,11 @@ const handleIncidentClick = (index: number) => {
                     </td>
                   </tr>
                 ) : (
-incidents.map((incident, idx) => (
+visibleIncidents.map((incident) => (
                     <tr 
                       key={incident.id} 
                       className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
-                      onClick={() => handleIncidentClick(idx)}
+                      onClick={() => handleIncidentClick(incident)}
                     >
                       <td className="p-4 font-mono text-sm text-red-600">
                         {incident.id.split('-')[0].toUpperCase()}
@@ -123,6 +123,34 @@ incidents.map((incident, idx) => (
               </tbody>
             </table>
           </div>
+
+          <div className="p-4">
+            <Pagination className="justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.max(1, p - 1)); }}
+                    aria-disabled={currentPage === 1}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-3 text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage((p) => Math.min(totalPages, p + 1)); }}
+                    aria-disabled={currentPage === totalPages}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </CardContent>
       </Card>
 
@@ -130,10 +158,6 @@ incidents.map((incident, idx) => (
         incident={selectedIncident}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        hasNext={selectedIndex < incidents.length - 1}
-        hasPrev={selectedIndex > 0}
       />
     </>
   );
