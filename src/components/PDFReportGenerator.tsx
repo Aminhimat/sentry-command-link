@@ -122,6 +122,7 @@ export class PDFReportGenerator {
     // Main content area - more compact
     const contentY = this.currentY + 4;
     const leftColumnX = this.margin + 5;
+    const middleColumnX = this.margin + 50;
     const rightColumnX = this.pageWidth - this.margin - 30;
     
     // Header: Date and Time (smaller font)
@@ -142,7 +143,7 @@ export class PDFReportGenerator {
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
     }
     
-    // Report Content - Display each field on separate lines
+    // Report Content - Display each field on separate lines in middle column
     if (report.report_text) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
@@ -150,11 +151,16 @@ export class PDFReportGenerator {
       
       // Split report text into separate lines and display each field
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
-      let yOffset = 20;
+      let yOffset = 0;
       
       lines.forEach((line, index) => {
         if (yOffset < 35) { // Ensure we don't exceed the entry box
-          this.doc.text(line.trim(), leftColumnX, contentY + yOffset);
+          // Remove "Task:" prefix and just show the value
+          let displayLine = line.trim();
+          if (displayLine.startsWith('Task:')) {
+            displayLine = displayLine.replace('Task:', '').trim();
+          }
+          this.doc.text(displayLine, middleColumnX, contentY + yOffset);
           yOffset += 4;
         }
       });
