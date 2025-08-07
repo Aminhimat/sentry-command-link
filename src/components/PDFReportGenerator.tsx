@@ -142,17 +142,22 @@ export class PDFReportGenerator {
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
     }
     
-    // Report Content - Display Task, Site, Severity in one line
+    // Report Content - Display each field on separate lines
     if (report.report_text) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       this.doc.setTextColor(0, 0, 0);
       
-      // Split and join with separators for compact display
+      // Split report text into separate lines and display each field
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
-      const compactText = lines.join(' | ');
-      const textLines = this.doc.splitTextToSize(compactText, 90);
-      this.doc.text(textLines.slice(0, 2), leftColumnX, contentY + 20);
+      let yOffset = 20;
+      
+      lines.forEach((line, index) => {
+        if (yOffset < 35) { // Ensure we don't exceed the entry box
+          this.doc.text(line.trim(), leftColumnX, contentY + yOffset);
+          yOffset += 4;
+        }
+      });
     }
     
     // Right side - Issue ID directly attached to smaller image
