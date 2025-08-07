@@ -502,9 +502,22 @@ const CompanyDashboard = () => {
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !company) return;
+    console.log('Logo upload started:', { file: !!file, company: !!company });
+    
+    if (!file || !company) {
+      console.log('Upload cancelled: missing file or company');
+      return;
+    }
+
+    console.log('File details:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      companyId: company.id
+    });
 
     if (!file.type.startsWith('image/')) {
+      console.log('File type rejected:', file.type);
       toast({
         title: "Error",
         description: "Please select an image file",
@@ -514,6 +527,7 @@ const CompanyDashboard = () => {
     }
 
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      console.log('File size too large:', file.size);
       toast({
         title: "Error", 
         description: "Logo file size must be less than 5MB",
@@ -530,15 +544,19 @@ const CompanyDashboard = () => {
       const timestamp = Date.now();
       const fileName = `${company.id}/logo_${timestamp}.${fileExt}`;
       
+      console.log('Attempting upload:', { fileName, bucket: 'guard-reports' });
+      
       const { data, error } = await supabase.storage
         .from('guard-reports')
         .upload(fileName, file, { 
           upsert: true,
-          contentType: file.type,
-          duplex: 'half'
+          contentType: file.type
         });
 
+      console.log('Upload result:', { data, error });
+
       if (error) {
+        console.error('Storage upload error:', error);
         throw error;
       }
 
@@ -546,14 +564,20 @@ const CompanyDashboard = () => {
       const { data: { publicUrl } } = supabase.storage
         .from('guard-reports')
         .getPublicUrl(fileName);
+        
+      console.log('Generated public URL:', publicUrl);
 
       // Update company with logo URL
+      console.log('Updating company with logo URL...');
       const { error: updateError } = await supabase
         .from('companies')
         .update({ logo_url: publicUrl })
         .eq('id', company.id);
 
+      console.log('Company update result:', { updateError });
+
       if (updateError) {
+        console.error('Company update error:', updateError);
         throw updateError;
       }
 
@@ -561,12 +585,15 @@ const CompanyDashboard = () => {
       setCompany({ ...company, logo_url: publicUrl });
       
       // Refresh company data from database to ensure consistency
+      console.log('Refreshing company data...');
       await fetchCompany(company.id);
 
       toast({
         title: "Success",
         description: "Company logo uploaded successfully!",
       });
+
+      console.log('Logo upload completed successfully');
 
     } catch (error: any) {
       console.error('Error uploading logo:', error);
@@ -605,7 +632,7 @@ const CompanyDashboard = () => {
           <div className="flex items-center space-x-4">
             <Shield className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-xl font-semibold tracking-wide">COMPANY DASHBOARD</h1>
+              <h1 className="text-xl font-semibold tracking-wide">{company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}</h1>
               <p className="text-sm text-muted-foreground">
                 Welcome, {userProfile?.first_name} {userProfile?.last_name}
               </p>
