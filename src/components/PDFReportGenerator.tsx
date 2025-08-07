@@ -60,7 +60,9 @@ export class PDFReportGenerator {
     if (this.currentY + requiredHeight > this.pageHeight - this.margin) {
       this.doc.addPage();
       this.currentY = this.margin;
+      return true; // Indicate that a new page was added
     }
+    return false; // No new page was added
   }
 
   private async drawHeader(company: Company | null, reportFilters: any) {
@@ -109,7 +111,7 @@ export class PDFReportGenerator {
 
   private async addReportEntry(report: Report, index: number) {
     const entryHeight = 50; // Reduced from 80 to fit 5 reports per page
-    this.addPageIfNeeded(entryHeight);
+    // No automatic page addition here since we handle it manually in generateReport
 
     const reportDate = new Date(report.created_at);
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
@@ -260,11 +262,18 @@ export class PDFReportGenerator {
   }
 
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
-    // Add header
+    // Add header to first page
     await this.drawHeader(company, reportFilters);
 
-    // Add each report
+    // Add each report with exactly 5 reports per page
     for (let i = 0; i < reports.length; i++) {
+      // Add new page and header after every 5 reports (except the first page)
+      if (i > 0 && i % 5 === 0) {
+        this.doc.addPage();
+        this.currentY = this.margin;
+        await this.drawHeader(company, reportFilters);
+      }
+      
       await this.addReportEntry(reports[i], i);
     }
 
