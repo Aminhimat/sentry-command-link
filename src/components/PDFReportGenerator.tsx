@@ -135,12 +135,12 @@ export class PDFReportGenerator {
     this.doc.setTextColor(0, 0, 0);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 8);
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 6);
     
     // Location Information (compact)
     if (report.location_address) {
       this.doc.setTextColor(0, 0, 0);
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 10);
     }
     
     // Report Content - Display Task in middle column and other fields at bottom
@@ -156,15 +156,15 @@ export class PDFReportGenerator {
       const taskLine = lines.find(line => line.startsWith('Task:'));
       if (taskLine) {
         const taskValue = taskLine.replace('Task:', '').trim();
-        this.doc.text(taskValue, middleColumnX, contentY);
+        this.doc.text(taskValue, middleColumnX, contentY + 2);
       }
       
-      // Display Site, Severity, Description at the bottom
-      let bottomY = contentY + 32;
+      // Display Site, Severity, Description at the bottom with reduced spacing
+      let bottomY = contentY + 14;
       lines.forEach((line) => {
         if (line.startsWith('Site:') || line.startsWith('Severity:') || line.startsWith('Description:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 4;
+          bottomY += 3;
         }
       });
     }
