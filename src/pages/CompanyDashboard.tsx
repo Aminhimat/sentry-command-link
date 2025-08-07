@@ -115,7 +115,7 @@ const CompanyDashboard = () => {
     reportType: "daily"
   });
 const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'shifts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'shifts' | 'guards'>('overview');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
   // Debug: Log all state variables to check for any issues
@@ -731,10 +731,11 @@ const { toast } = useToast();
 <StatsCards guards={guards} incidents={reports} />
 
         <div className="mt-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts')}>
+<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards')}>
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="shifts">Shifts</TabsTrigger>
+              <TabsTrigger value="guards">Guards</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -1120,85 +1121,86 @@ const { toast } = useToast();
           </DialogContent>
         </Dialog>
 
-        {/* Guards List */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Guards Roster
-            </CardTitle>
-            <CardDescription>
-              Manage your security guard team
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-4 font-medium">Name</th>
-                    <th className="text-left p-4 font-medium">Email</th>
-                    <th className="text-left p-4 font-medium">Phone</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                    <th className="text-left p-4 font-medium">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {guards.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="text-center p-8 text-muted-foreground">
-                        No guards found
-                      </td>
+{activeTab === 'guards' && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Guards Roster
+              </CardTitle>
+              <CardDescription>
+                Manage your security guard team
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left p-4 font-medium">Name</th>
+                      <th className="text-left p-4 font-medium">Email</th>
+                      <th className="text-left p-4 font-medium">Phone</th>
+                      <th className="text-left p-4 font-medium">Status</th>
+                      <th className="text-left p-4 font-medium">Joined</th>
                     </tr>
-                  ) : (
-                    guards.map((guard) => (
-                      <tr key={guard.id} className="border-b border-border/50 hover:bg-muted/50">
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-medium text-primary">
-                                {guard.first_name?.[0]}{guard.last_name?.[0]}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {guard.first_name} {guard.last_name}
-                              </span>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => {
-                                  setEditingGuard(guard);
-                                  setShowEditGuardForm(true);
-                                }}
-                              >
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {guard.email}
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {guard.phone || 'Not provided'}
-                        </td>
-                        <td className="p-4">
-                          <Badge variant={guard.is_active ? "default" : "secondary"}>
-                            {guard.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-sm text-muted-foreground">
-                          {new Date(guard.created_at).toLocaleDateString()}
+                  </thead>
+                  <tbody>
+                    {guards.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-center p-8 text-muted-foreground">
+                          No guards found
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : (
+                      guards.map((guard) => (
+                        <tr key={guard.id} className="border-b border-border/50 hover:bg-muted/50">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {guard.first_name?.[0]}{guard.last_name?.[0]}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {guard.first_name} {guard.last_name}
+                                </span>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => {
+                                    setEditingGuard(guard);
+                                    setShowEditGuardForm(true);
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {guard.email}
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {guard.phone || 'Not provided'}
+                          </td>
+                          <td className="p-4">
+                            <Badge variant={guard.is_active ? "default" : "secondary"}>
+                              {guard.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {new Date(guard.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
 
       </div>
