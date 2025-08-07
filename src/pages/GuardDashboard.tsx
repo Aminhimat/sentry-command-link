@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode } from "lucide-react";
+import QrScanner from 'react-qr-scanner';
 
 const GuardDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,6 +24,7 @@ const GuardDashboard = () => {
     severity: "",
     image: null as File | null
   });
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -169,6 +172,55 @@ const GuardDashboard = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQrCodeScan = async (data: string | null) => {
+    if (data) {
+      try {
+        // Parse QR code data for location or task information
+        const qrData = JSON.parse(data);
+        
+        if (qrData.type === 'location' && qrData.site) {
+          setTaskData({ ...taskData, site: qrData.site });
+          toast({
+            title: "Location Scanned",
+            description: `Site location set to: ${qrData.site}`,
+          });
+        } else if (qrData.type === 'task' && qrData.taskType) {
+          setTaskData({ ...taskData, taskType: qrData.taskType, site: qrData.site || '' });
+          toast({
+            title: "Task Scanned",
+            description: `Task type set to: ${qrData.taskType}`,
+          });
+        } else {
+          // Try to parse as simple text for site location
+          setTaskData({ ...taskData, site: data });
+          toast({
+            title: "QR Code Scanned",
+            description: `Site location set to: ${data}`,
+          });
+        }
+        
+        setShowQrScanner(false);
+      } catch (error) {
+        // If not JSON, treat as plain text for site location
+        setTaskData({ ...taskData, site: data });
+        toast({
+          title: "QR Code Scanned",
+          description: `Site location set to: ${data}`,
+        });
+        setShowQrScanner(false);
+      }
+    }
+  };
+
+  const handleQrError = (err: any) => {
+    console.error('QR Scanner error:', err);
+    toast({
+      title: "Camera Error",
+      description: "Failed to access camera. Please check permissions.",
+      variant: "destructive",
+    });
   };
 
   const getLocation = (): Promise<GeolocationPosition> => {
@@ -401,17 +453,80 @@ const GuardDashboard = () => {
               {/* Site */}
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="site"
-                    placeholder="Enter the site location"
-                    className="pl-10"
-                    value={taskData.site}
-                    onChange={(e) => setTaskData({ ...taskData, site: e.target.value })}
-                    required
-                  />
-                </div>
+                <Tabs defaultValue="manual" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="manual" className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Manual Entry
+                    </TabsTrigger>
+                    <TabsTrigger value="qr" className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4" />
+                      QR Scan
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="manual" className="space-y-2">
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="site"
+                        placeholder="Enter the site location"
+                        className="pl-10"
+                        value={taskData.site}
+                        onChange={(e) => setTaskData({ ...taskData, site: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="qr" className="space-y-2">
+                    <div className="text-center space-y-4">
+                      <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center">
+                        {showQrScanner ? (
+                          <div className="w-full h-full relative overflow-hidden rounded-lg">
+                            <QrScanner
+                              delay={300}
+                              onError={handleQrError}
+                              onScan={handleQrCodeScan}
+                              style={{ width: '100%', height: '100%' }}
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <Camera className="h-12 w-12 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Scan QR code for location or task
+                            </p>
+                            <Button
+                              onClick={() => setShowQrScanner(true)}
+                              variant="outline"
+                              className="flex items-center gap-2"
+                            >
+                              <QrCode className="h-4 w-4" />
+                              Start Scanner
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                      
+                      {showQrScanner && (
+                        <Button
+                          onClick={() => setShowQrScanner(false)}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          Stop Scanner
+                        </Button>
+                      )}
+                      
+                      {taskData.site && (
+                        <p className="text-sm text-green-600">
+                          Site: {taskData.site}
+                        </p>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
 
               {/* Issue Severity */}
