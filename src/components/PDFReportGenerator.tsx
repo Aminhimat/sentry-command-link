@@ -143,25 +143,28 @@ export class PDFReportGenerator {
       this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 14);
     }
     
-    // Report Content - Display each field on separate lines in middle column
+    // Report Content - Display Task in middle column and other fields at bottom
     if (report.report_text) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       this.doc.setTextColor(0, 0, 0);
       
-      // Split report text into separate lines and display each field
+      // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
-      let yOffset = 0;
       
-      lines.forEach((line, index) => {
-        if (yOffset < 35) { // Ensure we don't exceed the entry box
-          // Remove "Task:" prefix and just show the value
-          let displayLine = line.trim();
-          if (displayLine.startsWith('Task:')) {
-            displayLine = displayLine.replace('Task:', '').trim();
-          }
-          this.doc.text(displayLine, middleColumnX, contentY + yOffset);
-          yOffset += 4;
+      // Display Task in middle column (remove "Task:" prefix)
+      const taskLine = lines.find(line => line.startsWith('Task:'));
+      if (taskLine) {
+        const taskValue = taskLine.replace('Task:', '').trim();
+        this.doc.text(taskValue, middleColumnX, contentY);
+      }
+      
+      // Display Site, Severity, Description at the bottom
+      let bottomY = contentY + 32;
+      lines.forEach((line) => {
+        if (line.startsWith('Site:') || line.startsWith('Severity:') || line.startsWith('Description:')) {
+          this.doc.text(line.trim(), leftColumnX, bottomY);
+          bottomY += 4;
         }
       });
     }
