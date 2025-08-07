@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Shield, Mail, Lock, QrCode, Camera } from "lucide-react";
+import QrScanner from 'react-qr-scanner';
 
 const AuthPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -21,6 +23,7 @@ const AuthPage = () => {
     role: "platform_admin"
   });
   const [isGuardLogin, setIsGuardLogin] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,6 +141,62 @@ const AuthPage = () => {
     }
   };
 
+  const handleQrCodeScan = async (data: string | null) => {
+    if (data) {
+      try {
+        // Parse QR code data - expected format: "username:password"
+        const [username, password] = data.split(':');
+        
+        if (username && password) {
+          setIsLoading(true);
+          const emailToUse = `${username}@company.local`;
+          
+          const { error } = await supabase.auth.signInWithPassword({
+            email: emailToUse,
+            password: password,
+          });
+
+          if (error) {
+            toast({
+              title: "QR Login Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: "QR code login successful!",
+            });
+            setShowQrScanner(false);
+          }
+        } else {
+          toast({
+            title: "Invalid QR Code",
+            description: "QR code format is invalid",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "QR Scan Error",
+          description: "Failed to process QR code",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleQrError = (err: any) => {
+    console.error('QR Scanner error:', err);
+    toast({
+      title: "Camera Error",
+      description: "Failed to access camera. Please check permissions.",
+      variant: "destructive",
+    });
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -238,108 +297,215 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
-            {isSignUp && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
+          {isGuardLogin ? (
+            <Tabs defaultValue="manual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Manual Login
+                </TabsTrigger>
+                <TabsTrigger value="qr" className="flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  QR Scan
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manual" className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      required
-                    />
+                    <Label htmlFor="email">Username</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="text"
+                        placeholder="username"
+                        className="pl-10"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      required
-                    />
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        className="pl-10"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
                   </div>
+                  
+                  <Button 
+                    type="submit" 
+                    variant="hero" 
+                    className="w-full" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Loading..." : "Sign In"}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="qr" className="space-y-4">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-64 h-64 bg-muted rounded-lg flex flex-col items-center justify-center">
+                    {showQrScanner ? (
+                      <div className="w-full h-full relative overflow-hidden rounded-lg">
+                        <QrScanner
+                          delay={300}
+                          onError={handleQrError}
+                          onScan={handleQrCodeScan}
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <Camera className="h-16 w-16 text-muted-foreground mb-4" />
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Click below to start QR code scanning
+                        </p>
+                        <Button
+                          onClick={() => setShowQrScanner(true)}
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <QrCode className="h-4 w-4" />
+                          Start Scanner
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  {showQrScanner && (
+                    <Button
+                      onClick={() => setShowQrScanner(false)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Stop Scanner
+                    </Button>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Point your camera at a QR code containing guard credentials
+                  </p>
                 </div>
-              </>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">{isGuardLogin ? "Username" : "Email"}</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type={isGuardLogin ? "text" : "email"}
-                  placeholder={isGuardLogin ? "username" : "admin@example.com"}
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    className="pl-10"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  className="pl-10"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
-                />
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
-            </div>
-            
-            <Button 
-              type="submit" 
-              variant="hero" 
-              className="w-full" 
-              disabled={isLoading}
+              
+              <Button 
+                type="submit" 
+                variant="hero" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading 
+                  ? "Loading..." 
+                  : isSignUp ? "Create Account" : "Sign In"
+                }
+              </Button>
+            </form>
+          )}
+          
+          <div className="text-center space-y-2 mt-4">
+            <Button
+              type="button"
+              variant="link"
+              onClick={() => {
+                if (!isSignUp) {
+                  setIsGuardLogin(!isGuardLogin);
+                  setFormData({ ...formData, email: "" });
+                  setShowQrScanner(false);
+                }
+              }}
+              className="text-sm"
             >
-              {isLoading 
-                ? "Loading..." 
-                : isSignUp ? "Create Account" : "Sign In"
-              }
+              {isGuardLogin ? "Admin Login" : "Guard Login"}
             </Button>
             
-            <div className="text-center space-y-2">
+            {!isGuardLogin && (
               <Button
                 type="button"
                 variant="link"
-                onClick={() => {
-                  if (!isSignUp) {
-                    setIsGuardLogin(!isGuardLogin);
-                    setFormData({ ...formData, email: "" });
-                  }
-                }}
-                className="text-sm"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm block mx-auto"
               >
-                {isGuardLogin ? "Admin Login" : "Guard Login"}
+                {isSignUp 
+                  ? "Already have an account? Sign in" 
+                  : "Need an admin account? Sign up"
+                }
               </Button>
-              
-              {!isGuardLogin && (
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm block mx-auto"
-                >
-                  {isSignUp 
-                    ? "Already have an account? Sign in" 
-                    : "Need an admin account? Sign up"
-                  }
-                </Button>
-              )}
-            </div>
-          </form>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
