@@ -84,6 +84,7 @@ interface Company {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  license_limit?: number;
   created_at: string;
   updated_at: string;
 }
@@ -366,6 +367,19 @@ const { toast } = useToast();
   const handleCreateGuard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userProfile?.company_id) return;
+
+    // Client-side pre-check: enforce license limit
+    if (company?.license_limit !== undefined) {
+      const activeCount = guards.filter(g => g.is_active).length;
+      if (activeCount >= company.license_limit) {
+        toast({
+          title: "License limit reached",
+          description: `You have reached your license limit (${company.license_limit}). Deactivate a guard or increase your plan.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     setIsLoading(true);
 

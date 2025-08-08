@@ -103,6 +103,41 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Company admin verification passed');
     }
 
+    // Enforce company license limit before creating a new guard
+    console.log('Checking company license limits...');
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('companies')
+      .select('license_limit')
+      .eq('id', companyId)
+      .single();
+
+    if (companyError || !company) {
+      console.error('Company lookup failed:', companyError);
+      throw new Error('Unable to verify company license');
+    }
+
+    const { count: activeGuardsCount, error: guardCountError } = await supabaseAdmin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('role', 'guard')
+      .eq('is_active', true);
+
+    if (guardCountError) {
+      console.error('Guard count query failed:', guardCountError);
+      throw new Error('Unable to verify license usage');
+    }
+
+    console.log('License check:', { activeGuardsCount, license_limit: company.license_limit });
+
+    if ((activeGuardsCount ?? 0) >= company.license_limit) {
+      console.error('License limit reached for company:', companyId);
+      return new Response(
+        JSON.stringify({ success: false, error: 'License limit reached: cannot create more guards for this company.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
     console.log('Creating auth user...');
 
     // Create the auth user using admin client
