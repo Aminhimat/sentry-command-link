@@ -148,8 +148,26 @@ const { toast } = useToast();
       )
       .subscribe();
 
+    // Realtime for guard_shifts
+    const shiftsChannel = supabase
+      .channel('shifts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'guard_shifts',
+          filter: `company_id=eq.${userProfile.company_id}`
+        },
+        () => {
+          fetchShifts();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(reportsChannel);
+      supabase.removeChannel(shiftsChannel);
     };
   }, [userProfile?.company_id]);
 
