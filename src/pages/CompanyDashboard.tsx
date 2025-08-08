@@ -106,7 +106,7 @@ const CompanyDashboard = () => {
     firstName: "",
     lastName: "",
     username: "",
-    password: "TempPass123!"
+    password: ""
   });
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(),
@@ -432,7 +432,7 @@ const { toast } = useToast();
         firstName: "",
         lastName: "",
         username: "",
-        password: "TempPass123!"
+        password: ""
       });
       setShowCreateGuardForm(false);
       await fetchGuards();
@@ -783,6 +783,18 @@ const { toast } = useToast();
                     value={newGuard.username}
                     onChange={(e) => setNewGuard({...newGuard, username: e.target.value})}
                     required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newGuard.password}
+                    onChange={(e) => setNewGuard({ ...newGuard, password: e.target.value })}
+                    required
+                    minLength={6}
+                    placeholder="At least 6 characters"
                   />
                 </div>
                 <div className="flex items-end">
