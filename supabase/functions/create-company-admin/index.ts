@@ -16,14 +16,24 @@ interface CreateCompanyAdminRequest {
 }
 
 const sendWelcomeEmail = async (adminEmail: string, adminFirstName: string, tempPassword: string) => {
-  const SENDGRID_API_KEY = "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";
+  const apiKey = Deno.env.get('SENDGRID_API_KEY');
+  const fromEmail = Deno.env.get('SENDGRID_FROM_EMAIL');
+
+  if (!apiKey) {
+    console.error('Missing SENDGRID_API_KEY secret');
+    throw new Error('Email service not configured: missing SENDGRID_API_KEY');
+  }
+  if (!fromEmail) {
+    console.error('Missing SENDGRID_FROM_EMAIL secret');
+    throw new Error('Email service not configured: missing SENDGRID_FROM_EMAIL');
+  }
   
   const emailData = {
     personalizations: [{
       to: [{ email: adminEmail, name: adminFirstName }],
       subject: "Welcome to SecureOps - Your Admin Account"
     }],
-    from: { email: "onboarding@resend.dev", name: "SecureOps Platform" },
+    from: { email: fromEmail, name: "SecureOps Platform" },
     content: [{
       type: "text/html",
       value: `
@@ -59,7 +69,7 @@ const sendWelcomeEmail = async (adminEmail: string, adminFirstName: string, temp
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(emailData),
