@@ -35,7 +35,7 @@ const SecurityPlatformLanding = () => {
             >
               Admin Login
             </Button>
-            <Button variant="outline" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20 animate-slide-in">
+            <Button variant="outline" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20 animate-slide-in" onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
               View Demo
             </Button>
           </div>
@@ -43,7 +43,7 @@ const SecurityPlatformLanding = () => {
       </section>
 
       {/* Platform Overview */}
-      <section className="py-20 px-6">
+      <section id="demo" className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-foreground mb-4">
