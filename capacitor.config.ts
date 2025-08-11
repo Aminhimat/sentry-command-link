@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'sentry-command-link',
   webDir: 'dist',
   server: {
-    url: 'https://c930f666-6e00-4b59-8c57-49bac8d85aa0.lovableproject.com?forceHideBadge=true',
+    url: 'https://c930f666-6e00-4b59-8c57-49bac8d85aa0.lovableproject.com/guard?forceHideBadge=true',
     cleartext: true
   },
   plugins: {
