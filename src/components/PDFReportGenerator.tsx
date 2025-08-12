@@ -204,9 +204,12 @@ export class PDFReportGenerator {
       const issueIdText = `${report.id.substring(0, 8)}`;
       const issueIdWidth = this.doc.getTextWidth(issueIdText);
       this.doc.text(issueIdText, rightColumnX + (25 - issueIdWidth) / 2, contentY - 1);
-      
-      // Smaller image positioned right below the ID
-      await this.addImageToEntry(report.image_url, rightColumnX, contentY + 2, 25, 25);
+
+      // Watermark text: Guard name + timestamp (will be truncated to fit)
+      const wmText = `${guardName} • ${reportDate.toLocaleString()}`;
+
+      // Smaller image positioned right below the ID with watermark overlay at bottom
+      await this.addImageToEntry(report.image_url, rightColumnX, contentY + 2, 25, 25, wmText);
     } else {
       // Show issue ID even without image
       this.doc.setTextColor(0, 0, 0);
@@ -218,7 +221,7 @@ export class PDFReportGenerator {
     this.currentY += entryHeight;
   }
 
-  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number): Promise<void> {
+  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -256,6 +259,37 @@ export class PDFReportGenerator {
           // Convert to JPEG with 0.3 quality for significant compression
           const imageData = canvas.toDataURL('image/jpeg', 0.3);
           this.doc.addImage(imageData, 'JPEG', x, y, width, height);
+
+          // Draw watermark overlay (bottom of picture) if provided
+          if (watermarkText) {
+            const padding = 1.2;
+            const barHeight = Math.max(4, Math.min(8, height * 0.3));
+
+            // Background bar
+            this.doc.setFillColor(0, 0, 0);
+            this.doc.rect(x, y + height - barHeight, width, barHeight, 'F');
+
+            // Text settings
+            this.doc.setTextColor(255, 255, 255);
+            this.doc.setFont('helvetica', 'bold');
+            const fontSize = Math.max(5, Math.min(8, barHeight - 1));
+            this.doc.setFontSize(fontSize);
+
+            // Truncate text to fit available width
+            const maxTextWidth = width - padding * 2;
+            let text = watermarkText;
+            while (this.doc.getTextWidth(text) > maxTextWidth && text.length > 1) {
+              text = text.slice(0, -2) + '…';
+            }
+
+            const textX = x + padding;
+            const textY = y + height - barHeight + (barHeight / 2) + (fontSize / 2) - 1;
+            this.doc.text(text, textX, textY);
+
+            // Reset
+            this.doc.setTextColor(0, 0, 0);
+            this.doc.setFont('helvetica', 'normal');
+          }
           
         } catch (error) {
           console.error('Error processing image:', imageUrl, error);
