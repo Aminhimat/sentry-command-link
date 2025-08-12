@@ -20,7 +20,7 @@ const SecurityPlatformLanding = () => {
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-6">
           <div className="flex items-center justify-center mb-6">
             <Shield className="h-16 w-16 mr-4 text-accent" />
-            <h1 className="text-6xl font-bold">SecureOps</h1>
+            <h1 className="text-6xl font-bold">PatrolHQ</h1>
           </div>
           <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
             Complete security management platform for modern security companies. 
@@ -212,7 +212,7 @@ const SecurityPlatformLanding = () => {
             Ready to Transform Your Security Operations?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join leading security companies using SecureOps to streamline operations and ensure compliance
+            Join leading security companies using PatrolHQ to streamline operations and ensure compliance
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
