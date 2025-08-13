@@ -21,7 +21,7 @@ const GuardDashboard = () => {
     taskType: "",
     site: "",
     description: "",
-    severity: "",
+    severity: "none",
     image: null as File | null
   });
   const [showQrScanner, setShowQrScanner] = useState(false);
@@ -154,7 +154,7 @@ const GuardDashboard = () => {
         taskType: "",
         site: "",
         description: "",
-        severity: "",
+        severity: "none",
         image: null
       });
 
