@@ -1,4 +1,4 @@
-# PatrolHQ
+# GuardHQ
 
 Modern security operations platform for guard patrols, incident reports, and company administration.
 
@@ -29,4 +29,4 @@ npm run build
 - public/ — static assets served as-is
 
 ## License
-Copyright © PatrolHQ. All rights reserved.
+Copyright © GuardHQ. All rights reserved.
