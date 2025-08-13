@@ -230,11 +230,42 @@ const GuardDashboard = () => {
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      });
+      // First check if permission is already granted
+      if ('permissions' in navigator) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          if (result.state === 'denied') {
+            reject(new Error('Location access is denied. Please enable location permissions in your browser settings.'));
+            return;
+          }
+        });
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        resolve, 
+        (error) => {
+          let errorMessage = 'Failed to get location. ';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage += 'Location access denied. Please allow location access and try again.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage += 'Location information unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage += 'Location request timed out.';
+              break;
+            default:
+              errorMessage += 'Unknown location error.';
+              break;
+          }
+          reject(new Error(errorMessage));
+        }, 
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 60000
+        }
+      );
     });
   };
 
@@ -258,16 +289,29 @@ const GuardDashboard = () => {
       let latitude = null;
       let longitude = null;
       let locationAddress = 'Location not available';
+      let locationWarning = '';
 
-      // Try to get location, but don't fail if it's not available
+      // Try to get location with better user feedback
       try {
+        toast({
+          title: "Getting Location",
+          description: "Please allow location access for accurate shift tracking...",
+        });
+        
         const position = await getLocation();
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
         locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-      } catch (locationError) {
+      } catch (locationError: any) {
         console.warn('Location access failed:', locationError);
-        // Continue without location - this is optional
+        locationWarning = locationError.message || 'Location access failed';
+        
+        // Show specific warning about location
+        toast({
+          title: "Location Warning",
+          description: locationWarning + " Shift will be recorded without precise location.",
+          variant: "destructive",
+        });
       }
 
       // Create new shift
@@ -289,10 +333,19 @@ const GuardDashboard = () => {
       }
 
       setCurrentShift(newShift);
-      toast({
-        title: "Shift Started",
-        description: latitude ? "Your shift has been started successfully with location tracking." : "Your shift has been started successfully.",
-      });
+      
+      if (latitude) {
+        toast({
+          title: "Shift Started",
+          description: "Your shift has been started successfully with location tracking.",
+        });
+      } else {
+        toast({
+          title: "Shift Started (No Location)",
+          description: "Your shift has been started but without location tracking. Enable location access for better tracking.",
+          variant: "destructive",
+        });
+      }
       
     } catch (error: any) {
       console.error('Start shift error:', error);
