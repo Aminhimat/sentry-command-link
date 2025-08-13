@@ -226,7 +226,7 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
           <CardTitle className="text-2xl">
-            {isSignUp ? "Create Admin Account" : isGuardLogin ? "Guard Sign In" : "Admin Sign In"}
+            {isSignUp ? "Create Admin Account" : isGuardLogin ? "GuardHQ Sign In" : "Admin Sign In"}
           </CardTitle>
           <CardDescription>
             {isSignUp 
@@ -322,7 +322,7 @@ const AuthPage = () => {
                 }}
                 className="text-sm"
               >
-                {isGuardLogin ? "Admin Login" : "Guard Login"}
+                {isGuardLogin ? "Admin Login" : "GuardHQ Login"}
               </Button>
               
               {!isGuardLogin && (
