@@ -244,10 +244,6 @@ const GuardDashboard = () => {
     setShiftLoading(true);
     
     try {
-      // Get location
-      const position = await getLocation();
-      const { latitude, longitude } = position.coords;
-      
       // Get user's profile
       const { data: profile } = await supabase
         .from('profiles')
@@ -259,6 +255,21 @@ const GuardDashboard = () => {
         throw new Error('User profile not found');
       }
 
+      let latitude = null;
+      let longitude = null;
+      let locationAddress = 'Location not available';
+
+      // Try to get location, but don't fail if it's not available
+      try {
+        const position = await getLocation();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      } catch (locationError) {
+        console.warn('Location access failed:', locationError);
+        // Continue without location - this is optional
+      }
+
       // Create new shift
       const { data: newShift, error } = await supabase
         .from('guard_shifts')
@@ -267,20 +278,24 @@ const GuardDashboard = () => {
           company_id: profile.company_id,
           location_lat: latitude,
           location_lng: longitude,
-          location_address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          location_address: locationAddress
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Start shift database error:', error);
+        throw error;
+      }
 
       setCurrentShift(newShift);
       toast({
         title: "Shift Started",
-        description: "Your shift has been started successfully with location tracking.",
+        description: latitude ? "Your shift has been started successfully with location tracking." : "Your shift has been started successfully.",
       });
       
     } catch (error: any) {
+      console.error('Start shift error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to start shift",
@@ -297,9 +312,6 @@ const GuardDashboard = () => {
     setShiftLoading(true);
     
     try {
-      console.log('End shift - currentShift:', currentShift);
-      console.log('End shift - user.id:', user.id);
-      
       // Get user's profile first to verify guard_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -307,8 +319,6 @@ const GuardDashboard = () => {
         .eq('user_id', user.id)
         .single();
 
-      console.log('End shift - profile:', profile);
-      
       if (!profile) {
         throw new Error('User profile not found');
       }
@@ -317,13 +327,22 @@ const GuardDashboard = () => {
       if (currentShift.guard_id !== profile.id) {
         throw new Error('Shift does not belong to current user');
       }
-      
-      // Get current location
-      const position = await getLocation();
-      const { latitude, longitude } = position.coords;
-      
-      console.log('End shift - updating shift with ID:', currentShift.id);
-      console.log('End shift - guard_id match:', currentShift.guard_id === profile.id);
+
+      let latitude = currentShift.location_lat;
+      let longitude = currentShift.location_lng;
+      let locationAddress = 'Location not available';
+
+      // Try to get current location, but don't fail if it's not available
+      try {
+        const position = await getLocation();
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      } catch (locationError) {
+        console.warn('Location access failed for end shift:', locationError);
+        // Use original shift location or default
+        locationAddress = currentShift.location_address || 'Location not available';
+      }
       
       // Update shift with end time and location
       const { error } = await supabase
@@ -332,13 +351,14 @@ const GuardDashboard = () => {
           check_out_time: new Date().toISOString(),
           location_lat: latitude,
           location_lng: longitude,
-          location_address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          location_address: locationAddress
         })
         .eq('id', currentShift.id);
 
-      console.log('End shift - update error:', error);
-
-      if (error) throw error;
+      if (error) {
+        console.error('End shift database error:', error);
+        throw error;
+      }
 
       setCurrentShift(null);
       toast({
