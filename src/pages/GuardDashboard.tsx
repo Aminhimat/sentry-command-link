@@ -297,9 +297,33 @@ const GuardDashboard = () => {
     setShiftLoading(true);
     
     try {
+      console.log('End shift - currentShift:', currentShift);
+      console.log('End shift - user.id:', user.id);
+      
+      // Get user's profile first to verify guard_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      console.log('End shift - profile:', profile);
+      
+      if (!profile) {
+        throw new Error('User profile not found');
+      }
+
+      // Verify the current shift belongs to this guard
+      if (currentShift.guard_id !== profile.id) {
+        throw new Error('Shift does not belong to current user');
+      }
+      
       // Get current location
       const position = await getLocation();
       const { latitude, longitude } = position.coords;
+      
+      console.log('End shift - updating shift with ID:', currentShift.id);
+      console.log('End shift - guard_id match:', currentShift.guard_id === profile.id);
       
       // Update shift with end time and location
       const { error } = await supabase
@@ -312,6 +336,8 @@ const GuardDashboard = () => {
         })
         .eq('id', currentShift.id);
 
+      console.log('End shift - update error:', error);
+
       if (error) throw error;
 
       setCurrentShift(null);
@@ -321,6 +347,7 @@ const GuardDashboard = () => {
       });
       
     } catch (error: any) {
+      console.error('End shift error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to end shift",
