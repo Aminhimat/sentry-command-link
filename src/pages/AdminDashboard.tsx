@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +31,24 @@ interface Profile {
   last_name: string;
 }
 
+interface Guard {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  company_id: string;
+  company_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [guards, setGuards] = useState<Guard[]>([]);
+  const [guardsCount, setGuardsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCompany, setNewCompany] = useState({
@@ -92,6 +108,7 @@ const AdminDashboard = () => {
 
       setUserProfile(profile);
       await fetchCompanies();
+      await fetchGuards();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -117,6 +134,47 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load companies",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchGuards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          user_id,
+          first_name,
+          last_name,
+          phone,
+          company_id,
+          is_active,
+          created_at,
+          companies (
+            name
+          )
+        `)
+        .eq('role', 'guard')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const guardsWithCompany = data?.map((guard: any) => ({
+        ...guard,
+        company_name: guard.companies?.name || 'No Company'
+      })) || [];
+
+      setGuards(guardsWithCompany);
+      setGuardsCount(guardsWithCompany.length);
+    } catch (error) {
+      console.error('Error fetching guards:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load guards",
         variant: "destructive",
       });
     }
@@ -189,6 +247,7 @@ const AdminDashboard = () => {
       });
       setShowCreateForm(false);
       await fetchCompanies();
+      await fetchGuards();
     } catch (error) {
       console.error('Error creating company:', error);
       toast({
@@ -264,6 +323,7 @@ const AdminDashboard = () => {
 
       // Refresh the companies list
       await fetchCompanies();
+      await fetchGuards();
     } catch (error) {
       console.error('Error deleting company:', error);
       toast({
@@ -377,27 +437,35 @@ const AdminDashboard = () => {
           <Card className="shadow-card">
             <CardContent className="p-6">
               <div className="flex items-center">
-                <BarChart3 className="h-8 w-8 text-accent" />
+                <Users className="h-8 w-8 text-accent" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold">$0</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Guards</p>
+                  <p className="text-2xl font-bold">{guardsCount}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Companies Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Security Companies</h2>
-          <Button variant="hero" onClick={() => setShowCreateForm(!showCreateForm)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Company
-          </Button>
-        </div>
+        {/* Main Content with Tabs */}
+        <Tabs defaultValue="companies" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="companies">Companies</TabsTrigger>
+            <TabsTrigger value="guards">Guards</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="companies" className="space-y-6">
+            {/* Companies Section */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold">Security Companies</h2>
+              <Button variant="hero" onClick={() => setShowCreateForm(!showCreateForm)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Company
+              </Button>
+            </div>
 
-        {/* Create Company Form */}
-        {showCreateForm && (
+            {/* Create Company Form */}
+            {showCreateForm && (
           <Card className="mb-6 shadow-elevated">
             <CardHeader>
               <CardTitle>Create New Security Company</CardTitle>
@@ -544,71 +612,135 @@ const AdminDashboard = () => {
           </Card>
         )}
 
-        {/* Companies List */}
-        <div className="grid gap-6">
-          {companies.map((company) => (
-            <Card key={company.id} className="shadow-card hover:shadow-elevated transition-smooth">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold">{company.name}</h3>
-                      {getStatusBadge(company.status)}
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                      <div>
-                        <p><strong>Email:</strong> {company.email || 'Not provided'}</p>
-                        <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
+            {/* Companies List */}
+            <div className="grid gap-6">
+              {companies.map((company) => (
+                <Card key={company.id} className="shadow-card hover:shadow-elevated transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-semibold">{company.name}</h3>
+                          {getStatusBadge(company.status)}
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p><strong>Email:</strong> {company.email || 'Not provided'}</p>
+                            <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <p><strong>License Limit:</strong> {company.license_limit} users</p>
+                            <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        {company.address && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            <strong>Address:</strong> {company.address}
+                          </p>
+                        )}
                       </div>
-                      <div>
-                        <p><strong>License Limit:</strong> {company.license_limit} users</p>
-                        <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Edit
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => handleDeleteCompany(company.id, company.name)}
+                          disabled={isLoading}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
-                    {company.address && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        <strong>Address:</strong> {company.address}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => handleDeleteCompany(company.id, company.name)}
-                      disabled={isLoading}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </CardContent>
+                </Card>
+              ))}
 
-          {companies.length === 0 && (
+              {companies.length === 0 && (
+                <Card className="shadow-card">
+                  <CardContent className="p-12 text-center">
+                    <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Companies Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Get started by creating your first security company
+                    </p>
+                    <Button variant="hero" onClick={() => setShowCreateForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Company
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="guards" className="space-y-6">
+            {/* Guards Section */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold">Security Guards</h2>
+              <div className="text-lg font-medium text-muted-foreground">
+                Total: {guardsCount} guards
+              </div>
+            </div>
+
+            {/* Guards Table */}
             <Card className="shadow-card">
-              <CardContent className="p-12 text-center">
-                <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Companies Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Get started by creating your first security company
-                </p>
-                <Button variant="hero" onClick={() => setShowCreateForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Company
-                </Button>
+              <CardHeader>
+                <CardTitle>All Guards</CardTitle>
+                <CardDescription>
+                  Complete list of security guards across all companies
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {guards.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Joined</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {guards.map((guard) => (
+                        <TableRow key={guard.id}>
+                          <TableCell className="font-medium">
+                            {guard.first_name} {guard.last_name}
+                          </TableCell>
+                          <TableCell>{guard.company_name}</TableCell>
+                          <TableCell>{guard.phone || 'Not provided'}</TableCell>
+                          <TableCell>
+                            <Badge variant={guard.is_active ? "default" : "secondary"}>
+                              {guard.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(guard.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="p-12 text-center">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Guards Yet</h3>
+                    <p className="text-muted-foreground">
+                      Guards will appear here when companies create guard accounts
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
