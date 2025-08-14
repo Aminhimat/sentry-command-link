@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2 } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import IncidentDetailsModal from "@/components/IncidentDetailsModal";
 
 interface Company {
   id: string;
@@ -21,6 +22,7 @@ interface Company {
   license_limit: number;
   status: string;
   created_at: string;
+  logo_url?: string;
 }
 
 interface Profile {
@@ -43,12 +45,37 @@ interface Guard {
   created_at: string;
 }
 
+interface Incident {
+  id: string;
+  company_id: string;
+  guard_id: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  location_address: string;
+  created_at: string;
+  company?: {
+    name: string;
+    logo_url?: string;
+  };
+  guard?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [guardsCount, setGuardsCount] = useState(0);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCompany, setNewCompany] = useState({
@@ -109,6 +136,7 @@ const AdminDashboard = () => {
       setUserProfile(profile);
       await fetchCompanies();
       await fetchGuards();
+      await fetchIncidents();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -178,6 +206,76 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const fetchIncidents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('incidents')
+        .select(`
+          *,
+          companies (
+            name,
+            logo_url
+          ),
+          profiles!incidents_guard_id_fkey (
+            first_name,
+            last_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const incidentsWithCompany = data?.map((incident: any) => ({
+        ...incident,
+        company: incident.companies,
+        guard: incident.profiles
+      })) || [];
+
+      setIncidents(incidentsWithCompany);
+      setFilteredIncidents(incidentsWithCompany);
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load incidents",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    if (companyId === "") {
+      setFilteredIncidents(incidents);
+    } else {
+      setFilteredIncidents(incidents.filter(incident => incident.company_id === companyId));
+    }
+  };
+
+  const handleIncidentClick = (incident: Incident) => {
+    setSelectedIncident(incident);
+    setIsModalOpen(true);
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    const config = {
+      high: { variant: "destructive" as const, className: "bg-destructive" },
+      medium: { variant: "secondary" as const, className: "bg-warning text-warning-foreground" },
+      low: { variant: "outline" as const, className: "bg-success/10 text-success border-success" },
+      none: { variant: "outline" as const, className: "" }
+    } as const;
+
+    const severityConfig = config[severity as keyof typeof config] || config.none;
+
+    return (
+      <Badge variant={severityConfig.variant} className={severityConfig.className}>
+        {severity?.charAt(0).toUpperCase() + severity?.slice(1) || 'None'}
+      </Badge>
+    );
   };
 
   const handleCreateCompany = async (e: React.FormEvent) => {
@@ -324,6 +422,7 @@ const AdminDashboard = () => {
       // Refresh the companies list
       await fetchCompanies();
       await fetchGuards();
+      await fetchIncidents();
     } catch (error) {
       console.error('Error deleting company:', error);
       toast({
@@ -449,9 +548,10 @@ const AdminDashboard = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="companies" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="guards">Guards</TabsTrigger>
+            <TabsTrigger value="clients">Clients</TabsTrigger>
           </TabsList>
           
           <TabsContent value="companies" className="space-y-6">
@@ -740,8 +840,181 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="clients" className="space-y-6">
+            {/* Clients Section */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold">Client Management</h2>
+              <div className="flex items-center gap-4">
+                <Label htmlFor="company-select">Select Client:</Label>
+                <Select value={selectedCompanyId} onValueChange={handleCompanySelect}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Choose a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Clients</SelectItem>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Client Information Card */}
+            {selectedCompanyId && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <Building className="h-5 w-5" />
+                    {companies.find(c => c.id === selectedCompanyId)?.name} Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {(() => {
+                    const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+                    return selectedCompany ? (
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          {selectedCompany.logo_url && (
+                            <div className="mb-4">
+                              <img 
+                                src={selectedCompany.logo_url} 
+                                alt={`${selectedCompany.name} logo`}
+                                className="h-16 w-auto object-contain"
+                              />
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            <p><strong>Email:</strong> {selectedCompany.email || 'Not provided'}</p>
+                            <p><strong>Phone:</strong> {selectedCompany.phone || 'Not provided'}</p>
+                            <p><strong>Address:</strong> {selectedCompany.address || 'Not provided'}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <p><strong>Status:</strong> {getStatusBadge(selectedCompany.status)}</p>
+                          <p><strong>License Limit:</strong> {selectedCompany.license_limit} users</p>
+                          <p><strong>Created:</strong> {new Date(selectedCompany.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Incident Reports */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Incident Reports
+                  {selectedCompanyId && (
+                    <span className="text-sm font-normal text-muted-foreground">
+                      - {companies.find(c => c.id === selectedCompanyId)?.name}
+                    </span>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  {selectedCompanyId 
+                    ? `Incident reports for selected client (${filteredIncidents.length} total)`
+                    : `All incident reports across all clients (${incidents.length} total)`
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredIncidents.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredIncidents.map((incident) => (
+                      <Card 
+                        key={incident.id} 
+                        className="cursor-pointer hover:shadow-elevated transition-smooth border-l-4 border-l-primary"
+                        onClick={() => handleIncidentClick(incident)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            {/* Client Logo */}
+                            <div className="flex-shrink-0">
+                              {incident.company?.logo_url ? (
+                                <img 
+                                  src={incident.company.logo_url} 
+                                  alt={`${incident.company.name} logo`}
+                                  className="h-12 w-12 object-contain rounded border"
+                                />
+                              ) : (
+                                <div className="h-12 w-12 bg-muted rounded border flex items-center justify-center">
+                                  <Building className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Incident Details */}
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="font-semibold text-lg">{incident.title}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    Client: {incident.company?.name}
+                                  </p>
+                                </div>
+                                {getSeverityBadge(incident.severity)}
+                              </div>
+                              
+                              <p className="text-sm">{incident.description}</p>
+                              
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {new Date(incident.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                                {incident.location_address && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {incident.location_address}
+                                  </span>
+                                )}
+                                <span>
+                                  Guard: {incident.guard?.first_name} {incident.guard?.last_name}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-12 text-center">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Incidents Found</h3>
+                    <p className="text-muted-foreground">
+                      {selectedCompanyId 
+                        ? "No incident reports available for the selected client"
+                        : "No incident reports available"
+                      }
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Incident Details Modal */}
+      <IncidentDetailsModal
+        incident={selectedIncident}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };
