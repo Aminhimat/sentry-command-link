@@ -59,6 +59,19 @@ interface Report {
   };
 }
 
+interface Property {
+  id: string;
+  company_id: string;
+  name: string;
+  location_address: string;
+  location_lat: number;
+  location_lng: number;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 interface Shift {
   id: string;
   guard_id: string;
@@ -97,12 +110,20 @@ const CompanyDashboard = () => {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [showEditGuardForm, setShowEditGuardForm] = useState(false);
   const [showGenerateReportForm, setShowGenerateReportForm] = useState(false);
+  const [showPropertiesForm, setShowPropertiesForm] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
+  const [newProperty, setNewProperty] = useState({
+    name: "",
+    location_address: "",
+    email: "",
+    phone: ""
+  });
   const [newGuard, setNewGuard] = useState({
     firstName: "",
     lastName: "",
@@ -118,7 +139,7 @@ const CompanyDashboard = () => {
     reportType: "daily"
   });
 const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'shifts' | 'guards'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'shifts' | 'guards' | 'properties'>('overview');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
   // Debug: Log all state variables to check for any issues
@@ -216,6 +237,7 @@ const { toast } = useToast();
       await fetchGuardsForCompany(profile.company_id);
       await fetchReportsForCompany(profile.company_id);
       await fetchShiftsForCompany(profile.company_id);
+      await fetchPropertiesForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -380,6 +402,88 @@ const { toast } = useToast();
   const fetchShifts = async () => {
     if (!userProfile?.company_id) return;
     await fetchShiftsForCompany(userProfile.company_id);
+  };
+
+  const fetchPropertiesForCompany = async (companyId: string) => {
+    console.log('Fetching properties for company:', companyId);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+
+      console.log('Properties query result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching properties:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch properties",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Setting properties:', data);
+      setProperties(data || []);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  const fetchProperties = async () => {
+    if (!userProfile?.company_id) return;
+    await fetchPropertiesForCompany(userProfile.company_id);
+  };
+
+  const handleCreateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userProfile?.company_id) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([{
+          company_id: userProfile.company_id,
+          name: newProperty.name,
+          location_address: newProperty.location_address,
+          email: newProperty.email,
+          phone: newProperty.phone
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Property creation error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Property "${data.name}" created successfully!`,
+      });
+
+      setNewProperty({
+        name: "",
+        location_address: "",
+        email: "",
+        phone: ""
+      });
+      setShowPropertiesForm(false);
+      await fetchProperties();
+    } catch (error) {
+      console.error('Error creating property:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create property",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreateGuard = async (e: React.FormEvent) => {
@@ -765,11 +869,12 @@ const { toast } = useToast();
 <StatsCards guards={guards} incidents={reports} />
 
         <div className="mt-4">
-<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards')}>
+<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards' | 'properties')}>
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="shifts">Shifts</TabsTrigger>
               <TabsTrigger value="guards">Guards</TabsTrigger>
+              <TabsTrigger value="properties">Properties/Sites</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -1264,6 +1369,156 @@ const { toast } = useToast();
                     )}
                   </tbody>
                 </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Properties/Sites Tab */}
+        {activeTab === 'properties' && (
+          <Card className="mt-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Properties & Sites Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your company's properties and site locations
+                  </CardDescription>
+                </div>
+                <Button variant="outline" onClick={() => setShowPropertiesForm(!showPropertiesForm)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Property
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Add Property Form */}
+              {showPropertiesForm && (
+                <Card className="mb-6 shadow-elevated">
+                  <CardHeader>
+                    <CardTitle>Add New Property/Site</CardTitle>
+                    <CardDescription>
+                      Add a new property or site location for your security operations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleCreateProperty} className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="property-name">Property Name</Label>
+                        <Input
+                          id="property-name"
+                          value={newProperty.name}
+                          onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
+                          placeholder="e.g., Downtown Office Building"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="property-email">Contact Email</Label>
+                        <Input
+                          id="property-email"
+                          type="email"
+                          value={newProperty.email}
+                          onChange={(e) => setNewProperty({ ...newProperty, email: e.target.value })}
+                          placeholder="property@company.com"
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="property-address">Location Address</Label>
+                        <Input
+                          id="property-address"
+                          value={newProperty.location_address}
+                          onChange={(e) => setNewProperty({ ...newProperty, location_address: e.target.value })}
+                          placeholder="Full address of the property"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="property-phone">Contact Phone</Label>
+                        <Input
+                          id="property-phone"
+                          value={newProperty.phone}
+                          onChange={(e) => setNewProperty({ ...newProperty, phone: e.target.value })}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+
+                      <div className="flex gap-4 items-end">
+                        <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                          {isLoading ? "Creating..." : "Add Property"}
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={() => setShowPropertiesForm(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Properties List */}
+              <div className="space-y-4">
+                {properties.length === 0 ? (
+                  <div className="text-center p-12">
+                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Properties Added</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start by adding your first property or site location to manage your security operations
+                    </p>
+                    <Button variant="outline" onClick={() => setShowPropertiesForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Property
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {properties.map((property) => (
+                      <Card key={property.id} className="shadow-card hover:shadow-elevated transition-smooth">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <MapPin className="h-5 w-5 text-primary" />
+                                <h3 className="text-xl font-semibold">{property.name}</h3>
+                                <Badge variant={property.is_active ? "default" : "secondary"}>
+                                  {property.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                              <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                                <div>
+                                  <p><strong>Address:</strong> {property.location_address || 'Not provided'}</p>
+                                  <p><strong>Email:</strong> {property.email || 'Not provided'}</p>
+                                </div>
+                                <div>
+                                  <p><strong>Phone:</strong> {property.phone || 'Not provided'}</p>
+                                  <p><strong>Created:</strong> {new Date(property.created_at).toLocaleDateString()}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
