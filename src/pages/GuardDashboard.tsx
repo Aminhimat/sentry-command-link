@@ -207,11 +207,11 @@ const GuardDashboard = () => {
       }
 
       toast({
-        title: "Success",
-        description: "Task submitted successfully!",
+        title: "Report Submitted",
+        description: "Your task report has been sent to admin successfully!",
       });
 
-      // Reset form
+      // Reset form completely
       setTaskData({
         taskType: "",
         site: "",
@@ -228,7 +228,7 @@ const GuardDashboard = () => {
       console.error('Error submitting task:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to submit task",
+        description: error.message || "Failed to submit report to admin",
         variant: "destructive",
       });
     } finally {
@@ -611,10 +611,10 @@ const GuardDashboard = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <ClipboardList className="h-6 w-6" />
-              Submit Task Report
+              Submit Security Report
             </CardTitle>
             <CardDescription>
-              Fill out the form below to submit your task report
+              Submit your security report directly to admin - no local storage
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -837,7 +837,7 @@ const GuardDashboard = () => {
                 size="lg"
                 disabled={isLoading}
               >
-                {isLoading ? "Submitting..." : "Submit Task Report"}
+                {isLoading ? "Sending to Admin..." : "Send Report to Admin"}
               </Button>
             </form>
           </CardContent>
