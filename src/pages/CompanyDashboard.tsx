@@ -129,7 +129,7 @@ const CompanyDashboard = () => {
     lastName: "",
     username: "",
     password: "",
-    assignedPropertyId: ""
+    assignedPropertyId: "none"
   });
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(),
@@ -534,7 +534,7 @@ const { toast } = useToast();
           username: newGuard.username,
           password: newGuard.password,
           companyId: userProfile.company_id,
-          assignedPropertyId: newGuard.assignedPropertyId || null,
+          assignedPropertyId: newGuard.assignedPropertyId === "none" ? null : newGuard.assignedPropertyId,
           userToken: session.access_token
         }
       });
@@ -571,7 +571,7 @@ const { toast } = useToast();
         lastName: "",
         username: "",
         password: "",
-        assignedPropertyId: ""
+        assignedPropertyId: "none"
       });
       setShowCreateGuardForm(false);
       await fetchGuards();
@@ -947,7 +947,7 @@ const { toast } = useToast();
                       <SelectValue placeholder="Select property" />
                     </SelectTrigger>
                     <SelectContent className="bg-background border border-border shadow-lg z-50">
-                      <SelectItem value="">No Property</SelectItem>
+                      <SelectItem value="none">No Property</SelectItem>
                       {properties.map((property) => (
                         <SelectItem key={property.id} value={property.id}>
                           {property.name}
