@@ -128,7 +128,8 @@ const CompanyDashboard = () => {
     firstName: "",
     lastName: "",
     username: "",
-    password: ""
+    password: "",
+    assignedPropertyId: ""
   });
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(),
@@ -533,6 +534,7 @@ const { toast } = useToast();
           username: newGuard.username,
           password: newGuard.password,
           companyId: userProfile.company_id,
+          assignedPropertyId: newGuard.assignedPropertyId || null,
           userToken: session.access_token
         }
       });
@@ -568,7 +570,8 @@ const { toast } = useToast();
         firstName: "",
         lastName: "",
         username: "",
-        password: ""
+        password: "",
+        assignedPropertyId: ""
       });
       setShowCreateGuardForm(false);
       await fetchGuards();
@@ -891,7 +894,7 @@ const { toast } = useToast();
               </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateGuard} className="grid gap-4 md:grid-cols-4">
+              <form onSubmit={handleCreateGuard} className="grid gap-4 md:grid-cols-5">
                 <div>
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
@@ -934,7 +937,26 @@ const { toast } = useToast();
                     placeholder="At least 6 characters"
                   />
                 </div>
-                <div className="flex items-end">
+                <div>
+                  <Label htmlFor="assignedProperty">Assign to Property</Label>
+                  <Select 
+                    value={newGuard.assignedPropertyId} 
+                    onValueChange={(value) => setNewGuard({ ...newGuard, assignedPropertyId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
+                      <SelectItem value="">No Property</SelectItem>
+                      {properties.map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end md:col-span-5">
                   <Button type="submit" disabled={isLoading} className="w-full">
                     {isLoading ? "Creating..." : "Create Guard"}
                   </Button>

@@ -16,6 +16,7 @@ interface CreateGuardRequest {
   username?: string;
   password: string;
   companyId: string;
+  assignedPropertyId?: string | null;
   userToken?: string;
 }
 
@@ -33,7 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
     const requestBody = await req.json();
     console.log('Request body received:', { ...requestBody, password: '[REDACTED]' });
     
-    const { firstName, lastName, email, username, password, companyId, userToken }: CreateGuardRequest = requestBody;
+    const { firstName, lastName, email, username, password, companyId, assignedPropertyId, userToken }: CreateGuardRequest = requestBody;
 
     // Validate input data
     if (!firstName || !lastName || !email || !password || !companyId) {
@@ -166,19 +167,26 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Auth user created successfully:', authUser.user.id);
 
     // The profile should be created automatically by the trigger
-    // Let's update it with the company_id
+    // Let's update it with the company_id and assigned property
+    const updateData: any = {
+      company_id: companyId
+    };
+    
+    // Only add assigned_property_id if it's provided and not empty
+    if (assignedPropertyId && assignedPropertyId.trim() !== '') {
+      updateData.assigned_property_id = assignedPropertyId;
+    }
+    
     const { error: profileUpdateError } = await supabaseAdmin
       .from('profiles')
-      .update({
-        company_id: companyId
-      })
+      .update(updateData)
       .eq('user_id', authUser.user.id);
 
     if (profileUpdateError) {
       console.error('Error updating profile:', profileUpdateError);
       // Don't throw here as the user was created successfully
     } else {
-      console.log('Profile updated successfully');
+      console.log('Profile updated successfully with property assignment:', assignedPropertyId || 'none');
     }
 
     console.log('Guard creation completed successfully');

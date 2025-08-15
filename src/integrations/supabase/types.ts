@@ -236,6 +236,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          assigned_property_id: string | null
           company_id: string | null
           created_at: string
           first_name: string | null
@@ -248,6 +249,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_property_id?: string | null
           company_id?: string | null
           created_at?: string
           first_name?: string | null
@@ -260,6 +262,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_property_id?: string | null
           company_id?: string | null
           created_at?: string
           first_name?: string | null
@@ -272,6 +275,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_assigned_property_id_fkey"
+            columns: ["assigned_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_company_id_fkey"
             columns: ["company_id"]
