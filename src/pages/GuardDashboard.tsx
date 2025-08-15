@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import QrScanner from 'react-qr-scanner';
 import { Geolocation } from '@capacitor/geolocation';
 
 const GuardDashboard = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentShift, setCurrentShift] = useState<any>(null);
@@ -130,7 +132,7 @@ const GuardDashboard = () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      window.location.href = '/auth';
+      navigate('/auth');
       return;
     }
 
@@ -561,7 +563,7 @@ const GuardDashboard = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    navigate('/');
   };
 
   return (

@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
       permissions: {
         camera: 'Camera access is needed to take photos for security reports'
       }
+    },
+    App: {
+      launchUrl: 'guard'
     }
   }
 };
