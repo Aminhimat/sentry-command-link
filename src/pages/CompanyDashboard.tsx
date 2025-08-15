@@ -144,6 +144,7 @@ const CompanyDashboard = () => {
     startTime: "00:00",
     endTime: "23:59",
     guardId: "all",
+    propertyId: "all",
     reportType: "daily"
   });
 const { toast } = useToast();
@@ -690,6 +691,15 @@ const { toast } = useToast();
         query = query.eq('guard_id', reportFilters.guardId);
       }
 
+      // Apply property filter
+      if (reportFilters.propertyId !== 'all') {
+        const selectedProperty = properties.find(p => p.id === reportFilters.propertyId);
+        if (selectedProperty) {
+          // Filter reports by property location
+          query = query.ilike('location_address', `%${selectedProperty.location_address}%`);
+        }
+      }
+
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
@@ -1087,6 +1097,26 @@ const { toast } = useToast();
                       {guards.map((guard) => (
                         <SelectItem key={guard.id} value={guard.id}>
                           {guard.first_name} {guard.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Work Site</Label>
+                  <Select 
+                    value={reportFilters.propertyId} 
+                    onValueChange={(value) => setReportFilters({...reportFilters, propertyId: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Properties</SelectItem>
+                      {properties.map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
