@@ -411,7 +411,25 @@ const GuardDashboard = () => {
         const position = await getLocation();
         latitude = position.latitude;
         longitude = position.longitude;
+        
+        // Validate that this is not a default San Francisco location
+        const isSanFrancisco = (
+          Math.abs(latitude - 37.785834) < 0.001 && 
+          Math.abs(longitude - (-122.406417)) < 0.001
+        );
+        
+        if (isSanFrancisco) {
+          console.warn('Detected San Francisco default location, likely mock/cached data');
+          toast({
+            title: "Location Warning",
+            description: "Using mock location detected. Please ensure location services are enabled and you're not using a simulator.",
+            variant: "destructive",
+          });
+          // Still use the coordinates but warn the user
+        }
+        
         locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        console.log('Location obtained:', { latitude, longitude, isSanFrancisco });
       } catch (locationError: any) {
         console.warn('Location access failed:', locationError);
         locationWarning = locationError.message || 'Location access failed';
