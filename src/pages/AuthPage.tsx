@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Mail, Lock } from "lucide-react";
 
 const AuthPage = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,19 +44,19 @@ const AuthPage = () => {
           // Check if user needs to change password
           if (session.user.user_metadata?.must_change_password === true) {
             console.log('AuthPage: Redirecting to change-password');
-            window.location.href = '/change-password';
+            navigate('/change-password');
           } else {
             // Redirect based on role
             const role = session.user.user_metadata?.role;
             console.log('AuthPage: Redirecting based on role:', role);
             if (role === 'platform_admin') {
-              window.location.href = '/admin';
+              navigate('/admin');
             } else if (role === 'company_admin') {
-              window.location.href = '/company';
+              navigate('/company');
             } else if (role === 'guard') {
-              window.location.href = '/guard';
+              navigate('/guard');
             } else {
-              window.location.href = '/';
+              navigate('/');
             }
           }
         }
@@ -78,19 +80,19 @@ const AuthPage = () => {
         // Check if user needs to change password
         if (session.user.user_metadata?.must_change_password === true) {
           console.log('AuthPage: Redirecting to change-password');
-          window.location.href = '/change-password';
+          navigate('/change-password');
         } else {
           // Redirect based on role
           const role = session.user.user_metadata?.role;
           console.log('AuthPage: Redirecting based on role:', role);
           if (role === 'platform_admin') {
-            window.location.href = '/admin';
+            navigate('/admin');
           } else if (role === 'company_admin') {
-            window.location.href = '/company';
+            navigate('/company');
           } else if (role === 'guard') {
-            window.location.href = '/guard';
+            navigate('/guard');
           } else {
-            window.location.href = '/';
+            navigate('/');
           }
         }
       }
@@ -208,7 +210,7 @@ const AuthPage = () => {
               Sign Out
             </Button>
             <Button 
-              onClick={() => window.location.href = '/admin'}
+              onClick={() => navigate('/admin')}
               variant="hero" 
               className="w-full"
             >
