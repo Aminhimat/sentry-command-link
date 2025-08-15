@@ -131,6 +131,13 @@ const CompanyDashboard = () => {
     password: "",
     assignedPropertyId: "none"
   });
+  const [editGuardData, setEditGuardData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    newPassword: "",
+    assignedPropertyId: "none"
+  });
   const [reportFilters, setReportFilters] = useState({
     startDate: new Date(),
     endDate: new Date(),
@@ -251,10 +258,16 @@ const { toast } = useToast();
     console.log('Fetching guards for company:', companyId);
 
     try {
-      // Get guard profiles - we'll get emails from the edge function response
+      // Get guard profiles with assigned property information
       const { data: guardProfiles, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          properties (
+            id,
+            name
+          )
+        `)
         .eq('company_id', companyId)
         .eq('role', 'guard')
         .order('created_at', { ascending: false });
@@ -275,7 +288,8 @@ const { toast } = useToast();
       // This will be populated when creating new guards
       const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
         ...guard,
-        email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`
+        email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+        assigned_property: guard.properties
       }));
 
       console.log('Setting guards:', guardsWithPlaceholderEmails);
@@ -480,6 +494,62 @@ const { toast } = useToast();
       toast({
         title: "Error",
         description: "Failed to create property",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateGuard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGuard) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Prepare update data
+      const updateData: any = {
+        guardId: editingGuard.id,
+        firstName: editGuardData.firstName,
+        lastName: editGuardData.lastName,
+        phone: editGuardData.phone,
+        assignedPropertyId: editGuardData.assignedPropertyId === "none" ? null : editGuardData.assignedPropertyId
+      };
+
+      // Only include password if it's provided
+      if (editGuardData.newPassword && editGuardData.newPassword.trim() !== '') {
+        updateData.newPassword = editGuardData.newPassword;
+      }
+
+      // Call edge function to update guard
+      const { data, error } = await supabase.functions.invoke('update-guard', {
+        body: updateData
+      });
+
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw new Error(error.message || 'Failed to update guard');
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Success",
+        description: `Guard ${editGuardData.firstName} ${editGuardData.lastName} updated successfully!`,
+      });
+
+      setShowEditGuardForm(false);
+      setEditingGuard(null);
+      await fetchGuards();
+    } catch (error: any) {
+      console.error('Error updating guard:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update guard",
         variant: "destructive",
       });
     } finally {
@@ -794,7 +864,15 @@ const { toast } = useToast();
             </Button>
             <Button variant="outline" onClick={() => {
               if (guards.length > 0) {
-                setEditingGuard(guards[0]);
+                const guard = guards[0];
+                setEditingGuard(guard);
+                setEditGuardData({
+                  firstName: guard.first_name || "",
+                  lastName: guard.last_name || "",
+                  phone: guard.phone || "",
+                  newPassword: "",
+                  assignedPropertyId: (guard as any).assigned_property_id || "none"
+                });
                 setShowEditGuardForm(true);
               }
             }}>
@@ -1114,14 +1192,15 @@ const { toast } = useToast();
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <form onSubmit={handleUpdateGuard} className="grid gap-4 md:grid-cols-4">
                 <div>
                   <Label htmlFor="editFirstName">First Name</Label>
                   <Input
                     id="editFirstName"
                     type="text"
-                    value={editingGuard.first_name}
-                    onChange={(e) => setEditingGuard({...editingGuard, first_name: e.target.value})}
+                    value={editGuardData.firstName}
+                    onChange={(e) => setEditGuardData({...editGuardData, firstName: e.target.value})}
+                    required
                   />
                 </div>
                 <div>
@@ -1129,8 +1208,9 @@ const { toast } = useToast();
                   <Input
                     id="editLastName"
                     type="text"
-                    value={editingGuard.last_name}
-                    onChange={(e) => setEditingGuard({...editingGuard, last_name: e.target.value})}
+                    value={editGuardData.lastName}
+                    onChange={(e) => setEditGuardData({...editGuardData, lastName: e.target.value})}
+                    required
                   />
                 </div>
                 <div>
@@ -1138,26 +1218,50 @@ const { toast } = useToast();
                   <Input
                     id="editPhone"
                     type="text"
-                    value={editingGuard.phone || ''}
-                    onChange={(e) => setEditingGuard({...editingGuard, phone: e.target.value})}
+                    value={editGuardData.phone}
+                    onChange={(e) => setEditGuardData({...editGuardData, phone: e.target.value})}
+                    placeholder="Phone number"
                   />
                 </div>
-              </div>
-              <div className="flex gap-2 mt-4">
-                <Button onClick={() => {
-                  // Save guard changes
-                  toast({
-                    title: "Success",
-                    description: "Guard updated successfully",
-                  });
-                  setShowEditGuardForm(false);
-                }}>
-                  Save Changes
-                </Button>
-                <Button variant="outline" onClick={() => setShowEditGuardForm(false)}>
-                  Cancel
-                </Button>
-              </div>
+                <div>
+                  <Label htmlFor="editPassword">New Password (Optional)</Label>
+                  <Input
+                    id="editPassword"
+                    type="password"
+                    value={editGuardData.newPassword}
+                    onChange={(e) => setEditGuardData({...editGuardData, newPassword: e.target.value})}
+                    placeholder="Leave blank to keep current"
+                    minLength={6}
+                  />
+                </div>
+                <div className="md:col-span-4">
+                  <Label htmlFor="editAssignedProperty">Assign to Property</Label>
+                  <Select 
+                    value={editGuardData.assignedPropertyId} 
+                    onValueChange={(value) => setEditGuardData({ ...editGuardData, assignedPropertyId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
+                      <SelectItem value="none">No Property</SelectItem>
+                      {properties.map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {property.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2 md:col-span-4">
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Save Changes"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowEditGuardForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         )}
@@ -1334,6 +1438,7 @@ const { toast } = useToast();
                       <th className="text-left p-4 font-medium">Name</th>
                       <th className="text-left p-4 font-medium">Email</th>
                       <th className="text-left p-4 font-medium">Phone</th>
+                      <th className="text-left p-4 font-medium">Assigned Property</th>
                       <th className="text-left p-4 font-medium">Status</th>
                       <th className="text-left p-4 font-medium">Joined</th>
                     </tr>
@@ -1341,7 +1446,7 @@ const { toast } = useToast();
                   <tbody>
                     {guards.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="text-center p-8 text-muted-foreground">
+                        <td colSpan={6} className="text-center p-8 text-muted-foreground">
                           No guards found
                         </td>
                       </tr>
@@ -1364,6 +1469,13 @@ const { toast } = useToast();
                                   size="sm" 
                                   onClick={() => {
                                     setEditingGuard(guard);
+                                    setEditGuardData({
+                                      firstName: guard.first_name || "",
+                                      lastName: guard.last_name || "",
+                                      phone: guard.phone || "",
+                                      newPassword: "",
+                                      assignedPropertyId: (guard as any).assigned_property_id || "none"
+                                    });
                                     setShowEditGuardForm(true);
                                   }}
                                 >
@@ -1377,6 +1489,9 @@ const { toast } = useToast();
                           </td>
                           <td className="p-4 text-sm text-muted-foreground">
                             {guard.phone || 'Not provided'}
+                          </td>
+                          <td className="p-4 text-sm text-muted-foreground">
+                            {(guard as any).assigned_property?.name || 'No Property'}
                           </td>
                           <td className="p-4">
                             <Badge variant={guard.is_active ? "default" : "secondary"}>
