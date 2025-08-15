@@ -9,20 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import IncidentDetailsModal from "@/components/IncidentDetailsModal";
+import { generatePDFReport } from "@/components/PDFReportGenerator";
 
 interface Company {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
   license_limit: number;
   status: string;
   created_at: string;
-  logo_url?: string;
+  updated_at: string;
+  logo_url: string | null;
 }
 
 interface Profile {
@@ -116,6 +118,14 @@ const AdminDashboard = () => {
     adminPhone: ""
   });
   const { toast } = useToast();
+  
+  // Report generation state
+  const [reportFilters, setReportFilters] = useState({
+    propertyId: 'all',
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    reportType: 'daily' as 'daily' | 'range'
+  });
 
   useEffect(() => {
     checkUser();
@@ -553,6 +563,80 @@ const AdminDashboard = () => {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/auth';
+  };
+
+  const handleGenerateReport = async () => {
+    const currentCompany = companies.find(c => c.id === selectedCompanyId);
+    if (!currentCompany) {
+      toast({
+        title: "Error",
+        description: "Please select a company first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      let query = supabase
+        .from('guard_reports')
+        .select(`
+          *,
+          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+        `)
+        .eq('company_id', currentCompany.id);
+
+      // Apply date filters
+      let startDateTime = new Date(reportFilters.startDate);
+      let endDateTime = new Date(reportFilters.endDate);
+      
+      if (reportFilters.reportType === 'daily') {
+        startDateTime.setHours(0, 0, 0, 0);
+        endDateTime.setHours(23, 59, 59, 999);
+      } else {
+        startDateTime.setHours(0, 0, 0, 0);
+        endDateTime.setHours(23, 59, 59, 999);
+      }
+
+      query = query
+        .gte('created_at', startDateTime.toISOString())
+        .lte('created_at', endDateTime.toISOString());
+
+      // Apply property filter if specific property selected
+      if (reportFilters.propertyId !== 'all') {
+        // Filter reports by property location (assuming reports have location data)
+        const selectedProperty = properties.find(p => p.id === reportFilters.propertyId);
+        if (selectedProperty) {
+          // This is a simple approach - you might want to implement geofencing later
+          query = query.ilike('location_address', `%${selectedProperty.location_address}%`);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Generate PDF report
+      await generatePDFReport(data || [], currentCompany, { 
+        ...reportFilters, 
+        startDate: startDateTime, 
+        endDate: endDateTime 
+      });
+
+      toast({
+        title: "Success",
+        description: "Property report generated successfully!",
+      });
+
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate report",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -1114,6 +1198,110 @@ const AdminDashboard = () => {
                 </Card>
               )}
             </div>
+
+            {/* Property Report Generation */}
+            {properties.length > 0 && (
+              <Card className="shadow-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Generate Property Reports
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Generate security reports filtered by specific properties
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="company-select-report">Company</Label>
+                        <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select company" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {companies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="property-select">Property</Label>
+                        <Select 
+                          value={reportFilters.propertyId} 
+                          onValueChange={(value) => setReportFilters({ ...reportFilters, propertyId: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select property" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Properties</SelectItem>
+                            {properties
+                              .filter(property => !selectedCompanyId || property.company_id === selectedCompanyId)
+                              .map((property) => (
+                                <SelectItem key={property.id} value={property.id}>
+                                  {property.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="report-type">Report Type</Label>
+                        <Select 
+                          value={reportFilters.reportType} 
+                          onValueChange={(value: 'daily' | 'range') => setReportFilters({ ...reportFilters, reportType: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily Report</SelectItem>
+                            <SelectItem value="range">Date Range</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="start-date">Start Date</Label>
+                        <Input
+                          id="start-date"
+                          type="date"
+                          value={reportFilters.startDate}
+                          onChange={(e) => setReportFilters({ ...reportFilters, startDate: e.target.value })}
+                        />
+                      </div>
+                      {reportFilters.reportType === 'range' && (
+                        <div>
+                          <Label htmlFor="end-date">End Date</Label>
+                          <Input
+                            id="end-date"
+                            type="date"
+                            value={reportFilters.endDate}
+                            onChange={(e) => setReportFilters({ ...reportFilters, endDate: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button 
+                        onClick={handleGenerateReport} 
+                        className="flex items-center gap-2"
+                        disabled={!selectedCompanyId}
+                      >
+                        <Download className="h-4 w-4" />
+                        Generate Property Report
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="clients" className="space-y-6">
