@@ -191,15 +191,22 @@ const GuardDashboard = () => {
         throw new Error('User profile not found');
       }
 
+      // Get site name for report
+      let siteName = taskData.site;
+      const selectedProperty = properties.find(p => p.id === taskData.site);
+      if (selectedProperty) {
+        siteName = selectedProperty.name;
+      }
+
       // Submit report
       const { error: reportError } = await supabase
         .from('guard_reports')
         .insert({
           guard_id: profile.id,
           company_id: profile.company_id,
-          report_text: `Task: ${taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
+          report_text: `Task: ${taskData.taskType}\nSite: ${siteName}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
           image_url: imageUrl,
-          location_address: taskData.site
+          location_address: siteName
         });
 
       if (reportError) {
@@ -675,13 +682,12 @@ const GuardDashboard = () => {
                   <TabsContent value="properties" className="space-y-2">
                     <div className="relative">
                       <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Select 
+                       <Select 
                         value={taskData.site} 
                         onValueChange={(value) => {
-                          const selectedProperty = properties.find(p => p.id === value);
                           setTaskData({ 
                             ...taskData, 
-                            site: selectedProperty ? selectedProperty.name : value 
+                            site: value 
                           });
                         }}
                       >
