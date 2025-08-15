@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode } from "lucide-react";
 import QrScanner from 'react-qr-scanner';
+import { Geolocation } from '@capacitor/geolocation';
 
 const GuardDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -223,50 +224,91 @@ const GuardDashboard = () => {
     });
   };
 
-  const getLocation = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser.'));
-        return;
-      }
-
-      // First check if permission is already granted
-      if ('permissions' in navigator) {
-        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-          if (result.state === 'denied') {
-            reject(new Error('Location access is denied. Please enable location permissions in your browser settings.'));
-            return;
+  const getLocation = async (): Promise<{ latitude: number; longitude: number }> => {
+    try {
+      // Try Capacitor geolocation first (for mobile apps)
+      try {
+        // Check permissions first
+        const permissions = await Geolocation.checkPermissions();
+        console.log('Geolocation permissions:', permissions);
+        
+        if (permissions.location !== 'granted') {
+          // Request permissions
+          const requestResult = await Geolocation.requestPermissions();
+          console.log('Permission request result:', requestResult);
+          
+          if (requestResult.location !== 'granted') {
+            throw new Error('Location permission denied. Please enable location access in your device settings.');
           }
-        });
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        resolve, 
-        (error) => {
-          let errorMessage = 'Failed to get location. ';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += 'Location access denied. Please allow location access and try again.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += 'Location information unavailable.';
-              break;
-            case error.TIMEOUT:
-              errorMessage += 'Location request timed out.';
-              break;
-            default:
-              errorMessage += 'Unknown location error.';
-              break;
-          }
-          reject(new Error(errorMessage));
-        }, 
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 60000
         }
-      );
-    });
+
+        // Get position using Capacitor
+        const position = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 15000
+        });
+
+        console.log('Capacitor location success:', position);
+        return {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      } catch (capacitorError: any) {
+        console.log('Capacitor geolocation failed, falling back to browser:', capacitorError);
+        
+        // Fallback to browser geolocation
+        if (!navigator.geolocation) {
+          throw new Error('Geolocation is not supported by this device.');
+        }
+
+        // Check browser permissions
+        if ('permissions' in navigator) {
+          const result = await navigator.permissions.query({ name: 'geolocation' });
+          if (result.state === 'denied') {
+            throw new Error('Location access is denied. Please enable location permissions in your browser settings.');
+          }
+        }
+
+        // Get position using browser API
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve, 
+            (error) => {
+              let errorMessage = 'Failed to get location. ';
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMessage += 'Location access denied. Please allow location access and try again.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  errorMessage += 'Location information unavailable.';
+                  break;
+                case error.TIMEOUT:
+                  errorMessage += 'Location request timed out.';
+                  break;
+                default:
+                  errorMessage += 'Unknown location error.';
+                  break;
+              }
+              reject(new Error(errorMessage));
+            }, 
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 60000
+            }
+          );
+        });
+
+        console.log('Browser location success:', position);
+        return {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      }
+    } catch (error: any) {
+      console.error('Location error:', error);
+      throw error;
+    }
   };
 
   const handleStartShift = async () => {
@@ -299,8 +341,8 @@ const GuardDashboard = () => {
         });
         
         const position = await getLocation();
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
+        latitude = position.latitude;
+        longitude = position.longitude;
         locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       } catch (locationError: any) {
         console.warn('Location access failed:', locationError);
@@ -388,8 +430,8 @@ const GuardDashboard = () => {
       // Try to get current location, but don't fail if it's not available
       try {
         const position = await getLocation();
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
+        latitude = position.latitude;
+        longitude = position.longitude;
         locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
       } catch (locationError) {
         console.warn('Location access failed for end shift:', locationError);
