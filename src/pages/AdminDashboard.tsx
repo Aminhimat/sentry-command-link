@@ -65,6 +65,22 @@ interface Incident {
   };
 }
 
+interface Property {
+  id: string;
+  company_id: string;
+  name: string;
+  location_address: string;
+  location_lat: number;
+  location_lng: number;
+  email: string;
+  phone: string;
+  is_active: boolean;
+  created_at: string;
+  company?: {
+    name: string;
+  };
+}
+
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -72,10 +88,19 @@ const AdminDashboard = () => {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [guardsCount, setGuardsCount] = useState(0);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPropertyForm, setShowPropertyForm] = useState(false);
+  const [newProperty, setNewProperty] = useState({
+    name: "",
+    location_address: "",
+    email: "",
+    phone: "",
+    company_id: ""
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCompany, setNewCompany] = useState({
@@ -137,6 +162,7 @@ const AdminDashboard = () => {
       await fetchCompanies();
       await fetchGuards();
       await fetchIncidents();
+      await fetchProperties();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -247,6 +273,38 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          companies (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const propertiesWithCompany = data?.map((property: any) => ({
+        ...property,
+        company: property.companies
+      })) || [];
+
+      setProperties(propertiesWithCompany);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load properties",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCompanySelect = (companyId: string) => {
     setSelectedCompanyId(companyId);
     if (companyId === "") {
@@ -351,6 +409,63 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to create company",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProperty.company_id) {
+      toast({
+        title: "Error",
+        description: "Please select a company",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([{
+          company_id: newProperty.company_id,
+          name: newProperty.name,
+          location_address: newProperty.location_address,
+          email: newProperty.email,
+          phone: newProperty.phone
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Property creation error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Property "${data.name}" created successfully!`,
+      });
+
+      setNewProperty({
+        name: "",
+        location_address: "",
+        email: "",
+        phone: "",
+        company_id: ""
+      });
+      setShowPropertyForm(false);
+      await fetchProperties();
+    } catch (error) {
+      console.error('Error creating property:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create property",
         variant: "destructive",
       });
     } finally {
@@ -548,9 +663,10 @@ const AdminDashboard = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="companies" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="guards">Guards</TabsTrigger>
+            <TabsTrigger value="properties">Properties</TabsTrigger>
             <TabsTrigger value="clients">Clients</TabsTrigger>
           </TabsList>
           
@@ -839,6 +955,165 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="properties" className="space-y-6">
+            {/* Properties Section */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold">Properties & Sites</h2>
+              <Button variant="hero" onClick={() => setShowPropertyForm(!showPropertyForm)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Property
+              </Button>
+            </div>
+
+            {/* Create Property Form */}
+            {showPropertyForm && (
+              <Card className="mb-6 shadow-elevated">
+                <CardHeader>
+                  <CardTitle>Add New Property/Site</CardTitle>
+                  <CardDescription>
+                    Add a new property or site location for client management
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCreateProperty} className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="property-company">Company</Label>
+                      <Select 
+                        value={newProperty.company_id} 
+                        onValueChange={(value) => setNewProperty({ ...newProperty, company_id: value })}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a company" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {companies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="property-name">Property Name</Label>
+                      <Input
+                        id="property-name"
+                        value={newProperty.name}
+                        onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
+                        placeholder="e.g., Downtown Office Building"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="property-address">Location Address</Label>
+                      <Input
+                        id="property-address"
+                        value={newProperty.location_address}
+                        onChange={(e) => setNewProperty({ ...newProperty, location_address: e.target.value })}
+                        placeholder="Full address of the property"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="property-email">Contact Email</Label>
+                      <Input
+                        id="property-email"
+                        type="email"
+                        value={newProperty.email}
+                        onChange={(e) => setNewProperty({ ...newProperty, email: e.target.value })}
+                        placeholder="property@company.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="property-phone">Contact Phone</Label>
+                      <Input
+                        id="property-phone"
+                        value={newProperty.phone}
+                        onChange={(e) => setNewProperty({ ...newProperty, phone: e.target.value })}
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 flex gap-4">
+                      <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                        {isLoading ? "Creating..." : "Add Property"}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setShowPropertyForm(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Properties List */}
+            <div className="grid gap-6">
+              {properties.map((property) => (
+                <Card key={property.id} className="shadow-card hover:shadow-elevated transition-smooth">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <MapPin className="h-5 w-5 text-primary" />
+                          <h3 className="text-xl font-semibold">{property.name}</h3>
+                          <Badge variant={property.is_active ? "default" : "secondary"}>
+                            {property.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p><strong>Company:</strong> {property.company?.name}</p>
+                            <p><strong>Address:</strong> {property.location_address || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <p><strong>Email:</strong> {property.email || 'Not provided'}</p>
+                            <p><strong>Phone:</strong> {property.phone || 'Not provided'}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          <strong>Created:</strong> {new Date(property.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Edit
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {properties.length === 0 && (
+                <Card className="shadow-card">
+                  <CardContent className="p-12 text-center">
+                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Properties Yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Get started by adding your first property or site location
+                    </p>
+                    <Button variant="hero" onClick={() => setShowPropertyForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Property
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="clients" className="space-y-6">
