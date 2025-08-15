@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Shield, Mail, Lock, MapPin } from "lucide-react";
 
 const AuthPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -21,6 +22,9 @@ const AuthPage = () => {
     role: "platform_admin"
   });
   const [isGuardLogin, setIsGuardLogin] = useState(false);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [selectedWorkSite, setSelectedWorkSite] = useState("");
+  const [loadingProperties, setLoadingProperties] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,8 +103,62 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch properties when guard login is enabled
+  useEffect(() => {
+    if (isGuardLogin) {
+      fetchProperties();
+    } else {
+      setProperties([]);
+      setSelectedWorkSite("");
+    }
+  }, [isGuardLogin]);
+
+  const fetchProperties = async () => {
+    setLoadingProperties(true);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          id,
+          name,
+          location_address,
+          companies (
+            name
+          )
+        `)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching properties:', error);
+        toast({
+          title: "Warning",
+          description: "Could not load work sites. You can still sign in.",
+          variant: "destructive",
+        });
+      } else {
+        setProperties(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoadingProperties(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate work site selection for guards
+    if (isGuardLogin && !selectedWorkSite) {
+      toast({
+        title: "Work Site Required",
+        description: "Please select your work site before signing in.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -110,7 +168,7 @@ const AuthPage = () => {
         emailToUse = `${formData.email}@company.local`;
       }
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: emailToUse,
         password: formData.password,
       });
@@ -121,12 +179,38 @@ const AuthPage = () => {
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Success",
-          description: "Signed in successfully!",
-        });
+        return;
       }
+
+      // If guard login and work site selected, update the profile with current work site
+      if (isGuardLogin && selectedWorkSite && authData.user) {
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({ 
+              assigned_property_id: selectedWorkSite,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', authData.user.id);
+
+          if (profileError) {
+            console.error('Error updating work site assignment:', profileError);
+            // Don't prevent login, just log the error
+          } else {
+            console.log('Work site assignment updated successfully:', selectedWorkSite);
+          }
+        } catch (updateError) {
+          console.error('Error updating profile:', updateError);
+          // Don't prevent login, just log the error
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: isGuardLogin 
+          ? `Signed in successfully! Assigned to ${properties.find(p => p.id === selectedWorkSite)?.name || 'selected work site'}`
+          : "Signed in successfully!",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -298,11 +382,56 @@ const AuthPage = () => {
               </div>
             </div>
             
+            {/* Work Site Selection for Guards */}
+            {isGuardLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="workSite">Work Site *</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Select 
+                    value={selectedWorkSite} 
+                    onValueChange={setSelectedWorkSite}
+                    required
+                  >
+                    <SelectTrigger className="pl-10">
+                      <SelectValue placeholder={loadingProperties ? "Loading sites..." : "Select your work site"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
+                      {loadingProperties ? (
+                        <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
+                      ) : properties.length === 0 ? (
+                        <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
+                      ) : (
+                        properties.map((property) => (
+                          <SelectItem key={property.id} value={property.id}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{property.name}</span>
+                              {property.companies?.name && (
+                                <span className="text-xs text-muted-foreground">{property.companies.name}</span>
+                              )}
+                              {property.location_address && (
+                                <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isGuardLogin && !loadingProperties && properties.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No work sites found. Contact your administrator to set up work sites.
+                  </p>
+                )}
+              </div>
+            )}
+            
             <Button 
               type="submit" 
               variant="hero" 
               className="w-full" 
-              disabled={isLoading}
+              disabled={isLoading || (isGuardLogin && !selectedWorkSite)}
             >
               {isLoading 
                 ? "Loading..." 
