@@ -40,34 +40,60 @@ const GuardDashboard = () => {
     }
   }, [user]);
 
-  // Fetch properties for work site dropdown
+  // Fetch properties for work site dropdown - only from user's company
   useEffect(() => {
-    fetchProperties();
-  }, []);
+    if (user) {
+      fetchProperties();
+    }
+  }, [user]);
 
   const fetchProperties = async () => {
+    if (!user) return;
+    
     setLoadingProperties(true);
     try {
+      // First get user's profile to find their company_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        console.log('User has no company assigned');
+        setProperties([]);
+        return;
+      }
+
+      // Fetch properties belonging to user's company
       const { data, error } = await supabase
         .from('properties')
         .select(`
           id,
           name,
-          location_address,
-          companies (
-            name
-          )
+          location_address
         `)
+        .eq('company_id', profile.company_id)
         .eq('is_active', true)
         .order('name');
 
       if (error) {
         console.error('Error fetching properties:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load work sites",
+          variant: "destructive",
+        });
       } else {
         setProperties(data || []);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load work sites",
+        variant: "destructive",
+      });
     } finally {
       setLoadingProperties(false);
     }
@@ -670,15 +696,12 @@ const GuardDashboard = () => {
                           ) : (
                             properties.map((property) => (
                               <SelectItem key={property.id} value={property.id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{property.name}</span>
-                                  {property.companies?.name && (
-                                    <span className="text-xs text-muted-foreground">{property.companies.name}</span>
-                                  )}
-                                  {property.location_address && (
-                                    <span className="text-xs text-muted-foreground">{property.location_address}</span>
-                                  )}
-                                </div>
+                                 <div className="flex flex-col">
+                                   <span className="font-medium">{property.name}</span>
+                                   {property.location_address && (
+                                     <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                                   )}
+                                 </div>
                               </SelectItem>
                             ))
                           )}
