@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building } from "lucide-react";
 import QrScanner from 'react-qr-scanner';
 import { Geolocation } from '@capacitor/geolocation';
 
@@ -18,6 +18,8 @@ const GuardDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentShift, setCurrentShift] = useState<any>(null);
   const [shiftLoading, setShiftLoading] = useState(false);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(false);
   const [taskData, setTaskData] = useState({
     taskType: "",
     site: "",
@@ -37,6 +39,39 @@ const GuardDashboard = () => {
       checkActiveShift();
     }
   }, [user]);
+
+  // Fetch properties for work site dropdown
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const fetchProperties = async () => {
+    setLoadingProperties(true);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          id,
+          name,
+          location_address,
+          companies (
+            name
+          )
+        `)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching properties:', error);
+      } else {
+        setProperties(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoadingProperties(false);
+    }
+  };
 
   const checkActiveShift = async () => {
     if (!user) return;
@@ -595,8 +630,12 @@ const GuardDashboard = () => {
               {/* Site */}
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
-                <Tabs defaultValue="manual" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
+                <Tabs defaultValue="properties" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="properties" className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Properties
+                    </TabsTrigger>
                     <TabsTrigger value="manual" className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       Manual Entry
@@ -606,6 +645,52 @@ const GuardDashboard = () => {
                       QR Scan
                     </TabsTrigger>
                   </TabsList>
+                  
+                  <TabsContent value="properties" className="space-y-2">
+                    <div className="relative">
+                      <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Select 
+                        value={taskData.site} 
+                        onValueChange={(value) => {
+                          const selectedProperty = properties.find(p => p.id === value);
+                          setTaskData({ 
+                            ...taskData, 
+                            site: selectedProperty ? selectedProperty.name : value 
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-lg z-50">
+                          {loadingProperties ? (
+                            <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
+                          ) : properties.length === 0 ? (
+                            <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
+                          ) : (
+                            properties.map((property) => (
+                              <SelectItem key={property.id} value={property.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{property.name}</span>
+                                  {property.companies?.name && (
+                                    <span className="text-xs text-muted-foreground">{property.companies.name}</span>
+                                  )}
+                                  {property.location_address && (
+                                    <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {!loadingProperties && properties.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No work sites found. Contact your administrator to set up work sites.
+                      </p>
+                    )}
+                  </TabsContent>
                   
                   <TabsContent value="manual" className="space-y-2">
                     <div className="relative">
