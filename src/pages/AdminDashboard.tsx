@@ -674,7 +674,7 @@ const AdminDashboard = () => {
           <div className="flex items-center">
             <Shield className="h-8 w-8 text-primary mr-3" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">SecureOps Admin</h1>
+              <h1 className="text-2xl font-bold text-foreground">GuardHQ</h1>
               <p className="text-sm text-muted-foreground">Platform Administration</p>
             </div>
           </div>
