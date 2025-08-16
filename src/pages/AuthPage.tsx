@@ -327,19 +327,6 @@ const AuthPage = () => {
                 {isGuardLogin ? "Admin Login" : "GuardHQ Login"}
               </Button>
               
-              {!isGuardLogin && (
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm block mx-auto"
-                >
-                  {isSignUp 
-                    ? "Already have an account? Sign in" 
-                    : "Need an admin account? Sign up"
-                  }
-                </Button>
-              )}
             </div>
           </form>
         </CardContent>
