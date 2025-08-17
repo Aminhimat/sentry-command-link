@@ -160,65 +160,71 @@ const GuardDashboard = () => {
     setIsLoading(true);
 
     try {
-      let imageUrl = null;
+      // Get current location
+      let location = null;
+      try {
+        location = await getLocation();
+      } catch (error) {
+        console.log('Could not get location:', error);
+      }
 
-      // Upload image if provided
       if (taskData.image) {
-        const fileExt = taskData.image.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('guard-reports')
-          .upload(fileName, taskData.image);
+        // Use optimized edge function for faster image upload
+        const formData = new FormData();
+        formData.append('image', taskData.image);
+        formData.append('reportData', JSON.stringify({
+          taskType: taskData.taskType,
+          site: taskData.site,
+          severity: taskData.severity,
+          description: taskData.description,
+          location
+        }));
 
-        if (uploadError) {
-          throw new Error(`Failed to upload image: ${uploadError.message}`);
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('guard-reports')
-          .getPublicUrl(fileName);
-        
-        imageUrl = urlData.publicUrl;
-      }
-
-      // Get user's profile for company_id
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, company_id')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (!profile) {
-        throw new Error('User profile not found');
-      }
-
-      // Get site name for report
-      let siteName = taskData.site;
-      const selectedProperty = properties.find(p => p.id === taskData.site);
-      if (selectedProperty) {
-        siteName = selectedProperty.name;
-      }
-
-      // Submit report
-      const { error: reportError } = await supabase
-        .from('guard_reports')
-        .insert({
-          guard_id: profile.id,
-          company_id: profile.company_id,
-          report_text: `Task: ${taskData.taskType}\nSite: ${siteName}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
-          image_url: imageUrl,
-          location_address: siteName
+        const { data, error } = await supabase.functions.invoke('upload-guard-image', {
+          body: formData
         });
 
-      if (reportError) {
-        throw new Error(`Failed to submit report: ${reportError.message}`);
-      }
+        if (error) {
+          throw new Error(error.message || 'Failed to submit report');
+        }
 
-      toast({
-        title: "Report Submitted",
-        description: "Your task report has been sent to admin successfully!",
-      });
+        toast({
+          title: "Report Submitted",
+          description: "Your task report with photo has been sent to admin successfully!",
+        });
+
+      } else {
+        // Submit report without image (faster path)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, company_id, first_name, last_name')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (!profile) {
+          throw new Error('User profile not found');
+        }
+
+        const { error: reportError } = await supabase
+          .from('guard_reports')
+          .insert({
+            guard_id: profile.id,
+            company_id: profile.company_id,
+            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
+            location_address: taskData.site,
+            location_lat: location?.latitude,
+            location_lng: location?.longitude
+          });
+
+        if (reportError) {
+          throw new Error(`Failed to submit report: ${reportError.message}`);
+        }
+
+        toast({
+          title: "Report Submitted",
+          description: "Your task report has been sent to admin successfully!",
+        });
+      }
 
       // Reset form completely
       setTaskData({
