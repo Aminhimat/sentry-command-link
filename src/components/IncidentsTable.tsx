@@ -1,6 +1,8 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import IncidentDetailsModal from "./IncidentDetailsModal";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
 
@@ -12,13 +14,30 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
   const [selectedIncident, setSelectedIncident] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSite, setSelectedSite] = useState<string>("all");
   const pageSize = 20;
 
+  // Get unique sites from incidents
+  const uniqueSites = useMemo(() => {
+    const sites = [...new Set(incidents.map(incident => incident.location_address || 'Unknown Site'))];
+    return sites.sort();
+  }, [incidents]);
+
+  // Filter incidents by selected site
+  const filteredIncidents = useMemo(() => {
+    if (selectedSite === "all") {
+      return incidents;
+    }
+    return incidents.filter(incident => 
+      (incident.location_address || 'Unknown Site') === selectedSite
+    );
+  }, [incidents, selectedSite]);
+
   const sortedIncidents = useMemo(() => {
-    return [...incidents].sort(
+    return [...filteredIncidents].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-  }, [incidents]);
+  }, [filteredIncidents]);
 
   const totalPages = Math.max(1, Math.ceil(sortedIncidents.length / pageSize));
   const startIndex = (currentPage - 1) * pageSize;
@@ -26,9 +45,9 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
 
   useEffect(() => {
     if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+      setCurrentPage(1);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, selectedSite]);
 
   const getSeverityBadge = (severity: string) => {
     const severityConfig = {
@@ -41,6 +60,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     const config = severityConfig[severity as keyof typeof severityConfig] || severityConfig.none;
     return <Badge className={config.className}>{config.label}</Badge>;
   };
+
   const handleIncidentClick = (incident: any) => {
     setSelectedIncident(incident);
     setIsModalOpen(true);
@@ -52,10 +72,25 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Total: {incidents.length}</span>
-              <span>•</span>
-              <span>Reports: {incidents.length}</span>
+            <div className="flex items-center gap-4">
+              <Select value={selectedSite} onValueChange={setSelectedSite}>
+                <SelectTrigger className="w-[200px] bg-white">
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                  <SelectItem value="all">All Sites</SelectItem>
+                  {uniqueSites.map((site) => (
+                    <SelectItem key={site} value={site}>
+                      {site}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Total: {sortedIncidents.length}</span>
+                <span>•</span>
+                <span>Reports: {sortedIncidents.length}</span>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -74,14 +109,14 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                 </tr>
               </thead>
               <tbody>
-                {incidents.length === 0 ? (
+                {sortedIncidents.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No incidents reported yet
+                      {selectedSite === "all" ? "No incidents reported yet" : `No incidents reported for ${selectedSite}`}
                     </td>
                   </tr>
                 ) : (
-visibleIncidents.map((incident) => (
+                  visibleIncidents.map((incident) => (
                     <tr 
                       key={incident.id} 
                       className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
@@ -154,7 +189,7 @@ visibleIncidents.map((incident) => (
         </CardContent>
       </Card>
 
-<IncidentDetailsModal
+      <IncidentDetailsModal
         incident={selectedIncident}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
