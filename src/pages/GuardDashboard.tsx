@@ -300,6 +300,58 @@ const GuardDashboard = () => {
     });
   };
 
+  const checkLocationPermissions = async (): Promise<void> => {
+    try {
+      // Try Capacitor geolocation permissions first (for mobile apps)
+      try {
+        const permissions = await Geolocation.checkPermissions();
+        console.log('Geolocation permissions:', permissions);
+        
+        if (permissions.location !== 'granted') {
+          // Request permissions
+          const requestResult = await Geolocation.requestPermissions();
+          console.log('Permission request result:', requestResult);
+          
+          if (requestResult.location !== 'granted') {
+            // Show dialog to open settings
+            toast({
+              title: "Location Permission Required",
+              description: "Please enable location access in your device settings to start your shift.",
+              variant: "destructive",
+            });
+            
+            // Try to open device settings (for mobile)
+            if (window.location.protocol === 'capacitor:') {
+              // This will work on mobile with Capacitor
+              await Geolocation.requestPermissions();
+            }
+            
+            throw new Error('Location permission denied. Please enable location access in your device settings.');
+          }
+        }
+        return; // Permissions granted
+      } catch (capacitorError: any) {
+        console.log('Capacitor permission check failed, falling back to browser:', capacitorError);
+        
+        // Fallback to browser permissions
+        if ('permissions' in navigator) {
+          const result = await navigator.permissions.query({ name: 'geolocation' });
+          if (result.state === 'denied') {
+            toast({
+              title: "Location Permission Required",
+              description: "Please enable location access in your browser settings to start your shift.",
+              variant: "destructive",
+            });
+            throw new Error('Location access is denied. Please enable location permissions in your browser settings.');
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Location permission error:', error);
+      throw error;
+    }
+  };
+
   const getLocation = async (): Promise<{ latitude: number; longitude: number }> => {
     try {
       // Try Capacitor geolocation first (for mobile apps)
@@ -393,6 +445,9 @@ const GuardDashboard = () => {
     setShiftLoading(true);
     
     try {
+      // Check location permissions first
+      await checkLocationPermissions();
+      
       // Get user's profile
       const { data: profile } = await supabase
         .from('profiles')
