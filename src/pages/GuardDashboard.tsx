@@ -869,7 +869,7 @@ const GuardDashboard = () => {
                 size="lg"
                 disabled={isLoading}
               >
-                {isLoading ? "Sending to Admin..." : "Send Report to Admin"}
+                {isLoading ? "Submitting..." : "Submit"}
               </Button>
             </form>
           </CardContent>
