@@ -90,38 +90,32 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-
     setIsSubmitting(true);
 
     try {
-      let imageUrl: string | null = null;
-      
+      // Prepare report data first
+      const reportData = {
+        guard_id: userProfile.id,
+        company_id: userProfile.company_id,
+        shift_id: activeShift?.id || null,
+        report_text: reportText || null,
+        location_lat: location?.lat || null,
+        location_lng: location?.lng || null,
+        location_address: location?.address || null,
+        image_url: null
+      };
+
+      // Upload image if selected (in background if possible)
       if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
-        if (!imageUrl) {
-          toast({
-            title: "Upload failed",
-            description: "Failed to upload image. Please try again.",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
+        const imageUrl = await uploadImage(selectedImage);
+        if (imageUrl) {
+          reportData.image_url = imageUrl;
         }
       }
 
       const { error } = await supabase
         .from('guard_reports')
-        .insert({
-          guard_id: userProfile.id,
-          company_id: userProfile.company_id,
-          shift_id: activeShift?.id || null,
-          report_text: reportText,
-          image_url: imageUrl,
-          location_lat: location?.lat || null,
-          location_lng: location?.lng || null,
-          location_address: location?.address || null,
-        });
+        .insert(reportData);
 
       if (error) {
         console.error('Error submitting report:', error);

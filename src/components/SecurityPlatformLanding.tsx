@@ -26,7 +26,7 @@ const SecurityPlatformLanding = () => {
             Complete security management platform for modern security companies. 
             Manage teams, track patrols, and ensure compliance with real-time monitoring.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <Button 
               variant="hero" 
               size="xl" 
@@ -34,9 +34,6 @@ const SecurityPlatformLanding = () => {
               onClick={() => navigate('/auth')}
             >
               Admin Login
-            </Button>
-            <Button variant="outline" size="xl" className="bg-white/10 border-white/20 text-white hover:bg-white/20 animate-slide-in" onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}>
-              View Demo
             </Button>
           </div>
         </div>
