@@ -91,14 +91,6 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!reportText.trim()) {
-      toast({
-        title: "Report required",
-        description: "Please enter a report description.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
