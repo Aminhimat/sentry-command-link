@@ -121,12 +121,7 @@ Deno.serve(async (req) => {
     const fileExt = file.name.split('.').pop() || 'jpg'
     const fileName = `${user.id}_${Date.now()}.${fileExt}`
 
-    // Upload image in background (fire and forget for speed)
-    const uploadPromise = supabaseClient.storage
-      .from('guard-reports')
-      .upload(fileName, file)
-
-    // Get public URL immediately (works even before upload completes)
+    // Get public URL before upload for immediate response
     const { data: urlData } = supabaseClient.storage
       .from('guard-reports')
       .getPublicUrl(fileName)
@@ -146,6 +141,20 @@ Deno.serve(async (req) => {
         location_lng: reportData.location?.longitude
       })
 
+    // Upload image in background for better performance
+    EdgeRuntime.waitUntil(
+      supabaseClient.storage
+        .from('guard-reports')
+        .upload(fileName, file)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Background image upload error:', error)
+          } else {
+            console.log('Background image upload completed for:', fileName)
+          }
+        })
+    )
+
     if (reportError) {
       console.error('Report submission error:', reportError)
       return new Response(
@@ -156,15 +165,6 @@ Deno.serve(async (req) => {
         }
       )
     }
-
-    // Wait for upload to complete in background
-    EdgeRuntime.waitUntil(uploadPromise.then(({ error }) => {
-      if (error) {
-        console.error('Background image upload failed:', error)
-      } else {
-        console.log('Image uploaded successfully:', fileName)
-      }
-    }))
 
     return new Response(
       JSON.stringify({ 

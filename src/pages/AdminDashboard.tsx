@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import IncidentDetailsModal from "@/components/IncidentDetailsModal";
+import IncidentsTable from "@/components/IncidentsTable";
 import { generatePDFReport } from "@/components/PDFReportGenerator";
 
 interface Company {
@@ -247,16 +248,17 @@ const AdminDashboard = () => {
   const fetchIncidents = async () => {
     try {
       const { data, error } = await supabase
-        .from('incidents')
+        .from('guard_reports')
         .select(`
           *,
-          companies (
-            name,
-            logo_url
-          ),
-          profiles!incidents_guard_id_fkey (
+          profiles!guard_reports_guard_id_fkey (
             first_name,
-            last_name
+            last_name,
+            company_id,
+            companies (
+              name,
+              logo_url
+            )
           )
         `)
         .order('created_at', { ascending: false });
@@ -265,10 +267,15 @@ const AdminDashboard = () => {
         throw error;
       }
 
-      const incidentsWithCompany = data?.map((incident: any) => ({
-        ...incident,
-        company: incident.companies,
-        guard: incident.profiles
+      const incidentsWithCompany = data?.map((report: any) => ({
+        ...report,
+        guard: report.profiles,
+        company: report.profiles?.companies,
+        // Map guard report fields to incident fields for compatibility
+        title: report.report_text?.split('\n')[0]?.replace('Task: ', '') || 'Security Report',
+        description: report.report_text,
+        severity: report.report_text?.includes('Severity: ') ? 
+          report.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none'
       })) || [];
 
       setIncidents(incidentsWithCompany);
@@ -979,6 +986,11 @@ const AdminDashboard = () => {
 
 
         </Tabs>
+
+        {/* Incidents Monitor */}
+        <div className="mt-8">
+          <IncidentsTable incidents={filteredIncidents} />
+        </div>
       </div>
 
       {/* Incident Details Modal */}
