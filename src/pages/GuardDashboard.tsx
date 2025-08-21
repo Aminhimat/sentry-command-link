@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
 import QrScanner from 'react-qr-scanner';
 import { Geolocation } from '@capacitor/geolocation';
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -139,9 +141,84 @@ const GuardDashboard = () => {
     setUser(user);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setTaskData({ ...taskData, image: e.target.files[0] });
+  const handleCameraCapture = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Use native camera on mobile
+        const image = await CapCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Uri,
+          source: CameraSource.Camera,
+        });
+
+        // Convert to blob and then to File
+        const response = await fetch(image.webPath!);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        setTaskData({ ...taskData, image: file });
+      } else {
+        // Fallback for web - trigger file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            setTaskData({ ...taskData, image: file });
+          }
+        };
+        input.click();
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        title: "Camera Error",
+        description: "Could not access camera. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGallerySelect = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Use native photo library on mobile
+        const image = await CapCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Uri,
+          source: CameraSource.Photos,
+        });
+
+        // Convert to blob and then to File
+        const response = await fetch(image.webPath!);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        setTaskData({ ...taskData, image: file });
+      } else {
+        // Fallback for web - trigger file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            setTaskData({ ...taskData, image: file });
+          }
+        };
+        input.click();
+      }
+    } catch (error) {
+      console.error('Error accessing photo library:', error);
+      toast({
+        title: "Photo Library Error",
+        description: "Could not access photo library. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -898,22 +975,34 @@ const GuardDashboard = () => {
 
               {/* Photo Upload */}
               <div className="space-y-2">
-                <Label htmlFor="image-upload">Take Photo</Label>
-                <div className="relative">
-                  <Camera className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="pl-10"
-                    onChange={handleImageUpload}
-                  />
+                <Label>Take Photo</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCameraCapture}
+                    className="flex-1"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Take Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGallerySelect}
+                    className="flex-1"
+                  >
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Choose Photo
+                  </Button>
                 </div>
                 {taskData.image && (
-                  <p className="text-sm text-muted-foreground">
-                    Selected: {taskData.image.name}
-                  </p>
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <Camera className="w-4 h-4 text-green-500" />
+                    <p className="text-sm text-muted-foreground">
+                      Photo ready: {taskData.image.name}
+                    </p>
+                  </div>
                 )}
               </div>
 

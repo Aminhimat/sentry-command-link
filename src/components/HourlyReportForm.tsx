@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Upload, MapPin } from "lucide-react";
+import { Camera, Upload, MapPin, ImageIcon } from "lucide-react";
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 
 interface HourlyReportFormProps {
   userProfile: any;
@@ -53,18 +55,116 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
     }
   };
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast({
-          title: "File too large",
-          description: "Please select an image smaller than 5MB.",
-          variant: "destructive",
+  const handleCameraCapture = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Use native camera on mobile
+        const image = await CapCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Uri,
+          source: CameraSource.Camera,
         });
-        return;
+
+        // Convert to blob and then to File
+        const response = await fetch(image.webPath!);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          toast({
+            title: "File too large",
+            description: "Please select an image smaller than 5MB.",
+            variant: "destructive",
+          });
+          return;
+        }
+        setSelectedImage(file);
+      } else {
+        // Fallback for web - trigger file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.capture = 'environment';
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+              toast({
+                title: "File too large",
+                description: "Please select an image smaller than 5MB.",
+                variant: "destructive",
+              });
+              return;
+            }
+            setSelectedImage(file);
+          }
+        };
+        input.click();
       }
-      setSelectedImage(file);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        title: "Camera Error",
+        description: "Could not access camera. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGallerySelect = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Use native photo library on mobile
+        const image = await CapCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.Uri,
+          source: CameraSource.Photos,
+        });
+
+        // Convert to blob and then to File
+        const response = await fetch(image.webPath!);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+          toast({
+            title: "File too large",
+            description: "Please select an image smaller than 5MB.",
+            variant: "destructive",
+          });
+          return;
+        }
+        setSelectedImage(file);
+      } else {
+        // Fallback for web - trigger file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+              toast({
+                title: "File too large",
+                description: "Please select an image smaller than 5MB.",
+                variant: "destructive",
+              });
+              return;
+            }
+            setSelectedImage(file);
+          }
+        };
+        input.click();
+      }
+    } catch (error) {
+      console.error('Error accessing photo library:', error);
+      toast({
+        title: "Photo Library Error",
+        description: "Could not access photo library. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,33 +274,34 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
             />
           </div>
 
-          <div>
-            <Label htmlFor="image">Photo (Optional)</Label>
-            <div className="mt-2">
-              <input
-                id="image"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-              />
+          <div className="space-y-2">
+            <Label>Photo (Optional)</Label>
+            <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => document.getElementById('image')?.click()}
-                className="w-full"
+                onClick={handleCameraCapture}
+                className="flex-1"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                {selectedImage ? selectedImage.name : "Select Photo"}
+                <Camera className="w-4 h-4 mr-2" />
+                Take Photo
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGallerySelect}
+                className="flex-1"
+              >
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Choose Photo
               </Button>
             </div>
             {selectedImage && (
-              <div className="mt-2">
-                <img
-                  src={URL.createObjectURL(selectedImage)}
-                  alt="Preview"
-                  className="max-w-xs max-h-32 object-cover rounded"
-                />
+              <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                <Upload className="w-4 h-4 text-green-500" />
+                <p className="text-sm text-muted-foreground">
+                  Photo ready: {selectedImage.name}
+                </p>
               </div>
             )}
           </div>
