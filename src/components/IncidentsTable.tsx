@@ -2,14 +2,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, FileImage } from "lucide-react";
 import IncidentDetailsModal from "./IncidentDetailsModal";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
-import { generatePDFReport } from "./PDFReportGenerator";
-import { generateWordReport } from "./WordReportGenerator";
-import { useToast } from "@/hooks/use-toast";
 
 interface IncidentsTableProps {
   incidents: any[];
@@ -20,7 +15,6 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const { toast } = useToast();
   const pageSize = 20;
 
   // Get unique sites from incidents
@@ -72,66 +66,6 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     setIsModalOpen(true);
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      toast({
-        title: "Generating PDF...",
-        description: "Please wait while we generate your report.",
-      });
-
-      const reportFilters = {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 30)), // Last 30 days
-        endDate: new Date(),
-        guardId: 'all',
-        reportType: 'custom'
-      };
-
-      await generatePDFReport(filteredIncidents, null, reportFilters);
-      
-      toast({
-        title: "Success",
-        description: "PDF report has been downloaded.",
-      });
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF report.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownloadWord = async () => {
-    try {
-      toast({
-        title: "Generating Word document...",
-        description: "Please wait while we generate your report.",
-      });
-
-      const reportFilters = {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 30)), // Last 30 days
-        endDate: new Date(),
-        guardId: 'all',
-        reportType: 'custom'
-      };
-
-      await generateWordReport(filteredIncidents, null, reportFilters);
-      
-      toast({
-        title: "Success",
-        description: "Word document has been downloaded.",
-      });
-    } catch (error) {
-      console.error('Error generating Word document:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate Word document.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <>
       <Card>
@@ -139,26 +73,6 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
             <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadPDF}
-                  className="flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadWord}
-                  className="flex items-center gap-2"
-                >
-                  <FileImage className="h-4 w-4" />
-                  Word
-                </Button>
-              </div>
               <Select value={selectedSite} onValueChange={setSelectedSite}>
                 <SelectTrigger className="w-[200px] bg-white">
                   <SelectValue placeholder="Select site" />
