@@ -31,17 +31,17 @@ const SecurityPlatformLanding = () => {
               variant="hero" 
               size="xl" 
               className="animate-slide-in"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/auth?mode=guard')}
             >
-              Admin Login
+              Guard Login
             </Button>
             <Button 
               variant="outline" 
               size="xl" 
               className="animate-slide-in border-white/20 text-white hover:bg-white/10"
-              onClick={() => navigate('/auth?mode=guard')}
+              onClick={() => navigate('/auth')}
             >
-              Guard Login
+              Admin Login
             </Button>
           </div>
         </div>
