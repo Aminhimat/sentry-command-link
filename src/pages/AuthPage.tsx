@@ -26,6 +26,12 @@ const AuthPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check URL params for guard mode
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'guard') {
+      setIsGuardLogin(true);
+    }
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
