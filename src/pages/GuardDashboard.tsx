@@ -36,6 +36,7 @@ const GuardDashboard = () => {
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [qrScanner, setQrScanner] = useState<QrScanner | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [qrScanSuccess, setQrScanSuccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -352,6 +353,12 @@ const GuardDashboard = () => {
   const handleQrCodeScan = (result: string) => {
     console.log('QR Code scanned:', result);
     
+    // Set success flag to prevent error messages
+    setQrScanSuccess(true);
+    
+    // Stop scanner immediately to prevent multiple scans
+    stopQrScanner();
+    
     try {
       // Try to parse as JSON in case it's structured data
       const parsed = JSON.parse(result);
@@ -381,7 +388,6 @@ const GuardDashboard = () => {
         });
       }
       
-      stopQrScanner();
     } catch (error) {
       // If not JSON, treat as plain text for site location
       setTaskData({ 
@@ -394,13 +400,15 @@ const GuardDashboard = () => {
         title: "QR Code Scanned",
         description: `Ready to submit - Site: ${result}`,
       });
-      stopQrScanner();
     }
   };
 
   const startQrScanner = async () => {
     try {
       console.log('🔍 Starting QR scanner...');
+      
+      // Reset success flag when starting a new scan
+      setQrScanSuccess(false);
       
       // For native Capacitor apps, use the native camera
       if (Capacitor.isNativePlatform()) {
@@ -585,6 +593,12 @@ const GuardDashboard = () => {
         console.error('❌ Scanner initialization failed:', scannerError);
         
         setShowQrScanner(false);
+        
+        // Don't show error if we already successfully scanned something
+        if (qrScanSuccess) {
+          console.log('🎯 Ignoring scanner error - already scanned successfully');
+          return;
+        }
         
         // Provide specific guidance based on error
         let errorTitle = "Scanner Error";
