@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
-import QrScanner from 'react-qr-scanner';
+import QrScanner from 'qr-scanner';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
@@ -33,6 +33,8 @@ const GuardDashboard = () => {
     image: null as File | null
   });
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [qrScanner, setQrScanner] = useState<QrScanner | null>(null);
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -340,40 +342,95 @@ const GuardDashboard = () => {
     }
   };
 
-  const handleQrCodeScan = (data: string | null) => {
-    if (data) {
-      console.log('QR Code scanned:', data);
+  const handleQrCodeScan = (result: string) => {
+    console.log('QR Code scanned:', result);
+    
+    try {
+      // Try to parse as JSON in case it's structured data
+      const parsed = JSON.parse(result);
       
-      try {
-        // Try to parse as JSON in case it's structured data
-        const parsed = JSON.parse(data);
-        
-        if (parsed.location || parsed.site) {
-          setTaskData({ ...taskData, site: parsed.location || parsed.site });
-          toast({
-            title: "QR Code Scanned",
-            description: `Site location set to: ${parsed.location || parsed.site}`,
-          });
-        } else {
-          // Try to parse as simple text for site location
-          setTaskData({ ...taskData, site: data });
-          toast({
-            title: "QR Code Scanned",
-            description: `Site location set to: ${data}`,
-          });
-        }
-        
-        setShowQrScanner(false);
-      } catch (error) {
-        // If not JSON, treat as plain text for site location
-        setTaskData({ ...taskData, site: data });
+      if (parsed.location || parsed.site) {
+        setTaskData({ ...taskData, site: parsed.location || parsed.site });
         toast({
           title: "QR Code Scanned",
-          description: `Site location set to: ${data}`,
+          description: `Site location set to: ${parsed.location || parsed.site}`,
         });
-        setShowQrScanner(false);
+      } else {
+        // Try to parse as simple text for site location
+        setTaskData({ ...taskData, site: result });
+        toast({
+          title: "QR Code Scanned",
+          description: `Site location set to: ${result}`,
+        });
       }
+      
+      stopQrScanner();
+    } catch (error) {
+      // If not JSON, treat as plain text for site location
+      setTaskData({ ...taskData, site: result });
+      toast({
+        title: "QR Code Scanned",
+        description: `Site location set to: ${result}`,
+      });
+      stopQrScanner();
     }
+  };
+
+  const startQrScanner = async () => {
+    try {
+      // Check if device has camera support
+      const hasCamera = await QrScanner.hasCamera();
+      if (!hasCamera) {
+        toast({
+          title: "No Camera",
+          description: "No camera found on this device",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setShowQrScanner(true);
+      
+      // Wait for video element to be available
+      setTimeout(async () => {
+        if (videoElement) {
+          const scanner = new QrScanner(
+            videoElement, 
+            (result) => {
+              // Handle both string results and ScanResult objects
+              const data = typeof result === 'string' ? result : result.data;
+              handleQrCodeScan(data);
+            },
+            {
+              preferredCamera: 'environment',
+              highlightScanRegion: true,
+              highlightCodeOutline: true,
+            }
+          );
+          
+          setQrScanner(scanner);
+          await scanner.start();
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('QR Scanner error:', error);
+      toast({
+        title: "Scanner Error",
+        description: "Failed to start QR scanner. Please check camera permissions.",
+        variant: "destructive",
+      });
+      setShowQrScanner(false);
+    }
+  };
+
+  const stopQrScanner = () => {
+    if (qrScanner) {
+      qrScanner.stop();
+      qrScanner.destroy();
+      setQrScanner(null);
+    }
+    setShowQrScanner(false);
   };
 
   const handleQrError = (err: any) => {
@@ -908,29 +965,31 @@ const GuardDashboard = () => {
                   
                    <TabsContent value="qr" className="space-y-2">
                      <div className="text-center space-y-4">
-                       <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center">
+                       <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
                          {showQrScanner ? (
-                           <div className="w-full h-full relative overflow-hidden rounded-lg">
-                             <QrScanner
-                               delay={300}
-                               onError={handleQrError}
-                               onScan={handleQrCodeScan}
-                               constraints={{
-                                 video: { 
-                                   facingMode: 'environment' // This requests rear camera
-                                 }
-                               }}
-                               style={{ width: '100%', height: '100%' }}
+                           <>
+                             <video
+                               ref={(el) => setVideoElement(el)}
+                               className="w-full h-full object-cover rounded-lg"
+                               autoPlay
+                               playsInline
+                               muted
                              />
-                           </div>
+                             <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none">
+                               <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary"></div>
+                               <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary"></div>
+                               <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary"></div>
+                               <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary"></div>
+                             </div>
+                           </>
                          ) : (
                            <>
                              <Camera className="h-12 w-12 text-muted-foreground mb-2" />
-                             <p className="text-sm text-muted-foreground mb-4">
-                               Tap to scan QR code - will use rear camera in browser
+                             <p className="text-sm text-muted-foreground mb-4 px-2">
+                               Scan QR code for location (iOS compatible)
                              </p>
                              <Button
-                               onClick={() => setShowQrScanner(true)}
+                               onClick={startQrScanner}
                                variant="outline"
                                className="flex items-center gap-2"
                              >
@@ -943,7 +1002,7 @@ const GuardDashboard = () => {
                        
                        {showQrScanner && (
                          <Button
-                           onClick={() => setShowQrScanner(false)}
+                           onClick={stopQrScanner}
                            variant="outline"
                            className="w-full"
                          >
