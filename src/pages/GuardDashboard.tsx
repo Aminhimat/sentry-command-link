@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
 import QrScanner from 'qr-scanner';
+import jsQR from 'jsqr';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
@@ -398,17 +399,51 @@ const GuardDashboard = () => {
   };
 
   const startQrScanner = async () => {
-    alert('🔍 Button clicked! Starting QR scanner...');
-    console.log('🔍 QR Scanner: Button clicked - starting scanner');
-    
     try {
-      // Check if device has camera support
-      console.log('🔍 QR Scanner: Checking camera support...');
-      const hasCamera = await QrScanner.hasCamera();
-      console.log('🔍 QR Scanner: Has camera:', hasCamera);
+      // For mobile devices, use Capacitor Camera + jsQR
+      if (Capacitor.isNativePlatform()) {
+        console.log('🔍 Using Capacitor Camera for QR scanning on mobile');
+        
+        const image = await CapCamera.getPhoto({
+          quality: 90,
+          allowEditing: false,
+          resultType: CameraResultType.DataUrl,
+          source: CameraSource.Camera,
+        });
+
+        if (image.dataUrl) {
+          // Create an image element to process with jsQR
+          const img = new Image();
+          img.onload = () => {
+            // Create canvas to get image data
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx?.drawImage(img, 0, 0);
+            
+            const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+            if (imageData) {
+              const code = jsQR(imageData.data, imageData.width, imageData.height);
+              if (code) {
+                handleQrCodeScan(code.data);
+              } else {
+                toast({
+                  title: "No QR Code Found",
+                  description: "Please try again with a clearer view of the QR code",
+                  variant: "destructive",
+                });
+              }
+            }
+          };
+          img.src = image.dataUrl;
+        }
+        return;
+      }
       
+      // For web browsers, use the existing QR scanner
+      const hasCamera = await QrScanner.hasCamera();
       if (!hasCamera) {
-        console.log('❌ QR Scanner: No camera found');
         toast({
           title: "No Camera",
           description: "No camera found on this device",
@@ -417,19 +452,14 @@ const GuardDashboard = () => {
         return;
       }
 
-      console.log('🔍 QR Scanner: Setting showQrScanner to true');
       setShowQrScanner(true);
       
       // Wait for video element to be available
       setTimeout(async () => {
-        console.log('🔍 QR Scanner: Timeout triggered, videoElement:', videoElement);
         if (videoElement) {
-          console.log('🔍 QR Scanner: Creating scanner instance');
           const scanner = new QrScanner(
             videoElement, 
             (result) => {
-              console.log('🔍 QR Scanner: Scan result:', result);
-              // Handle both string results and ScanResult objects
               const data = typeof result === 'string' ? result : result.data;
               handleQrCodeScan(data);
             },
@@ -440,19 +470,20 @@ const GuardDashboard = () => {
             }
           );
           
-          console.log('🔍 QR Scanner: Starting scanner...');
           setQrScanner(scanner);
           await scanner.start();
-          console.log('🔍 QR Scanner: Scanner started successfully');
         } else {
-          console.log('❌ QR Scanner: Video element not found');
-          alert('❌ Video element not found - this is the issue!');
+          toast({
+            title: "Scanner Error",
+            description: "Failed to initialize camera",
+            variant: "destructive",
+          });
+          setShowQrScanner(false);
         }
-      }, 500); // Increased timeout
+      }, 500);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ QR Scanner error:', error);
-      alert(`❌ Scanner Error: ${error.message}`);
       toast({
         title: "Scanner Error",
         description: `Failed to start QR scanner: ${error.message}`,
