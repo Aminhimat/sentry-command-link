@@ -304,7 +304,7 @@ export class PDFReportGenerator {
             // Text settings
             this.doc.setTextColor(255, 255, 255);
             this.doc.setFont('helvetica', 'bold');
-            const fontSize = Math.max(5, Math.min(8, barHeight - 1));
+            const fontSize = Math.max(3, Math.min(5, barHeight - 1));
             this.doc.setFontSize(fontSize);
 
             // Truncate text to fit available width
