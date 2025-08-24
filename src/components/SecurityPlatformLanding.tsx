@@ -36,9 +36,9 @@ const SecurityPlatformLanding = () => {
               Guard Login
             </Button>
             <Button 
-              variant="outline" 
+              variant="ghost-white" 
               size="xl" 
-              className="animate-slide-in border-white/20 text-white hover:bg-white/10"
+              className="animate-slide-in"
               onClick={() => navigate('/auth')}
             >
               Admin Login
