@@ -1020,26 +1020,28 @@ const GuardDashboard = () => {
                              <p className="text-xs text-muted-foreground mb-4 px-2 text-center">
                                No need to fill other fields - just scan and submit!
                              </p>
-                             <Button
-                               onClick={startQrScanner}
-                               variant="outline"
-                               className="flex items-center gap-2"
-                             >
-                               <QrCode className="h-4 w-4" />
-                               Scan QR Code
-                             </Button>
+                              <Button
+                                type="button"
+                                onClick={startQrScanner}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                              >
+                                <QrCode className="h-4 w-4" />
+                                Scan QR Code
+                              </Button>
                            </>
                          )}
                        </div>
                        
                        {showQrScanner && (
-                         <Button
-                           onClick={stopQrScanner}
-                           variant="outline"
-                           className="w-full"
-                         >
-                           Stop Scanner
-                         </Button>
+                          <Button
+                            type="button"
+                            onClick={stopQrScanner}
+                            variant="outline"
+                            className="w-full"
+                          >
+                            Stop Scanner
+                          </Button>
                        )}
                        
                         {taskData.site && (
