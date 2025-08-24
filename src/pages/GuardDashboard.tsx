@@ -26,7 +26,7 @@ const GuardDashboard = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [taskData, setTaskData] = useState({
-    taskType: "",
+    taskType: "security-patrol",
     customTaskType: "",
     site: "",
     description: "",
@@ -400,10 +400,8 @@ const GuardDashboard = () => {
 
   const startQrScanner = async () => {
     try {
-      // Check if we're on mobile (native app or mobile browser)
-      const isMobile = Capacitor.isNativePlatform() || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobile && Capacitor.isNativePlatform()) {
+      // For native Capacitor apps, use the native camera
+      if (Capacitor.isNativePlatform()) {
         console.log('🔍 Using Capacitor Camera for QR scanning on native mobile');
         
         const image = await CapCamera.getPhoto({
@@ -443,65 +441,77 @@ const GuardDashboard = () => {
         return;
       }
       
-      // For web browsers (including mobile browsers)
-      console.log('🔍 Starting web QR scanner');
+      // For web browsers (desktop and mobile browsers)
+      console.log('🔍 Starting web QR scanner for browser');
       
-      // Request camera permissions first
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      } catch (permissionError) {
-        toast({
-          title: "Camera Permission Required",
-          description: "Please allow camera access to scan QR codes",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Check if camera is available
       const hasCamera = await QrScanner.hasCamera();
       if (!hasCamera) {
         toast({
-          title: "No Camera",
+          title: "No Camera Available",
           description: "No camera found on this device",
           variant: "destructive",
         });
         return;
       }
 
+      // Show the scanner UI first
       setShowQrScanner(true);
       
-      // Wait for video element to be available
-      setTimeout(async () => {
-        if (videoElement) {
-          const scanner = new QrScanner(
-            videoElement, 
-            (result) => {
-              const data = typeof result === 'string' ? result : result.data;
-              handleQrCodeScan(data);
-            },
-            {
-              preferredCamera: 'environment',
-              highlightScanRegion: true,
-              highlightCodeOutline: true,
+      // Use a more robust way to wait for video element
+      const waitForVideoElement = () => {
+        return new Promise<void>((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 50; // 5 seconds max wait
+          
+          const checkVideo = () => {
+            if (videoElement) {
+              resolve();
+            } else if (attempts >= maxAttempts) {
+              reject(new Error('Video element not available'));
+            } else {
+              attempts++;
+              setTimeout(checkVideo, 100);
             }
-          );
+          };
           
-          setQrScanner(scanner);
-          await scanner.start();
-          
-          toast({
-            title: "QR Scanner Active",
-            description: "Point camera at QR code to scan",
-          });
-        } else {
-          toast({
-            title: "Scanner Error",
-            description: "Failed to initialize camera",
-            variant: "destructive",
-          });
-          setShowQrScanner(false);
-        }
-      }, 100);
+          checkVideo();
+        });
+      };
+
+      try {
+        await waitForVideoElement();
+        
+        const scanner = new QrScanner(
+          videoElement!, 
+          (result) => {
+            const data = typeof result === 'string' ? result : result.data;
+            handleQrCodeScan(data);
+          },
+          {
+            preferredCamera: 'environment',
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+          }
+        );
+        
+        setQrScanner(scanner);
+        await scanner.start();
+        
+        toast({
+          title: "QR Scanner Ready",
+          description: "Point camera at QR code to scan",
+        });
+        
+      } catch (error: any) {
+        console.error('❌ Failed to initialize QR scanner:', error);
+        toast({
+          title: "Camera Error",
+          description: "Failed to access camera. Please check permissions.",
+          variant: "destructive",
+        });
+        setShowQrScanner(false);
+      }
       
     } catch (error: any) {
       console.error('❌ QR Scanner error:', error);
