@@ -241,8 +241,8 @@ export class PDFReportGenerator {
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Larger image positioned right below the ID with watermark overlay at bottom
-      await this.addImageToEntry(report.image_url, rightColumnX - 10, contentY + 2, 40, 40, wmText);
+      // Larger landscape image positioned right below the ID with watermark overlay at bottom
+      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 2, 50, 35, wmText);
     } else {
       // Show issue ID even without image
       this.doc.setTextColor(0, 0, 0);
