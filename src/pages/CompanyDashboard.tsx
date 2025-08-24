@@ -326,8 +326,7 @@ const CompanyDashboard = () => {
           guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
         `)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: false });
 
       console.log('Reports query result:', { data, error });
 
@@ -338,8 +337,7 @@ const CompanyDashboard = () => {
           .from('guard_reports')
           .select('*')
           .eq('company_id', companyId)
-          .order('created_at', { ascending: false })
-          .limit(20);
+          .order('created_at', { ascending: false });
 
         if (fallbackError) {
           console.error('Fallback query also failed:', fallbackError);
