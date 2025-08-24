@@ -356,27 +356,42 @@ const GuardDashboard = () => {
       const parsed = JSON.parse(result);
       
       if (parsed.location || parsed.site) {
-        setTaskData({ ...taskData, site: parsed.location || parsed.site });
+        setTaskData({ 
+          ...taskData, 
+          site: parsed.location || parsed.site,
+          taskType: parsed.taskType || "security-patrol", // Default task type
+          severity: parsed.severity || "none" // Default severity
+        });
         toast({
           title: "QR Code Scanned",
-          description: `Site location set to: ${parsed.location || parsed.site}`,
+          description: `Ready to submit - Site: ${parsed.location || parsed.site}`,
         });
       } else {
         // Try to parse as simple text for site location
-        setTaskData({ ...taskData, site: result });
+        setTaskData({ 
+          ...taskData, 
+          site: result,
+          taskType: "security-patrol", // Default task type
+          severity: "none" // Default severity
+        });
         toast({
-          title: "QR Code Scanned",
-          description: `Site location set to: ${result}`,
+          title: "QR Code Scanned", 
+          description: `Ready to submit - Site: ${result}`,
         });
       }
       
       stopQrScanner();
     } catch (error) {
       // If not JSON, treat as plain text for site location
-      setTaskData({ ...taskData, site: result });
+      setTaskData({ 
+        ...taskData, 
+        site: result,
+        taskType: "security-patrol", // Default task type  
+        severity: "none" // Default severity
+      });
       toast({
         title: "QR Code Scanned",
-        description: `Site location set to: ${result}`,
+        description: `Ready to submit - Site: ${result}`,
       });
       stopQrScanner();
     }
@@ -999,8 +1014,11 @@ const GuardDashboard = () => {
                          ) : (
                            <>
                              <Camera className="h-12 w-12 text-muted-foreground mb-2" />
-                             <p className="text-sm text-muted-foreground mb-4 px-2">
-                               Scan QR code for location (iOS compatible)
+                             <p className="text-sm text-muted-foreground mb-2 px-2 text-center">
+                               Scan QR code to auto-fill and submit report
+                             </p>
+                             <p className="text-xs text-muted-foreground mb-4 px-2 text-center">
+                               No need to fill other fields - just scan and submit!
                              </p>
                              <Button
                                onClick={startQrScanner}
@@ -1008,7 +1026,7 @@ const GuardDashboard = () => {
                                className="flex items-center gap-2"
                              >
                                <QrCode className="h-4 w-4" />
-                               Start Scanner
+                               Scan QR Code
                              </Button>
                            </>
                          )}
@@ -1025,9 +1043,12 @@ const GuardDashboard = () => {
                        )}
                        
                         {taskData.site && (
-                         <div className="p-2 bg-green-50 border border-green-200 rounded">
+                         <div className="p-3 bg-green-50 border border-green-200 rounded">
                            <p className="text-sm text-green-800 font-medium">
-                             ✓ Site: {taskData.site}
+                             ✅ QR Scanned: {taskData.site}
+                           </p>
+                           <p className="text-xs text-green-600 mt-1">
+                             Ready to submit! All fields auto-filled.
                            </p>
                          </div>
                        )}
