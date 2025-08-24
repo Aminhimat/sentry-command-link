@@ -228,10 +228,16 @@ const GuardDashboard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!taskData.taskType || !taskData.site || !taskData.severity) {
+    // Check which required fields are missing
+    const missingFields = [];
+    if (!taskData.taskType) missingFields.push("Task Type");
+    if (!taskData.site) missingFields.push("Work Site");  
+    if (!taskData.severity) missingFields.push("Type of Issue");
+    
+    if (missingFields.length > 0) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Missing Required Fields",
+        description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -851,9 +857,17 @@ const GuardDashboard = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Task Type */}
               <div className="space-y-2">
-                <Label htmlFor="taskType">Choose Task *</Label>
+                <Label htmlFor="taskType" className="flex items-center gap-2">
+                  Choose Task *
+                  {!taskData.taskType && (
+                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Required</span>
+                  )}
+                  {taskData.taskType && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓</span>
+                  )}
+                </Label>
                 <Select value={taskData.taskType} onValueChange={(value) => setTaskData({ ...taskData, taskType: value, customTaskType: "" })}>
-                  <SelectTrigger>
+                  <SelectTrigger className={!taskData.taskType ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select a task type" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg z-50">
@@ -1010,11 +1024,13 @@ const GuardDashboard = () => {
                          </Button>
                        )}
                        
-                       {taskData.site && (
-                        <p className="text-sm text-green-600">
-                          Site: {taskData.site}
-                        </p>
-                      )}
+                        {taskData.site && (
+                         <div className="p-2 bg-green-50 border border-green-200 rounded">
+                           <p className="text-sm text-green-800 font-medium">
+                             ✓ Site: {taskData.site}
+                           </p>
+                         </div>
+                       )}
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -1022,9 +1038,17 @@ const GuardDashboard = () => {
 
               {/* Issue Severity */}
               <div className="space-y-2">
-                <Label htmlFor="severity">Type of Issue *</Label>
+                <Label htmlFor="severity" className="flex items-center gap-2">
+                  Type of Issue *
+                  {!taskData.severity && (
+                    <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Required</span>
+                  )}
+                  {taskData.severity && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓</span>
+                  )}
+                </Label>
                 <Select value={taskData.severity} onValueChange={(value) => setTaskData({ ...taskData, severity: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className={!taskData.severity ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select issue severity" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border shadow-lg z-50">
