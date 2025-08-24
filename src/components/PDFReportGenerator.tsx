@@ -152,21 +152,28 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Task in middle column (remove "Task:" prefix) - make it bold
-      const taskLine = lines.find(line => line.startsWith('Task:'));
-      if (taskLine) {
-        const taskValue = taskLine.replace('Task:', '').trim();
+      // Display Description in middle column instead of Task - make it bold
+      const descriptionLine = lines.find(line => line.startsWith('Description:'));
+      if (descriptionLine) {
+        const descriptionValue = descriptionLine.replace('Description:', '').trim();
         this.doc.setFont('helvetica', 'bold');
         this.doc.setFontSize(8);
-        this.doc.text(taskValue, middleColumnX, contentY + 2);
+        // Wrap text if it's too long
+        const maxWidth = 60; // Adjust based on column width
+        const wrappedText = this.doc.splitTextToSize(descriptionValue, maxWidth);
+        let descY = contentY + 2;
+        for (let j = 0; j < Math.min(wrappedText.length, 3); j++) { // Limit to 3 lines
+          this.doc.text(wrappedText[j], middleColumnX, descY);
+          descY += 4;
+        }
         this.doc.setFont('helvetica', 'normal'); // Reset to normal
         this.doc.setFontSize(7);
       }
       
-      // Display Site, Severity, Description at the bottom with reduced spacing
+      // Display Task, Site, Severity at the bottom with reduced spacing (exclude Description since it's now in middle)
       let bottomY = contentY + 14;
       lines.forEach((line) => {
-        if (line.startsWith('Site:') || line.startsWith('Description:')) {
+        if (line.startsWith('Task:') || line.startsWith('Site:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
           bottomY += 3;
         } else if (line.startsWith('Severity:')) {
