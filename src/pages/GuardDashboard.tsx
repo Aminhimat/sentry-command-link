@@ -26,6 +26,7 @@ const GuardDashboard = () => {
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [taskData, setTaskData] = useState({
     taskType: "",
+    customTaskType: "",
     site: "",
     description: "",
     severity: "none",
@@ -234,6 +235,16 @@ const GuardDashboard = () => {
       return;
     }
 
+    // If "other" is selected, check for custom task type
+    if (taskData.taskType === "other" && !taskData.customTaskType.trim()) {
+      toast({
+        title: "Error",
+        description: "Please specify what kind of task you're performing",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -250,7 +261,7 @@ const GuardDashboard = () => {
         const formData = new FormData();
         formData.append('image', taskData.image);
         formData.append('reportData', JSON.stringify({
-          taskType: taskData.taskType,
+          taskType: taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType,
           site: taskData.site,
           severity: taskData.severity,
           description: taskData.description,
@@ -287,7 +298,7 @@ const GuardDashboard = () => {
           .insert({
             guard_id: profile.id,
             company_id: profile.company_id,
-            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
+            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
             location_address: taskData.site,
             location_lat: location?.latitude,
             location_lng: location?.longitude
@@ -306,6 +317,7 @@ const GuardDashboard = () => {
       // Reset form completely
       setTaskData({
         taskType: "",
+        customTaskType: "",
         site: "",
         description: "",
         severity: "none",
@@ -787,7 +799,7 @@ const GuardDashboard = () => {
               {/* Task Type */}
               <div className="space-y-2">
                 <Label htmlFor="taskType">Choose Task *</Label>
-                <Select value={taskData.taskType} onValueChange={(value) => setTaskData({ ...taskData, taskType: value })}>
+                <Select value={taskData.taskType} onValueChange={(value) => setTaskData({ ...taskData, taskType: value, customTaskType: "" })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a task type" />
                   </SelectTrigger>
@@ -816,6 +828,18 @@ const GuardDashboard = () => {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Custom Task Input - Shows when "other" is selected */}
+                {taskData.taskType === "other" && (
+                  <div className="mt-2">
+                    <Input
+                      placeholder="Please specify the task type..."
+                      value={taskData.customTaskType}
+                      onChange={(e) => setTaskData({ ...taskData, customTaskType: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Site */}
