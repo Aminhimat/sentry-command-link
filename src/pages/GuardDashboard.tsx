@@ -400,75 +400,148 @@ const GuardDashboard = () => {
 
   const startQrScanner = async () => {
     try {
+      console.log('🔍 Starting QR scanner...');
+      
       // For native Capacitor apps, use the native camera
       if (Capacitor.isNativePlatform()) {
-        console.log('🔍 Using Capacitor Camera for QR scanning on native mobile');
+        console.log('📱 Using Capacitor Camera for native mobile app');
         
-        const image = await CapCamera.getPhoto({
-          quality: 90,
-          allowEditing: false,
-          resultType: CameraResultType.DataUrl,
-          source: CameraSource.Camera,
-        });
+        try {
+          const image = await CapCamera.getPhoto({
+            quality: 90,
+            allowEditing: false,
+            resultType: CameraResultType.DataUrl,
+            source: CameraSource.Camera,
+          });
 
-        if (image.dataUrl) {
-          // Create an image element to process with jsQR
-          const img = new Image();
-          img.onload = () => {
-            // Create canvas to get image data
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx?.drawImage(img, 0, 0);
-            
-            const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
-            if (imageData) {
-              const code = jsQR(imageData.data, imageData.width, imageData.height);
-              if (code) {
-                handleQrCodeScan(code.data);
-              } else {
-                toast({
-                  title: "No QR Code Found",
-                  description: "Please try again with a clearer view of the QR code",
-                  variant: "destructive",
-                });
+          if (image.dataUrl) {
+            // Create an image element to process with jsQR
+            const img = new Image();
+            img.onload = () => {
+              // Create canvas to get image data
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx?.drawImage(img, 0, 0);
+              
+              const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+              if (imageData) {
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                  handleQrCodeScan(code.data);
+                } else {
+                  toast({
+                    title: "No QR Code Found",
+                    description: "Please try again with a clearer view of the QR code",
+                    variant: "destructive",
+                  });
+                }
               }
-            }
-          };
-          img.src = image.dataUrl;
+            };
+            img.src = image.dataUrl;
+          }
+          return;
+        } catch (capacitorError: any) {
+          console.error('❌ Capacitor Camera error:', capacitorError);
+          // Fall through to web camera as backup
         }
+      }
+      
+      // For web browsers - check HTTPS requirement
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        toast({
+          title: "HTTPS Required",
+          description: "Camera access requires a secure connection (HTTPS)",
+          variant: "destructive",
+        });
         return;
       }
       
-      // For web browsers (desktop and mobile browsers)
-      console.log('🔍 Starting web QR scanner for browser');
+      console.log('🌐 Using web QR scanner for browser');
+      
+      // Check if navigator.mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          title: "Camera Not Supported",
+          description: "Your browser doesn't support camera access",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Check if camera is available
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
+      try {
+        const hasCamera = await QrScanner.hasCamera();
+        if (!hasCamera) {
+          toast({
+            title: "No Camera Found",
+            description: "Please check if camera is connected and not in use by another app",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (cameraCheckError) {
+        console.error('❌ Camera check failed:', cameraCheckError);
         toast({
-          title: "No Camera Available",
-          description: "No camera found on this device",
+          title: "Camera Check Failed",
+          description: "Unable to detect camera. Please refresh and try again.",
           variant: "destructive",
         });
         return;
       }
 
-      // Show the scanner UI first
+      // Request camera permissions explicitly
+      try {
+        console.log('📷 Requesting camera permissions...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          } 
+        });
+        
+        // Stop the stream since we just needed to check permissions
+        stream.getTracks().forEach(track => track.stop());
+        console.log('✅ Camera permissions granted');
+        
+      } catch (permissionError: any) {
+        console.error('❌ Camera permission denied:', permissionError);
+        
+        let errorMessage = "Camera access denied";
+        if (permissionError.name === 'NotAllowedError') {
+          errorMessage = "Please allow camera access in your browser settings and refresh the page";
+        } else if (permissionError.name === 'NotFoundError') {
+          errorMessage = "No camera found on this device";
+        } else if (permissionError.name === 'NotReadableError') {
+          errorMessage = "Camera is being used by another app. Please close other apps and try again";
+        } else if (permissionError.name === 'OverconstrainedError') {
+          errorMessage = "Camera settings not supported. Please try again";
+        }
+        
+        toast({
+          title: "Camera Permission Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Show the scanner UI
       setShowQrScanner(true);
       
-      // Use a more robust way to wait for video element
+      // Wait for video element with better error handling
       const waitForVideoElement = () => {
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<HTMLVideoElement>((resolve, reject) => {
           let attempts = 0;
-          const maxAttempts = 50; // 5 seconds max wait
+          const maxAttempts = 100; // 10 seconds max wait
           
           const checkVideo = () => {
             if (videoElement) {
-              resolve();
+              resolve(videoElement);
             } else if (attempts >= maxAttempts) {
-              reject(new Error('Video element not available'));
+              reject(new Error('Video element not available after 10 seconds'));
             } else {
               attempts++;
               setTimeout(checkVideo, 100);
@@ -480,44 +553,65 @@ const GuardDashboard = () => {
       };
 
       try {
-        await waitForVideoElement();
+        console.log('⏳ Waiting for video element...');
+        const video = await waitForVideoElement();
+        console.log('✅ Video element ready, initializing scanner...');
         
         const scanner = new QrScanner(
-          videoElement!, 
+          video, 
           (result) => {
             const data = typeof result === 'string' ? result : result.data;
+            console.log('🎯 QR Code detected:', data);
             handleQrCodeScan(data);
           },
           {
             preferredCamera: 'environment',
             highlightScanRegion: true,
             highlightCodeOutline: true,
+            maxScansPerSecond: 5,
           }
         );
         
         setQrScanner(scanner);
         await scanner.start();
+        console.log('✅ QR Scanner started successfully');
         
         toast({
-          title: "QR Scanner Ready",
-          description: "Point camera at QR code to scan",
+          title: "QR Scanner Active",
+          description: "Point your camera at a QR code",
         });
         
-      } catch (error: any) {
-        console.error('❌ Failed to initialize QR scanner:', error);
+      } catch (scannerError: any) {
+        console.error('❌ Scanner initialization failed:', scannerError);
+        
+        setShowQrScanner(false);
+        
+        // Provide specific guidance based on error
+        let errorTitle = "Scanner Error";
+        let errorDescription = "Failed to start camera scanner";
+        
+        if (scannerError.message.includes('Video element')) {
+          errorTitle = "Interface Error";
+          errorDescription = "Scanner interface failed to load. Please refresh the page.";
+        } else if (scannerError.message.includes('Permission')) {
+          errorTitle = "Camera Permission";
+          errorDescription = "Please allow camera access and refresh the page";
+        } else {
+          errorDescription = "Try refreshing the page or using a different browser";
+        }
+        
         toast({
-          title: "Camera Error",
-          description: "Failed to access camera. Please check permissions.",
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         });
-        setShowQrScanner(false);
       }
       
     } catch (error: any) {
-      console.error('❌ QR Scanner error:', error);
+      console.error('❌ Unexpected QR Scanner error:', error);
       toast({
-        title: "Scanner Error",
-        description: `Failed to start QR scanner: ${error.message}`,
+        title: "Unexpected Error",
+        description: "Please refresh the page and try again",
         variant: "destructive",
       });
       setShowQrScanner(false);
