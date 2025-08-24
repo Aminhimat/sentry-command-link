@@ -822,14 +822,10 @@ const GuardDashboard = () => {
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
                 <Tabs defaultValue="properties" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="properties" className="flex items-center gap-2">
                       <Building className="h-4 w-4" />
                       Properties
-                    </TabsTrigger>
-                    <TabsTrigger value="manual" className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Manual Entry
                     </TabsTrigger>
                     <TabsTrigger value="qr" className="flex items-center gap-2">
                       <QrCode className="h-4 w-4" />
@@ -879,19 +875,6 @@ const GuardDashboard = () => {
                     )}
                   </TabsContent>
                   
-                  <TabsContent value="manual" className="space-y-2">
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="site"
-                        placeholder="Enter the site location"
-                        className="pl-10"
-                        value={taskData.site}
-                        onChange={(e) => setTaskData({ ...taskData, site: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </TabsContent>
                   
                   <TabsContent value="qr" className="space-y-2">
                     <div className="text-center space-y-4">
