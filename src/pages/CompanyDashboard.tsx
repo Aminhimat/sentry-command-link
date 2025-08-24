@@ -895,6 +895,20 @@ const { toast } = useToast();
         </div>
       </div>
 
+      {/* Navigation Tabs */}
+      <div className="bg-card border-b">
+        <div className="px-6 py-4">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards' | 'properties')}>
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="shifts">Shifts</TabsTrigger>
+              <TabsTrigger value="guards">Guards</TabsTrigger>
+              <TabsTrigger value="properties">Properties/Sites</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
       <div className="flex-1 p-6">
         {/* Company Logo Upload Section */}
         <Card className="mb-6">
@@ -958,17 +972,6 @@ const { toast } = useToast();
         </Card>
 
 <StatsCards guards={guards} incidents={reports} />
-
-        <div className="mt-4">
-<Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards' | 'properties')}>
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="shifts">Shifts</TabsTrigger>
-              <TabsTrigger value="guards">Guards</TabsTrigger>
-              <TabsTrigger value="properties">Properties/Sites</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
