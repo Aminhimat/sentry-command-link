@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
-import QrScanner from 'react-qr-scanner';
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
@@ -32,7 +32,6 @@ const GuardDashboard = () => {
     severity: "none",
     image: null as File | null
   });
-  const [showQrScanner, setShowQrScanner] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -342,21 +341,17 @@ const GuardDashboard = () => {
 
   const handleQrCodeScan = async (data: string | null) => {
     if (data) {
+      console.log('QR Code scanned:', data);
+      
       try {
-        // Parse QR code data for location or task information
-        const qrData = JSON.parse(data);
+        // Try to parse as JSON in case it's structured data
+        const parsed = JSON.parse(data);
         
-        if (qrData.type === 'location' && qrData.site) {
-          setTaskData({ ...taskData, site: qrData.site });
+        if (parsed.location || parsed.site) {
+          setTaskData({ ...taskData, site: parsed.location || parsed.site });
           toast({
-            title: "Location Scanned",
-            description: `Site location set to: ${qrData.site}`,
-          });
-        } else if (qrData.type === 'task' && qrData.taskType) {
-          setTaskData({ ...taskData, taskType: qrData.taskType, site: qrData.site || '' });
-          toast({
-            title: "Task Scanned",
-            description: `Task type set to: ${qrData.taskType}`,
+            title: "QR Code Scanned",
+            description: `Site location set to: ${parsed.location || parsed.site}`,
           });
         } else {
           // Try to parse as simple text for site location
@@ -367,7 +362,6 @@ const GuardDashboard = () => {
           });
         }
         
-        setShowQrScanner(false);
       } catch (error) {
         // If not JSON, treat as plain text for site location
         setTaskData({ ...taskData, site: data });
@@ -375,18 +369,49 @@ const GuardDashboard = () => {
           title: "QR Code Scanned",
           description: `Site location set to: ${data}`,
         });
-        setShowQrScanner(false);
       }
     }
   };
 
-  const handleQrError = (err: any) => {
-    console.error('QR Scanner error:', err);
-    toast({
-      title: "Camera Error",
-      description: "Failed to access camera. Please check permissions.",
-      variant: "destructive",
-    });
+  const startBarcodeScanning = async () => {
+    try {
+      // Check if device supports barcode scanning
+      const isSupported = await BarcodeScanner.isSupported();
+      if (!isSupported.supported) {
+        toast({
+          title: "Not Supported",
+          description: "Barcode scanning is not supported on this device",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Request camera permissions
+      const permissions = await BarcodeScanner.requestPermissions();
+      if (permissions.camera !== 'granted') {
+        toast({
+          title: "Permission Denied",
+          description: "Camera permission is required for QR scanning",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Start scanning
+      const result = await BarcodeScanner.scan();
+      
+      if (result.barcodes && result.barcodes.length > 0) {
+        const scannedData = result.barcodes[0].displayValue;
+        handleQrCodeScan(scannedData);
+      }
+    } catch (error) {
+      console.error('Barcode scanning error:', error);
+      toast({
+        title: "Scanning Error",
+        description: "Failed to scan QR code. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const checkLocationPermissions = async (): Promise<void> => {
@@ -910,47 +935,26 @@ const GuardDashboard = () => {
                   </TabsContent>
                   
                   
-                  <TabsContent value="qr" className="space-y-2">
-                    <div className="text-center space-y-4">
-                      <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center">
-                        {showQrScanner ? (
-                          <div className="w-full h-full relative overflow-hidden rounded-lg">
-                            <QrScanner
-                              delay={300}
-                              onError={handleQrError}
-                              onScan={handleQrCodeScan}
-                              style={{ width: '100%', height: '100%' }}
-                            />
-                          </div>
-                        ) : (
-                          <>
-                            <Camera className="h-12 w-12 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground mb-4">
-                              Scan QR code for location or task
-                            </p>
-                            <Button
-                              onClick={() => setShowQrScanner(true)}
-                              variant="outline"
-                              className="flex items-center gap-2"
-                            >
-                              <QrCode className="h-4 w-4" />
-                              Start Scanner
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                      
-                      {showQrScanner && (
-                        <Button
-                          onClick={() => setShowQrScanner(false)}
-                          variant="outline"
-                          className="w-full"
-                        >
-                          Stop Scanner
-                        </Button>
-                      )}
-                      
-                      {taskData.site && (
+                   <TabsContent value="qr" className="space-y-2">
+                     <div className="text-center space-y-4">
+                       <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center">
+                         <>
+                           <Camera className="h-12 w-12 text-muted-foreground mb-2" />
+                           <p className="text-sm text-muted-foreground mb-4">
+                             Tap to scan QR code for location or task
+                           </p>
+                           <Button
+                             onClick={startBarcodeScanning}
+                             variant="outline"
+                             className="flex items-center gap-2"
+                           >
+                             <QrCode className="h-4 w-4" />
+                             Scan QR Code
+                           </Button>
+                         </>
+                       </div>
+                       
+                       {taskData.site && (
                         <p className="text-sm text-green-600">
                           Site: {taskData.site}
                         </p>
