@@ -15,6 +15,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [selectedGuard, setSelectedGuard] = useState<string>("all");
   const pageSize = 20;
 
   // Get unique sites from incidents
@@ -23,15 +24,38 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     return sites.sort();
   }, [incidents]);
 
-  // Filter incidents by selected site
+  // Get unique guards from incidents
+  const uniqueGuards = useMemo(() => {
+    const guards = [...new Set(incidents.map(incident => {
+      if (incident.guard?.first_name) {
+        return `${incident.guard.first_name} ${incident.guard.last_name}`;
+      }
+      return 'Unknown Guard';
+    }))];
+    return guards.sort();
+  }, [incidents]);
+
+  // Filter incidents by selected site and guard
   const filteredIncidents = useMemo(() => {
-    if (selectedSite === "all") {
-      return incidents;
+    let filtered = incidents;
+    
+    if (selectedSite !== "all") {
+      filtered = filtered.filter(incident => 
+        (incident.location_address || 'Unknown Site') === selectedSite
+      );
     }
-    return incidents.filter(incident => 
-      (incident.location_address || 'Unknown Site') === selectedSite
-    );
-  }, [incidents, selectedSite]);
+    
+    if (selectedGuard !== "all") {
+      filtered = filtered.filter(incident => {
+        const guardName = incident.guard?.first_name ? 
+          `${incident.guard.first_name} ${incident.guard.last_name}` : 
+          'Unknown Guard';
+        return guardName === selectedGuard;
+      });
+    }
+    
+    return filtered;
+  }, [incidents, selectedSite, selectedGuard]);
 
   const sortedIncidents = useMemo(() => {
     return [...filteredIncidents].sort(
@@ -47,7 +71,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     if (currentPage > totalPages) {
       setCurrentPage(1);
     }
-  }, [totalPages, selectedSite]);
+  }, [totalPages, selectedSite, selectedGuard]);
 
   const getSeverityBadge = (severity: string) => {
     const severityConfig = {
@@ -86,6 +110,19 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={selectedGuard} onValueChange={setSelectedGuard}>
+                <SelectTrigger className="w-[200px] bg-white">
+                  <SelectValue placeholder="Select guard" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                  <SelectItem value="all">All Guards</SelectItem>
+                  {uniqueGuards.map((guard) => (
+                    <SelectItem key={guard} value={guard}>
+                      {guard}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Total: {sortedIncidents.length}</span>
                 <span>•</span>
@@ -112,7 +149,9 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                 {sortedIncidents.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {selectedSite === "all" ? "No incidents reported yet" : `No incidents reported for ${selectedSite}`}
+                      {selectedSite === "all" && selectedGuard === "all" 
+                        ? "No incidents reported yet" 
+                        : `No incidents found for the selected filters`}
                     </td>
                   </tr>
                 ) : (
