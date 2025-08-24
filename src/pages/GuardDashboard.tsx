@@ -398,10 +398,17 @@ const GuardDashboard = () => {
   };
 
   const startQrScanner = async () => {
+    alert('🔍 Button clicked! Starting QR scanner...');
+    console.log('🔍 QR Scanner: Button clicked - starting scanner');
+    
     try {
       // Check if device has camera support
+      console.log('🔍 QR Scanner: Checking camera support...');
       const hasCamera = await QrScanner.hasCamera();
+      console.log('🔍 QR Scanner: Has camera:', hasCamera);
+      
       if (!hasCamera) {
+        console.log('❌ QR Scanner: No camera found');
         toast({
           title: "No Camera",
           description: "No camera found on this device",
@@ -410,14 +417,18 @@ const GuardDashboard = () => {
         return;
       }
 
+      console.log('🔍 QR Scanner: Setting showQrScanner to true');
       setShowQrScanner(true);
       
       // Wait for video element to be available
       setTimeout(async () => {
+        console.log('🔍 QR Scanner: Timeout triggered, videoElement:', videoElement);
         if (videoElement) {
+          console.log('🔍 QR Scanner: Creating scanner instance');
           const scanner = new QrScanner(
             videoElement, 
             (result) => {
+              console.log('🔍 QR Scanner: Scan result:', result);
               // Handle both string results and ScanResult objects
               const data = typeof result === 'string' ? result : result.data;
               handleQrCodeScan(data);
@@ -429,16 +440,22 @@ const GuardDashboard = () => {
             }
           );
           
+          console.log('🔍 QR Scanner: Starting scanner...');
           setQrScanner(scanner);
           await scanner.start();
+          console.log('🔍 QR Scanner: Scanner started successfully');
+        } else {
+          console.log('❌ QR Scanner: Video element not found');
+          alert('❌ Video element not found - this is the issue!');
         }
-      }, 100);
+      }, 500); // Increased timeout
       
     } catch (error) {
-      console.error('QR Scanner error:', error);
+      console.error('❌ QR Scanner error:', error);
+      alert(`❌ Scanner Error: ${error.message}`);
       toast({
         title: "Scanner Error",
-        description: "Failed to start QR scanner. Please check camera permissions.",
+        description: `Failed to start QR scanner: ${error.message}`,
         variant: "destructive",
       });
       setShowQrScanner(false);
