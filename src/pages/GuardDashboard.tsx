@@ -400,9 +400,11 @@ const GuardDashboard = () => {
 
   const startQrScanner = async () => {
     try {
-      // For mobile devices, use Capacitor Camera + jsQR
-      if (Capacitor.isNativePlatform()) {
-        console.log('🔍 Using Capacitor Camera for QR scanning on mobile');
+      // Check if we're on mobile (native app or mobile browser)
+      const isMobile = Capacitor.isNativePlatform() || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile && Capacitor.isNativePlatform()) {
+        console.log('🔍 Using Capacitor Camera for QR scanning on native mobile');
         
         const image = await CapCamera.getPhoto({
           quality: 90,
@@ -441,7 +443,21 @@ const GuardDashboard = () => {
         return;
       }
       
-      // For web browsers, use the existing QR scanner
+      // For web browsers (including mobile browsers)
+      console.log('🔍 Starting web QR scanner');
+      
+      // Request camera permissions first
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (permissionError) {
+        toast({
+          title: "Camera Permission Required",
+          description: "Please allow camera access to scan QR codes",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const hasCamera = await QrScanner.hasCamera();
       if (!hasCamera) {
         toast({
@@ -472,6 +488,11 @@ const GuardDashboard = () => {
           
           setQrScanner(scanner);
           await scanner.start();
+          
+          toast({
+            title: "QR Scanner Active",
+            description: "Point camera at QR code to scan",
+          });
         } else {
           toast({
             title: "Scanner Error",
@@ -480,7 +501,7 @@ const GuardDashboard = () => {
           });
           setShowQrScanner(false);
         }
-      }, 500);
+      }, 100);
       
     } catch (error: any) {
       console.error('❌ QR Scanner error:', error);
