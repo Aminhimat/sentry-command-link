@@ -106,7 +106,7 @@ export class PDFReportGenerator {
     this.currentY += 15;
   }
 
-  private async addReportEntry(report: Report, index: number) {
+  private async addReportEntry(report: Report, index: number, company: Company | null) {
     const entryHeight = 50; // Reduced from 80 to fit 5 reports per page
     // No automatic page addition here since we handle it manually in generateReport
 
@@ -237,8 +237,9 @@ export class PDFReportGenerator {
       const issueIdWidth = this.doc.getTextWidth(issueIdText);
       this.doc.text(issueIdText, rightColumnX + (25 - issueIdWidth) / 2, contentY - 1);
 
-      // Watermark text: Guard name + timestamp (will be truncated to fit)
-      const wmText = `${guardName} • ${reportDate.toLocaleString()}`;
+      // Watermark text: Company name + Guard name + timestamp (will be truncated to fit)
+      const companyName = company?.name || 'Security Co';
+      const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
       // Larger image positioned right below the ID with watermark overlay at bottom
       await this.addImageToEntry(report.image_url, rightColumnX - 10, contentY + 2, 40, 40, wmText);
@@ -384,7 +385,7 @@ export class PDFReportGenerator {
         await this.drawHeader(company, reportFilters);
       }
       
-      await this.addReportEntry(reports[i], i);
+      await this.addReportEntry(reports[i], i, company);
     }
 
     // Generate filename
