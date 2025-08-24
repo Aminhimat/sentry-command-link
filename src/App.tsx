@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import CompanyDashboard from "./pages/CompanyDashboard";
+import CompanyShifts from "./pages/CompanyShifts";
+import CompanyGuards from "./pages/CompanyGuards";
+import CompanyProperties from "./pages/CompanyProperties";
 import GuardDashboard from "./pages/GuardDashboard";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import NotFound from "./pages/NotFound";
@@ -26,6 +29,9 @@ const App = () => {
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/company" element={<CompanyDashboard />} />
+            <Route path="/company/shifts" element={<CompanyShifts />} />
+            <Route path="/company/guards" element={<CompanyGuards />} />
+            <Route path="/company/properties" element={<CompanyProperties />} />
             <Route path="/guard" element={<GuardDashboard />} />
             <Route path="/change-password" element={<ChangePasswordPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

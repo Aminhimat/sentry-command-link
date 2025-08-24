@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
 import { generatePDFReport } from "@/components/PDFReportGenerator";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Profile {
@@ -147,8 +147,7 @@ const CompanyDashboard = () => {
     propertyId: "all",
     reportType: "daily"
   });
-const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'shifts' | 'guards' | 'properties'>('overview');
+  const { toast } = useToast();
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
   // Debug: Log all state variables to check for any issues
@@ -898,14 +897,28 @@ const { toast } = useToast();
       {/* Navigation Tabs */}
       <div className="bg-card border-b">
         <div className="px-6 py-4">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'shifts' | 'guards' | 'properties')}>
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="shifts">Shifts</TabsTrigger>
-              <TabsTrigger value="guards">Guards</TabsTrigger>
-              <TabsTrigger value="properties">Properties/Sites</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex gap-1">
+            <Link to="/company">
+              <Button variant="ghost" className="h-10 px-4 py-2 bg-background text-foreground shadow-sm">
+                Overview
+              </Button>
+            </Link>
+            <Link to="/company/shifts">
+              <Button variant="ghost" className="h-10 px-4 py-2">
+                Shifts
+              </Button>
+            </Link>
+            <Link to="/company/guards">
+              <Button variant="ghost" className="h-10 px-4 py-2">
+                Guards
+              </Button>
+            </Link>
+            <Link to="/company/properties">
+              <Button variant="ghost" className="h-10 px-4 py-2">
+                Properties/Sites
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -1301,121 +1314,7 @@ const { toast } = useToast();
 
         <IncidentsTable incidents={reports} />
 
-{activeTab === 'shifts' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Guard Shifts
-              </CardTitle>
-              <CardDescription>
-                Monitor guard check-in and check-out times with locations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-4 font-medium">Guard</th>
-                      <th className="text-left p-4 font-medium">Check In</th>
-                      <th className="text-left p-4 font-medium">Check Out</th>
-                      <th className="text-left p-4 font-medium">Duration</th>
-                      <th className="text-left p-4 font-medium">Location</th>
-                      <th className="text-left p-4 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shifts.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center p-8 text-muted-foreground">
-                          No shift data found
-                        </td>
-                      </tr>
-                    ) : (
-                      shifts.map((shift) => {
-                        const checkInTime = new Date(shift.check_in_time);
-                        const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
-                        const duration = checkOutTime 
-                          ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
-                          : null;
-                        const isActive = !shift.check_out_time;
-                        
-                        return (
-                          <tr 
-                            key={shift.id} 
-                            className="border-b border-border/50 hover:bg-muted/50 cursor-pointer"
-                            onClick={() => setSelectedShift(shift)}
-                          >
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                  <span className="text-sm font-medium text-primary">
-                                    {shift.guard?.first_name?.[0]}{shift.guard?.last_name?.[0]}
-                                  </span>
-                                </div>
-                                <span className="font-medium">
-                                  {shift.guard?.first_name} {shift.guard?.last_name}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div className="text-sm">
-                                <div className="font-medium">
-                                  {checkInTime.toLocaleDateString()}
-                                </div>
-                                <div className="text-muted-foreground">
-                                  {checkInTime.toLocaleTimeString()}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              {checkOutTime ? (
-                                <div className="text-sm">
-                                  <div className="font-medium">
-                                    {checkOutTime.toLocaleDateString()}
-                                  </div>
-                                  <div className="text-muted-foreground">
-                                    {checkOutTime.toLocaleTimeString()}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">Still active</span>
-                              )}
-                            </td>
-                            <td className="p-4">
-                              {duration ? (
-                                <span className="text-sm font-medium">
-                                  {duration}h
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">-</span>
-                              )}
-                            </td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                <span className="truncate max-w-32">
-                                  {shift.location_address || 'Location not available'}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <Badge variant={isActive ? "default" : "secondary"}>
-                                {isActive ? 'Active' : 'Completed'}
-                              </Badge>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
+        {/* Shift Details Modal */}
         <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
@@ -1451,248 +1350,6 @@ const { toast } = useToast();
             )}
           </DialogContent>
         </Dialog>
-
-{activeTab === 'guards' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Guards Roster
-              </CardTitle>
-              <CardDescription>
-                Manage your security guard team
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-4 font-medium">Name</th>
-                      <th className="text-left p-4 font-medium">Email</th>
-                      <th className="text-left p-4 font-medium">Phone</th>
-                      <th className="text-left p-4 font-medium">Assigned Property</th>
-                      <th className="text-left p-4 font-medium">Status</th>
-                      <th className="text-left p-4 font-medium">Joined</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {guards.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="text-center p-8 text-muted-foreground">
-                          No guards found
-                        </td>
-                      </tr>
-                    ) : (
-                      guards.map((guard) => (
-                        <tr key={guard.id} className="border-b border-border/50 hover:bg-muted/50">
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary">
-                                  {guard.first_name?.[0]}{guard.last_name?.[0]}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">
-                                  {guard.first_name} {guard.last_name}
-                                </span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => {
-                                    setEditingGuard(guard);
-                                    setEditGuardData({
-                                      firstName: guard.first_name || "",
-                                      lastName: guard.last_name || "",
-                                      phone: guard.phone || "",
-                                      newPassword: "",
-                                      assignedPropertyId: (guard as any).assigned_property_id || "none"
-                                    });
-                                    setShowEditGuardForm(true);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {guard.email}
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {guard.phone || 'Not provided'}
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {(guard as any).assigned_property?.name || 'No Property'}
-                          </td>
-                          <td className="p-4">
-                            <Badge variant={guard.is_active ? "default" : "secondary"}>
-                              {guard.is_active ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </td>
-                          <td className="p-4 text-sm text-muted-foreground">
-                            {new Date(guard.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Properties/Sites Tab */}
-        {activeTab === 'properties' && (
-          <Card className="mt-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Properties & Sites Management
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your company's properties and site locations
-                  </CardDescription>
-                </div>
-                <Button variant="outline" onClick={() => setShowPropertiesForm(!showPropertiesForm)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Property
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Add Property Form */}
-              {showPropertiesForm && (
-                <Card className="mb-6 shadow-elevated">
-                  <CardHeader>
-                    <CardTitle>Add New Property/Site</CardTitle>
-                    <CardDescription>
-                      Add a new property or site location for your security operations
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleCreateProperty} className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="property-name">Property Name</Label>
-                        <Input
-                          id="property-name"
-                          value={newProperty.name}
-                          onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
-                          placeholder="e.g., Downtown Office Building"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="property-email">Contact Email</Label>
-                        <Input
-                          id="property-email"
-                          type="email"
-                          value={newProperty.email}
-                          onChange={(e) => setNewProperty({ ...newProperty, email: e.target.value })}
-                          placeholder="property@company.com"
-                        />
-                      </div>
-
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="property-address">Location Address</Label>
-                        <Input
-                          id="property-address"
-                          value={newProperty.location_address}
-                          onChange={(e) => setNewProperty({ ...newProperty, location_address: e.target.value })}
-                          placeholder="Full address of the property"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="property-phone">Contact Phone</Label>
-                        <Input
-                          id="property-phone"
-                          value={newProperty.phone}
-                          onChange={(e) => setNewProperty({ ...newProperty, phone: e.target.value })}
-                          placeholder="+1 (555) 123-4567"
-                        />
-                      </div>
-
-                      <div className="flex gap-4 items-end">
-                        <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
-                          {isLoading ? "Creating..." : "Add Property"}
-                        </Button>
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          onClick={() => setShowPropertiesForm(false)}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Properties List */}
-              <div className="space-y-4">
-                {properties.length === 0 ? (
-                  <div className="text-center p-12">
-                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Properties Added</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start by adding your first property or site location to manage your security operations
-                    </p>
-                    <Button variant="outline" onClick={() => setShowPropertiesForm(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Property
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {properties.map((property) => (
-                      <Card key={property.id} className="shadow-card hover:shadow-elevated transition-smooth">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <MapPin className="h-5 w-5 text-primary" />
-                                <h3 className="text-xl font-semibold">{property.name}</h3>
-                                <Badge variant={property.is_active ? "default" : "secondary"}>
-                                  {property.is_active ? 'Active' : 'Inactive'}
-                                </Badge>
-                              </div>
-                              <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                                <div>
-                                  <p><strong>Address:</strong> {property.location_address || 'Not provided'}</p>
-                                  <p><strong>Email:</strong> {property.email || 'Not provided'}</p>
-                                </div>
-                                <div>
-                                  <p><strong>Phone:</strong> {property.phone || 'Not provided'}</p>
-                                  <p><strong>Created:</strong> {new Date(property.created_at).toLocaleDateString()}</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4 mr-1" />
-                                View
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                Edit
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
 
       </div>
