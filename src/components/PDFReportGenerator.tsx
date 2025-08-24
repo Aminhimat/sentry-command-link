@@ -152,16 +152,15 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Description in middle column with rectangle box - use task if no description
+      // Display Description in middle column with rectangle box - show "Security Patrol" if empty
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
-      const taskLine = lines.find(line => line.startsWith('Task:'));
       
-      let displayText = '';
+      let displayText = 'Security Patrol'; // Default value
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
-        displayText = descriptionValue || (taskLine ? taskLine.replace('Task:', '').trim() : 'Security Patrol');
-      } else {
-        displayText = taskLine ? taskLine.replace('Task:', '').trim() : 'Security Patrol';
+        if (descriptionValue) {
+          displayText = descriptionValue;
+        }
       }
       
       // Calculate bigger box dimensions (similar to picture size)
