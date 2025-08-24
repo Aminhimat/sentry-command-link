@@ -23,6 +23,29 @@ const config: CapacitorConfig = {
     App: {
       launchUrl: 'guard'
     }
+  },
+  android: {
+    iconDensity: "mdpi"
+  },
+  ios: {
+    iconGenerateFor: [
+      "iphone-small@2x",
+      "iphone-small@3x", 
+      "iphone-40@2x",
+      "iphone-40@3x",
+      "iphone-60@2x",
+      "iphone-60@3x",
+      "ipad-20",
+      "ipad-20@2x",
+      "ipad-29",
+      "ipad-29@2x",
+      "ipad-40",
+      "ipad-40@2x",
+      "ipad-76",
+      "ipad-76@2x",
+      "ipad-83.5@2x",
+      "ios-marketing"
+    ]
   }
 };
 
