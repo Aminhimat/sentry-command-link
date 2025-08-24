@@ -226,7 +226,7 @@ const GuardDashboard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!taskData.taskType || !taskData.site || !taskData.description || !taskData.severity) {
+    if (!taskData.taskType || !taskData.site || !taskData.severity) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -264,7 +264,7 @@ const GuardDashboard = () => {
           taskType: taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType,
           site: taskData.site,
           severity: taskData.severity,
-          description: taskData.description,
+          description: taskData.description.trim() || "Security Patrol",
           location
         }));
 
@@ -298,7 +298,7 @@ const GuardDashboard = () => {
           .insert({
             guard_id: profile.id,
             company_id: profile.company_id,
-            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description}`,
+            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description.trim() || "Security Patrol"}`,
             location_address: taskData.site,
             location_lat: location?.latitude,
             location_lng: location?.longitude
@@ -982,11 +982,10 @@ const GuardDashboard = () => {
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe the task details, observations, or issues..."
+                  placeholder="Describe the task details, observations, or issues (optional - defaults to 'Security Patrol')..."
                   className="min-h-[100px]"
                   value={taskData.description}
                   onChange={(e) => setTaskData({ ...taskData, description: e.target.value })}
-                  required
                 />
               </div>
 
