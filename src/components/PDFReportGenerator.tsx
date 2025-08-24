@@ -296,7 +296,7 @@ export class PDFReportGenerator {
           // Draw watermark overlay (bottom of picture) if provided
           if (watermarkText) {
             const padding = 1.2;
-            const barHeight = Math.max(4, Math.min(8, height * 0.3));
+            const barHeight = Math.max(3, Math.min(6, height * 0.2));
 
             // Background bar
             this.doc.setFillColor(0, 0, 0);
