@@ -171,7 +171,7 @@ export class PDFReportGenerator {
       }
       
       // Display Task and Severity at the bottom with better spacing (exclude Description and Site)
-      let bottomY = contentY + 16; // Increased spacing from 14 to 16
+      let bottomY = contentY + 20; // Increased spacing from 16 to 20 to give more space after Location
       lines.forEach((line) => {
         if (line.startsWith('Task:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
