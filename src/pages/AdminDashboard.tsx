@@ -502,20 +502,50 @@ const AdminDashboard = () => {
       
       console.log(`Starting deletion process for company: ${companyId}`);
       
+      // First, get all profile IDs for this company
+      console.log('Fetching company profiles...');
+      const { data: companyProfiles, error: profilesQueryError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('company_id', companyId);
+
+      if (profilesQueryError) {
+        console.error('Error fetching company profiles:', profilesQueryError);
+        throw new Error(`Failed to fetch company profiles: ${profilesQueryError.message}`);
+      }
+
+      const profileIds = companyProfiles?.map(p => p.id) || [];
+      console.log(`Found ${profileIds.length} profiles to delete`);
+      
       // Delete all related data first in the correct order to handle foreign key constraints
       
-      // Delete guard reports first (they reference profiles via guard_id)
-      console.log('Deleting guard reports...');
-      const { error: reportsError } = await supabase
+      // Delete guard reports that reference these profiles (by guard_id)
+      if (profileIds.length > 0) {
+        console.log('Deleting guard reports by guard_id...');
+        const { error: reportsByGuardError } = await supabase
+          .from('guard_reports')
+          .delete()
+          .in('guard_id', profileIds);
+
+        if (reportsByGuardError) {
+          console.error('Error deleting guard reports by guard_id:', reportsByGuardError);
+          throw new Error(`Failed to delete guard reports by guard_id: ${reportsByGuardError.message}`);
+        }
+        console.log('Guard reports deleted by guard_id successfully');
+      }
+
+      // Also delete any remaining guard reports by company_id (just in case)
+      console.log('Deleting remaining guard reports by company_id...');
+      const { error: reportsByCompanyError } = await supabase
         .from('guard_reports')
         .delete()
         .eq('company_id', companyId);
 
-      if (reportsError) {
-        console.error('Error deleting guard reports:', reportsError);
-        throw new Error(`Failed to delete guard reports: ${reportsError.message}`);
+      if (reportsByCompanyError) {
+        console.error('Error deleting guard reports by company_id:', reportsByCompanyError);
+        throw new Error(`Failed to delete guard reports by company_id: ${reportsByCompanyError.message}`);
       }
-      console.log('Guard reports deleted successfully');
+      console.log('Remaining guard reports deleted by company_id successfully');
 
       // Delete guard shifts
       console.log('Deleting guard shifts...');
