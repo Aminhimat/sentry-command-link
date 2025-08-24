@@ -11,9 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import IncidentDetailsModal from "@/components/IncidentDetailsModal";
-import IncidentsTable from "@/components/IncidentsTable";
-import { generatePDFReport } from "@/components/PDFReportGenerator";
 
 interface Company {
   id: string;
@@ -48,25 +45,6 @@ interface Guard {
   created_at: string;
 }
 
-interface Incident {
-  id: string;
-  company_id: string;
-  guard_id: string;
-  title: string;
-  description: string;
-  severity: string;
-  status: string;
-  location_address: string;
-  created_at: string;
-  company?: {
-    name: string;
-    logo_url?: string;
-  };
-  guard?: {
-    first_name: string;
-    last_name: string;
-  };
-}
 
 interface Property {
   id: string;
@@ -90,12 +68,7 @@ const AdminDashboard = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [guardsCount, setGuardsCount] = useState(0);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
-  const [filteredIncidents, setFilteredIncidents] = useState<Incident[]>([]);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [newProperty, setNewProperty] = useState({
     name: "",
@@ -120,13 +93,6 @@ const AdminDashboard = () => {
   });
   const { toast } = useToast();
   
-  // Report generation state
-  const [reportFilters, setReportFilters] = useState({
-    propertyId: 'all',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    reportType: 'daily' as 'daily' | 'range'
-  });
 
   useEffect(() => {
     checkUser();
@@ -172,7 +138,6 @@ const AdminDashboard = () => {
       setUserProfile(profile);
       await fetchCompanies();
       await fetchGuards();
-      await fetchIncidents();
       await fetchProperties();
     } catch (error) {
       console.error('Error checking user:', error);
@@ -245,50 +210,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchIncidents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('guard_reports')
-        .select(`
-          *,
-          profiles!guard_reports_guard_id_fkey (
-            first_name,
-            last_name,
-            company_id,
-            companies (
-              name,
-              logo_url
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      const incidentsWithCompany = data?.map((report: any) => ({
-        ...report,
-        guard: report.profiles,
-        company: report.profiles?.companies,
-        // Map guard report fields to incident fields for compatibility
-        title: report.report_text?.split('\n')[0]?.replace('Task: ', '') || 'Security Report',
-        description: report.report_text,
-        severity: report.report_text?.includes('Severity: ') ? 
-          report.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none'
-      })) || [];
-
-      setIncidents(incidentsWithCompany);
-      setFilteredIncidents(incidentsWithCompany);
-    } catch (error) {
-      console.error('Error fetching incidents:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load incidents",
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchProperties = async () => {
     try {
@@ -322,36 +243,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCompanySelect = (companyId: string) => {
-    setSelectedCompanyId(companyId);
-    if (companyId === "") {
-      setFilteredIncidents(incidents);
-    } else {
-      setFilteredIncidents(incidents.filter(incident => incident.company_id === companyId));
-    }
-  };
-
-  const handleIncidentClick = (incident: Incident) => {
-    setSelectedIncident(incident);
-    setIsModalOpen(true);
-  };
-
-  const getSeverityBadge = (severity: string) => {
-    const config = {
-      high: { variant: "destructive" as const, className: "bg-destructive" },
-      medium: { variant: "secondary" as const, className: "bg-warning text-warning-foreground" },
-      low: { variant: "outline" as const, className: "bg-success/10 text-success border-success" },
-      none: { variant: "outline" as const, className: "" }
-    } as const;
-
-    const severityConfig = config[severity as keyof typeof config] || config.none;
-
-    return (
-      <Badge variant={severityConfig.variant} className={severityConfig.className}>
-        {severity?.charAt(0).toUpperCase() + severity?.slice(1) || 'None'}
-      </Badge>
-    );
-  };
 
   const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -632,7 +523,6 @@ const AdminDashboard = () => {
       // Refresh the companies list
       await fetchCompanies();
       await fetchGuards();
-      await fetchIncidents();
     } catch (error) {
       console.error('Error deleting company:', error);
       toast({
@@ -650,79 +540,6 @@ const AdminDashboard = () => {
     window.location.href = '/auth';
   };
 
-  const handleGenerateReport = async () => {
-    const currentCompany = companies.find(c => c.id === selectedCompanyId);
-    if (!currentCompany) {
-      toast({
-        title: "Error",
-        description: "Please select a company first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      let query = supabase
-        .from('guard_reports')
-        .select(`
-          *,
-          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
-        `)
-        .eq('company_id', currentCompany.id);
-
-      // Apply date filters
-      let startDateTime = new Date(reportFilters.startDate);
-      let endDateTime = new Date(reportFilters.endDate);
-      
-      if (reportFilters.reportType === 'daily') {
-        startDateTime.setHours(0, 0, 0, 0);
-        endDateTime.setHours(23, 59, 59, 999);
-      } else {
-        startDateTime.setHours(0, 0, 0, 0);
-        endDateTime.setHours(23, 59, 59, 999);
-      }
-
-      query = query
-        .gte('created_at', startDateTime.toISOString())
-        .lte('created_at', endDateTime.toISOString());
-
-      // Apply property filter if specific property selected
-      if (reportFilters.propertyId !== 'all') {
-        // Filter reports by property location (assuming reports have location data)
-        const selectedProperty = properties.find(p => p.id === reportFilters.propertyId);
-        if (selectedProperty) {
-          // This is a simple approach - you might want to implement geofencing later
-          query = query.ilike('location_address', `%${selectedProperty.location_address}%`);
-        }
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      // Generate PDF report
-      await generatePDFReport(data || [], currentCompany, { 
-        ...reportFilters, 
-        startDate: startDateTime, 
-        endDate: endDateTime 
-      });
-
-      toast({
-        title: "Success",
-        description: "Property report generated successfully!",
-      });
-
-    } catch (error: any) {
-      console.error('Error generating report:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate report",
-        variant: "destructive",
-      });
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const config = {
@@ -1065,18 +882,8 @@ const AdminDashboard = () => {
 
         </Tabs>
 
-        {/* Incidents Monitor */}
-        <div className="mt-8">
-          <IncidentsTable incidents={filteredIncidents} />
-        </div>
       </div>
 
-      {/* Incident Details Modal */}
-      <IncidentDetailsModal
-        incident={selectedIncident}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 };
