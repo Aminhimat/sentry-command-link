@@ -152,38 +152,48 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Description in middle column with rectangle box - make it bold
+      // Display Description in middle column with rectangle box - use task if no description
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
+      const taskLine = lines.find(line => line.startsWith('Task:'));
+      
+      let displayText = '';
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
-        
-        // Calculate box dimensions
-        const boxWidth = 60;
-        const boxHeight = 18;
-        const boxX = middleColumnX - 2;
-        const boxY = contentY;
-        
-        // Draw rectangle background
-        this.doc.setFillColor(245, 245, 245); // Light gray background
-        this.doc.setDrawColor(200, 200, 200); // Gray border
-        this.doc.rect(boxX, boxY, boxWidth, boxHeight, 'FD'); // F = fill, D = draw border
-        
-        // Add description text inside the box
-        this.doc.setFont('helvetica', 'bold');
-        this.doc.setFontSize(8);
-        this.doc.setTextColor(0, 0, 0);
-        
-        // Wrap text if it's too long
-        const maxWidth = boxWidth - 4; // Leave padding inside box
-        const wrappedText = this.doc.splitTextToSize(descriptionValue, maxWidth);
-        let descY = boxY + 6; // Start text with padding from top of box
-        for (let j = 0; j < Math.min(wrappedText.length, 2); j++) { // Limit to 2 lines to fit in box
-          this.doc.text(wrappedText[j], boxX + 2, descY); // Add left padding
-          descY += 5;
-        }
-        this.doc.setFont('helvetica', 'normal'); // Reset to normal
-        this.doc.setFontSize(7);
+        displayText = descriptionValue || (taskLine ? taskLine.replace('Task:', '').trim() : 'Security Patrol');
+      } else {
+        displayText = taskLine ? taskLine.replace('Task:', '').trim() : 'Security Patrol';
       }
+      
+      // Calculate box dimensions
+      const boxWidth = 60;
+      const boxHeight = 18;
+      const boxX = middleColumnX - 2;
+      const boxY = contentY;
+      
+      // Draw rectangle border only (no fill)
+      this.doc.setDrawColor(200, 200, 200); // Gray border
+      this.doc.rect(boxX, boxY, boxWidth, boxHeight, 'S'); // S = stroke only
+      
+      // Add centered text inside the box
+      this.doc.setFont('helvetica', 'bold');
+      this.doc.setFontSize(8);
+      this.doc.setTextColor(0, 0, 0);
+      
+      // Wrap text if it's too long
+      const maxWidth = boxWidth - 4; // Leave padding inside box
+      const wrappedText = this.doc.splitTextToSize(displayText, maxWidth);
+      
+      // Center the text vertically and horizontally
+      const totalTextHeight = Math.min(wrappedText.length, 2) * 5;
+      const startY = boxY + (boxHeight - totalTextHeight) / 2 + 4;
+      
+      for (let j = 0; j < Math.min(wrappedText.length, 2); j++) { // Limit to 2 lines to fit in box
+        const textWidth = this.doc.getTextWidth(wrappedText[j]);
+        const centeredX = boxX + (boxWidth - textWidth) / 2;
+        this.doc.text(wrappedText[j], centeredX, startY + (j * 5));
+      }
+      this.doc.setFont('helvetica', 'normal'); // Reset to normal
+      this.doc.setFontSize(7);
       
       // Display Task and Severity at the bottom with better spacing (exclude Description and Site)
       let bottomY = contentY + 20; // Increased spacing from 16 to 20 to give more space after Location
