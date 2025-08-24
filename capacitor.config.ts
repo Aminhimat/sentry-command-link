@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
         camera: 'Camera access is needed to take photos for security reports'
       }
     },
-    BarcodeScanning: {
+    BarcodeScanner: {
       permissions: {
         camera: 'Camera access is required for QR code scanning'
       }

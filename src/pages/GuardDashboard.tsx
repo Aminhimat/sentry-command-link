@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
-import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
+import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
@@ -375,42 +375,39 @@ const GuardDashboard = () => {
 
   const startBarcodeScanning = async () => {
     try {
-      // Check if device supports barcode scanning
-      const isSupported = await BarcodeScanner.isSupported();
-      if (!isSupported.supported) {
-        toast({
-          title: "Not Supported",
-          description: "Barcode scanning is not supported on this device",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Request camera permissions
-      const permissions = await BarcodeScanner.requestPermissions();
-      if (permissions.camera !== 'granted') {
+      // Check permission status
+      const status = await BarcodeScanner.checkPermission({ force: true });
+      
+      if (status.granted) {
+        // Hide the background to make the camera visible
+        BarcodeScanner.hideBackground();
+        
+        // Start the scanner
+        const result = await BarcodeScanner.startScan();
+        
+        // If we got a result, process it
+        if (result.hasContent) {
+          handleQrCodeScan(result.content);
+        }
+        
+        // Show the background again
+        BarcodeScanner.showBackground();
+      } else {
         toast({
           title: "Permission Denied",
           description: "Camera permission is required for QR scanning",
           variant: "destructive",
         });
-        return;
-      }
-
-      // Start scanning
-      const result = await BarcodeScanner.scan();
-      
-      if (result.barcodes && result.barcodes.length > 0) {
-        const scannedData = result.barcodes[0].displayValue;
-        handleQrCodeScan(scannedData);
       }
     } catch (error) {
       console.error('Barcode scanning error:', error);
       toast({
-        title: "Scanning Error",
+        title: "Scanning Error", 
         description: "Failed to scan QR code. Please try again.",
         variant: "destructive",
       });
+      // Make sure to show background even if error occurs
+      BarcodeScanner.showBackground();
     }
   };
 
@@ -941,7 +938,7 @@ const GuardDashboard = () => {
                          <>
                            <Camera className="h-12 w-12 text-muted-foreground mb-2" />
                            <p className="text-sm text-muted-foreground mb-4">
-                             Tap to scan QR code for location or task
+                             Tap to scan QR code - uses rear camera by default
                            </p>
                            <Button
                              onClick={startBarcodeScanning}
