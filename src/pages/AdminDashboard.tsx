@@ -501,6 +501,17 @@ const AdminDashboard = () => {
       setIsLoading(true);
       
       // Delete all related data first
+      // Delete guard reports (must be deleted before profiles due to foreign key constraint)
+      const { error: reportsError } = await supabase
+        .from('guard_reports')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (reportsError) {
+        console.error('Error deleting guard reports:', reportsError);
+        throw new Error('Failed to delete guard reports');
+      }
+
       // Delete guard shifts
       const { error: shiftsError } = await supabase
         .from('guard_shifts')
