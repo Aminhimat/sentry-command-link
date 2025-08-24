@@ -345,15 +345,32 @@ const CompanyDashboard = () => {
         }
 
         console.log('Using fallback data:', fallbackData);
-        setReports(fallbackData || []);
+        setReports(processReportsWithPropertyNames(fallbackData || []));
         return;
       }
 
       console.log('Setting reports:', data);
-      setReports(data || []);
+      setReports(processReportsWithPropertyNames(data || []));
     } catch (error) {
       console.error('Error fetching reports:', error);
     }
+  };
+
+  // Function to process reports and convert property IDs to names
+  const processReportsWithPropertyNames = (reportsData: Report[]) => {
+    return reportsData.map(report => {
+      if (report.location_address && properties.length > 0) {
+        // Check if location_address is a property ID (UUID format)
+        const propertyMatch = properties.find(prop => prop.id === report.location_address);
+        if (propertyMatch) {
+          return {
+            ...report,
+            location_address: propertyMatch.name
+          };
+        }
+      }
+      return report;
+    });
   };
 
   const fetchCompany = async (companyId: string) => {
@@ -449,6 +466,34 @@ const CompanyDashboard = () => {
     if (!userProfile?.company_id) return;
     await fetchPropertiesForCompany(userProfile.company_id);
   };
+
+  // Re-process reports whenever properties change
+  useEffect(() => {
+    if (properties.length > 0 && reports.length > 0) {
+      const processedReports = reports.map(report => {
+        if (report.location_address && properties.length > 0) {
+          // Check if location_address is a property ID (UUID format)
+          const propertyMatch = properties.find(prop => prop.id === report.location_address);
+          if (propertyMatch) {
+            return {
+              ...report,
+              location_address: propertyMatch.name
+            };
+          }
+        }
+        return report;
+      });
+      
+      // Only update if there are actual changes
+      const hasChanges = processedReports.some((report, index) => 
+        report.location_address !== reports[index].location_address
+      );
+      
+      if (hasChanges) {
+        setReports(processedReports);
+      }
+    }
+  }, [properties.length]); // Only depend on properties length to avoid circular updates
 
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -703,8 +748,22 @@ const CompanyDashboard = () => {
         throw error;
       }
 
+      // Convert property IDs to names in reports for PDF generation
+      const reportsForPDF = (data || []).map(report => {
+        if (report.location_address && properties.length > 0) {
+          const propertyMatch = properties.find(prop => prop.id === report.location_address);
+          if (propertyMatch) {
+            return {
+              ...report,
+              location_address: propertyMatch.name
+            };
+          }
+        }
+        return report;
+      });
+
       // Generate PDF report using the new generator
-      await generatePDFReport(data || [], company, { ...reportFilters, startDate: startDateTime, endDate: endDateTime });
+      await generatePDFReport(reportsForPDF, company, { ...reportFilters, startDate: startDateTime, endDate: endDateTime });
 
       toast({
         title: "Success",
