@@ -857,41 +857,51 @@ const GuardDashboard = () => {
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="properties" className="space-y-2">
-                    <div className="relative">
-                      <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                       <Select 
-                        value={taskData.site} 
-                        onValueChange={(value) => {
-                          setTaskData({ 
-                            ...taskData, 
-                            site: value 
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="pl-10">
-                          <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border shadow-lg z-50">
-                          {loadingProperties ? (
-                            <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
-                          ) : properties.length === 0 ? (
-                            <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
-                          ) : (
-                            properties.map((property) => (
-                              <SelectItem key={property.id} value={property.id}>
-                                 <div className="flex flex-col">
-                                   <span className="font-medium">{property.name}</span>
-                                   {property.location_address && (
-                                     <span className="text-xs text-muted-foreground">{property.location_address}</span>
-                                   )}
-                                 </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                   <TabsContent value="properties" className="space-y-2">
+                     <div className="relative">
+                       <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                       {(() => {
+                         // Check if the selected site matches any property name for proper selection display
+                         const selectedPropertyValue = properties.find(prop => prop.name === taskData.site)?.id || taskData.site;
+                         
+                         return (
+                           <Select 
+                             value={selectedPropertyValue}
+                             onValueChange={(value) => {
+                               // Find the selected property to get its name
+                               const selectedProperty = properties.find(prop => prop.id === value);
+                               const siteName = selectedProperty ? selectedProperty.name : value;
+                               setTaskData({ 
+                                 ...taskData, 
+                                 site: siteName 
+                               });
+                             }}
+                           >
+                             <SelectTrigger className="pl-10">
+                               <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
+                             </SelectTrigger>
+                             <SelectContent className="bg-background border border-border shadow-lg z-50">
+                               {loadingProperties ? (
+                                 <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
+                               ) : properties.length === 0 ? (
+                                 <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
+                               ) : (
+                                 properties.map((property) => (
+                                   <SelectItem key={property.id} value={property.id}>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{property.name}</span>
+                                        {property.location_address && (
+                                          <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                                        )}
+                                      </div>
+                                   </SelectItem>
+                                 ))
+                               )}
+                             </SelectContent>
+                           </Select>
+                         );
+                       })()}
+                     </div>
                     {!loadingProperties && properties.length === 0 && (
                       <p className="text-sm text-muted-foreground">
                         No work sites found. Contact your administrator to set up work sites.
