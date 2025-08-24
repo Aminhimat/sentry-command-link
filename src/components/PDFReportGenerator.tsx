@@ -131,16 +131,16 @@ export class PDFReportGenerator {
     this.doc.setTextColor(0, 0, 0);
     this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
     
-    // Guard Information (more compact)
+    // Guard Information (more compact with better spacing)
     this.doc.setTextColor(0, 0, 0);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 6);
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 8); // Increased spacing from 6 to 8
     
-    // Location Information (compact)
+    // Location Information (compact with better spacing)
     if (report.location_address) {
       this.doc.setTextColor(0, 0, 0);
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 10);
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 13); // Increased spacing from 10 to 13
     }
     
     // Report Content - Display Task in middle column and other fields at bottom
@@ -170,12 +170,12 @@ export class PDFReportGenerator {
         this.doc.setFontSize(7);
       }
       
-      // Display Task, Site, Severity at the bottom with reduced spacing (exclude Description since it's now in middle)
-      let bottomY = contentY + 14;
+      // Display Task and Severity at the bottom with better spacing (exclude Description and Site)
+      let bottomY = contentY + 16; // Increased spacing from 14 to 16
       lines.forEach((line) => {
-        if (line.startsWith('Task:') || line.startsWith('Site:')) {
+        if (line.startsWith('Task:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 3;
+          bottomY += 5; // Increased spacing from 3 to 5
         } else if (line.startsWith('Severity:')) {
           // Extract severity value and set color
           const severityValue = line.replace('Severity:', '').trim().toLowerCase();
@@ -194,7 +194,7 @@ export class PDFReportGenerator {
           }
           
           this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 3;
+          bottomY += 5; // Increased spacing from 3 to 5
           
           // Reset color to black for other text
           this.doc.setTextColor(0, 0, 0);
