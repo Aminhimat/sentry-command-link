@@ -152,19 +152,34 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Description in middle column instead of Task - make it bold
+      // Display Description in middle column with rectangle box - make it bold
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
+        
+        // Calculate box dimensions
+        const boxWidth = 60;
+        const boxHeight = 18;
+        const boxX = middleColumnX - 2;
+        const boxY = contentY;
+        
+        // Draw rectangle background
+        this.doc.setFillColor(245, 245, 245); // Light gray background
+        this.doc.setDrawColor(200, 200, 200); // Gray border
+        this.doc.rect(boxX, boxY, boxWidth, boxHeight, 'FD'); // F = fill, D = draw border
+        
+        // Add description text inside the box
         this.doc.setFont('helvetica', 'bold');
         this.doc.setFontSize(8);
+        this.doc.setTextColor(0, 0, 0);
+        
         // Wrap text if it's too long
-        const maxWidth = 60; // Adjust based on column width
+        const maxWidth = boxWidth - 4; // Leave padding inside box
         const wrappedText = this.doc.splitTextToSize(descriptionValue, maxWidth);
-        let descY = contentY + 2;
-        for (let j = 0; j < Math.min(wrappedText.length, 3); j++) { // Limit to 3 lines
-          this.doc.text(wrappedText[j], middleColumnX, descY);
-          descY += 4;
+        let descY = boxY + 6; // Start text with padding from top of box
+        for (let j = 0; j < Math.min(wrappedText.length, 2); j++) { // Limit to 2 lines to fit in box
+          this.doc.text(wrappedText[j], boxX + 2, descY); // Add left padding
+          descY += 5;
         }
         this.doc.setFont('helvetica', 'normal'); // Reset to normal
         this.doc.setFontSize(7);
