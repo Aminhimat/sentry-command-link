@@ -240,8 +240,8 @@ export class PDFReportGenerator {
       // Watermark text: Guard name + timestamp (will be truncated to fit)
       const wmText = `${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Smaller image positioned right below the ID with watermark overlay at bottom
-      await this.addImageToEntry(report.image_url, rightColumnX, contentY + 2, 25, 25, wmText);
+      // Larger image positioned right below the ID with watermark overlay at bottom
+      await this.addImageToEntry(report.image_url, rightColumnX - 10, contentY + 2, 40, 40, wmText);
     } else {
       // Show issue ID even without image
       this.doc.setTextColor(0, 0, 0);
@@ -269,9 +269,9 @@ export class PDFReportGenerator {
             return;
           }
 
-          // Set smaller canvas size for compression
-          const maxWidth = 400;
-          const maxHeight = 400;
+          // Set smaller canvas size for faster processing
+          const maxWidth = 200;
+          const maxHeight = 200;
           
           let { width: imgWidth, height: imgHeight } = img;
           
