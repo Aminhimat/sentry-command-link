@@ -500,34 +500,25 @@ const AdminDashboard = () => {
     try {
       setIsLoading(true);
       
-      // Delete all related data first
-      // First get all profile IDs for this company
-      const { data: companyProfiles, error: profilesQueryError } = await supabase
-        .from('profiles')
-        .select('id')
+      console.log(`Starting deletion process for company: ${companyId}`);
+      
+      // Delete all related data first in the correct order to handle foreign key constraints
+      
+      // Delete guard reports first (they reference profiles via guard_id)
+      console.log('Deleting guard reports...');
+      const { error: reportsError } = await supabase
+        .from('guard_reports')
+        .delete()
         .eq('company_id', companyId);
 
-      if (profilesQueryError) {
-        console.error('Error fetching company profiles:', profilesQueryError);
-        throw new Error('Failed to fetch company profiles');
+      if (reportsError) {
+        console.error('Error deleting guard reports:', reportsError);
+        throw new Error(`Failed to delete guard reports: ${reportsError.message}`);
       }
-
-      const profileIds = companyProfiles?.map(p => p.id) || [];
-
-      // Delete guard reports that reference these profiles
-      if (profileIds.length > 0) {
-        const { error: reportsError } = await supabase
-          .from('guard_reports')
-          .delete()
-          .in('guard_id', profileIds);
-
-        if (reportsError) {
-          console.error('Error deleting guard reports:', reportsError);
-          throw new Error('Failed to delete guard reports');
-        }
-      }
+      console.log('Guard reports deleted successfully');
 
       // Delete guard shifts
+      console.log('Deleting guard shifts...');
       const { error: shiftsError } = await supabase
         .from('guard_shifts')
         .delete()
@@ -535,10 +526,12 @@ const AdminDashboard = () => {
 
       if (shiftsError) {
         console.error('Error deleting guard shifts:', shiftsError);
-        throw new Error('Failed to delete guard shifts');
+        throw new Error(`Failed to delete guard shifts: ${shiftsError.message}`);
       }
+      console.log('Guard shifts deleted successfully');
 
       // Delete incidents
+      console.log('Deleting incidents...');
       const { error: incidentsError } = await supabase
         .from('incidents')
         .delete()
@@ -546,10 +539,25 @@ const AdminDashboard = () => {
 
       if (incidentsError) {
         console.error('Error deleting incidents:', incidentsError);
-        throw new Error('Failed to delete incidents');
+        throw new Error(`Failed to delete incidents: ${incidentsError.message}`);
       }
+      console.log('Incidents deleted successfully');
+
+      // Delete properties
+      console.log('Deleting properties...');
+      const { error: propertiesError } = await supabase
+        .from('properties')
+        .delete()
+        .eq('company_id', companyId);
+
+      if (propertiesError) {
+        console.error('Error deleting properties:', propertiesError);
+        throw new Error(`Failed to delete properties: ${propertiesError.message}`);
+      }
+      console.log('Properties deleted successfully');
 
       // Delete profiles associated with this company
+      console.log('Deleting profiles...');
       const { error: profilesError } = await supabase
         .from('profiles')
         .delete()
@@ -557,10 +565,12 @@ const AdminDashboard = () => {
 
       if (profilesError) {
         console.error('Error deleting profiles:', profilesError);
-        throw new Error('Failed to delete user profiles');
+        throw new Error(`Failed to delete user profiles: ${profilesError.message}`);
       }
+      console.log('Profiles deleted successfully');
 
       // Finally delete the company
+      console.log('Deleting company...');
       const { error: companyError } = await supabase
         .from('companies')
         .delete()
@@ -568,8 +578,9 @@ const AdminDashboard = () => {
 
       if (companyError) {
         console.error('Error deleting company:', companyError);
-        throw new Error('Failed to delete company');
+        throw new Error(`Failed to delete company: ${companyError.message}`);
       }
+      console.log('Company deleted successfully');
 
       toast({
         title: "Success",
