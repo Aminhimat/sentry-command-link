@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
-import { BarcodeScanner } from '@capacitor-community/barcode-scanner';
+import QrScanner from 'react-qr-scanner';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
@@ -32,6 +32,7 @@ const GuardDashboard = () => {
     severity: "none",
     image: null as File | null
   });
+  const [showQrScanner, setShowQrScanner] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -339,7 +340,7 @@ const GuardDashboard = () => {
     }
   };
 
-  const handleQrCodeScan = async (data: string | null) => {
+  const handleQrCodeScan = (data: string | null) => {
     if (data) {
       console.log('QR Code scanned:', data);
       
@@ -362,6 +363,7 @@ const GuardDashboard = () => {
           });
         }
         
+        setShowQrScanner(false);
       } catch (error) {
         // If not JSON, treat as plain text for site location
         setTaskData({ ...taskData, site: data });
@@ -369,46 +371,18 @@ const GuardDashboard = () => {
           title: "QR Code Scanned",
           description: `Site location set to: ${data}`,
         });
+        setShowQrScanner(false);
       }
     }
   };
 
-  const startBarcodeScanning = async () => {
-    try {
-      // Check permission status
-      const status = await BarcodeScanner.checkPermission({ force: true });
-      
-      if (status.granted) {
-        // Hide the background to make the camera visible
-        BarcodeScanner.hideBackground();
-        
-        // Start the scanner
-        const result = await BarcodeScanner.startScan();
-        
-        // If we got a result, process it
-        if (result.hasContent) {
-          handleQrCodeScan(result.content);
-        }
-        
-        // Show the background again
-        BarcodeScanner.showBackground();
-      } else {
-        toast({
-          title: "Permission Denied",
-          description: "Camera permission is required for QR scanning",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Barcode scanning error:', error);
-      toast({
-        title: "Scanning Error", 
-        description: "Failed to scan QR code. Please try again.",
-        variant: "destructive",
-      });
-      // Make sure to show background even if error occurs
-      BarcodeScanner.showBackground();
-    }
+  const handleQrError = (err: any) => {
+    console.error('QR Scanner error:', err);
+    toast({
+      title: "Camera Error", 
+      description: "Failed to access camera. Please check permissions.",
+      variant: "destructive",
+    });
   };
 
   const checkLocationPermissions = async (): Promise<void> => {
@@ -935,21 +909,47 @@ const GuardDashboard = () => {
                    <TabsContent value="qr" className="space-y-2">
                      <div className="text-center space-y-4">
                        <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center">
-                         <>
-                           <Camera className="h-12 w-12 text-muted-foreground mb-2" />
-                           <p className="text-sm text-muted-foreground mb-4">
-                             Tap to scan QR code - uses rear camera by default
-                           </p>
-                           <Button
-                             onClick={startBarcodeScanning}
-                             variant="outline"
-                             className="flex items-center gap-2"
-                           >
-                             <QrCode className="h-4 w-4" />
-                             Scan QR Code
-                           </Button>
-                         </>
+                         {showQrScanner ? (
+                           <div className="w-full h-full relative overflow-hidden rounded-lg">
+                             <QrScanner
+                               delay={300}
+                               onError={handleQrError}
+                               onScan={handleQrCodeScan}
+                               constraints={{
+                                 video: { 
+                                   facingMode: 'environment' // This requests rear camera
+                                 }
+                               }}
+                               style={{ width: '100%', height: '100%' }}
+                             />
+                           </div>
+                         ) : (
+                           <>
+                             <Camera className="h-12 w-12 text-muted-foreground mb-2" />
+                             <p className="text-sm text-muted-foreground mb-4">
+                               Tap to scan QR code - will use rear camera in browser
+                             </p>
+                             <Button
+                               onClick={() => setShowQrScanner(true)}
+                               variant="outline"
+                               className="flex items-center gap-2"
+                             >
+                               <QrCode className="h-4 w-4" />
+                               Start Scanner
+                             </Button>
+                           </>
+                         )}
                        </div>
+                       
+                       {showQrScanner && (
+                         <Button
+                           onClick={() => setShowQrScanner(false)}
+                           variant="outline"
+                           className="w-full"
+                         >
+                           Stop Scanner
+                         </Button>
+                       )}
                        
                        {taskData.site && (
                         <p className="text-sm text-green-600">
