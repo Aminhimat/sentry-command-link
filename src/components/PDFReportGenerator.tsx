@@ -164,10 +164,10 @@ export class PDFReportGenerator {
         displayText = taskLine ? taskLine.replace('Task:', '').trim() : 'Security Patrol';
       }
       
-      // Calculate box dimensions
-      const boxWidth = 60;
-      const boxHeight = 18;
-      const boxX = middleColumnX - 2;
+      // Calculate bigger box dimensions (similar to picture size)
+      const boxWidth = 70;
+      const boxHeight = 30;
+      const boxX = middleColumnX - 5;
       const boxY = contentY;
       
       // Draw rectangle border only (no fill)
