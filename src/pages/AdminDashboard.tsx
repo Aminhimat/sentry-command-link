@@ -502,52 +502,47 @@ const AdminDashboard = () => {
       
       console.log(`Starting deletion process for company: ${companyId}`);
       
-      // First, get all profile IDs for this company
-      console.log('Fetching company profiles...');
-      const { data: companyProfiles, error: profilesQueryError } = await supabase
+      // Step 1: Get all profile IDs for this company first
+      console.log('Fetching all profiles for company...');
+      const { data: profiles, error: profilesFetchError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, user_id')
         .eq('company_id', companyId);
 
-      if (profilesQueryError) {
-        console.error('Error fetching company profiles:', profilesQueryError);
-        throw new Error(`Failed to fetch company profiles: ${profilesQueryError.message}`);
+      if (profilesFetchError) {
+        console.error('Error fetching profiles:', profilesFetchError);
+        throw new Error(`Failed to fetch profiles: ${profilesFetchError.message}`);
       }
 
-      const profileIds = companyProfiles?.map(p => p.id) || [];
-      console.log(`Found ${profileIds.length} profiles to delete`);
-      
-      // Delete all related data first in the correct order to handle foreign key constraints
-      
-      // Delete guard reports that reference these profiles (by guard_id)
-      if (profileIds.length > 0) {
-        console.log('Deleting guard reports by guard_id...');
-        const { error: reportsByGuardError } = await supabase
-          .from('guard_reports')
-          .delete()
-          .in('guard_id', profileIds);
+      const profileIds = profiles?.map(p => p.id) || [];
+      console.log(`Found ${profileIds.length} profiles:`, profileIds);
 
-        if (reportsByGuardError) {
-          console.error('Error deleting guard reports by guard_id:', reportsByGuardError);
-          throw new Error(`Failed to delete guard reports by guard_id: ${reportsByGuardError.message}`);
-        }
-        console.log('Guard reports deleted by guard_id successfully');
-      }
-
-      // Also delete any remaining guard reports by company_id (just in case)
-      console.log('Deleting remaining guard reports by company_id...');
-      const { error: reportsByCompanyError } = await supabase
+      // Step 2: Delete ALL guard reports for this company (by company_id AND by guard_id)
+      console.log('Deleting all guard reports for company...');
+      
+      // First delete by company_id
+      const { error: reportsCompanyError } = await supabase
         .from('guard_reports')
         .delete()
         .eq('company_id', companyId);
 
-      if (reportsByCompanyError) {
-        console.error('Error deleting guard reports by company_id:', reportsByCompanyError);
-        throw new Error(`Failed to delete guard reports by company_id: ${reportsByCompanyError.message}`);
+      if (reportsCompanyError) {
+        console.error('Error deleting reports by company_id:', reportsCompanyError);
       }
-      console.log('Remaining guard reports deleted by company_id successfully');
 
-      // Delete guard shifts
+      // Then delete any remaining by guard_id (profile_id)
+      if (profileIds.length > 0) {
+        const { error: reportsGuardError } = await supabase
+          .from('guard_reports')
+          .delete()
+          .in('guard_id', profileIds);
+
+        if (reportsGuardError) {
+          console.error('Error deleting reports by guard_id:', reportsGuardError);
+        }
+      }
+
+      // Step 3: Delete guard shifts
       console.log('Deleting guard shifts...');
       const { error: shiftsError } = await supabase
         .from('guard_shifts')
@@ -556,11 +551,9 @@ const AdminDashboard = () => {
 
       if (shiftsError) {
         console.error('Error deleting guard shifts:', shiftsError);
-        throw new Error(`Failed to delete guard shifts: ${shiftsError.message}`);
       }
-      console.log('Guard shifts deleted successfully');
 
-      // Delete incidents
+      // Step 4: Delete incidents
       console.log('Deleting incidents...');
       const { error: incidentsError } = await supabase
         .from('incidents')
@@ -569,11 +562,9 @@ const AdminDashboard = () => {
 
       if (incidentsError) {
         console.error('Error deleting incidents:', incidentsError);
-        throw new Error(`Failed to delete incidents: ${incidentsError.message}`);
       }
-      console.log('Incidents deleted successfully');
 
-      // Delete properties
+      // Step 5: Delete properties
       console.log('Deleting properties...');
       const { error: propertiesError } = await supabase
         .from('properties')
@@ -582,11 +573,31 @@ const AdminDashboard = () => {
 
       if (propertiesError) {
         console.error('Error deleting properties:', propertiesError);
-        throw new Error(`Failed to delete properties: ${propertiesError.message}`);
       }
-      console.log('Properties deleted successfully');
 
-      // Delete profiles associated with this company
+      // Step 6: Double-check no guard_reports remain that reference our profiles
+      console.log('Checking for remaining guard_reports...');
+      if (profileIds.length > 0) {
+        const { data: remainingReports, error: checkError } = await supabase
+          .from('guard_reports')
+          .select('id, guard_id')
+          .in('guard_id', profileIds);
+
+        if (remainingReports && remainingReports.length > 0) {
+          console.log('Found remaining reports, force deleting:', remainingReports);
+          const { error: forceDeleteError } = await supabase
+            .from('guard_reports')
+            .delete()
+            .in('guard_id', profileIds);
+          
+          if (forceDeleteError) {
+            console.error('Force delete failed:', forceDeleteError);
+            throw new Error(`Cannot delete remaining guard reports: ${forceDeleteError.message}`);
+          }
+        }
+      }
+
+      // Step 7: Now delete profiles
       console.log('Deleting profiles...');
       const { error: profilesError } = await supabase
         .from('profiles')
@@ -599,7 +610,7 @@ const AdminDashboard = () => {
       }
       console.log('Profiles deleted successfully');
 
-      // Finally delete the company
+      // Step 8: Finally delete the company
       console.log('Deleting company...');
       const { error: companyError } = await supabase
         .from('companies')
