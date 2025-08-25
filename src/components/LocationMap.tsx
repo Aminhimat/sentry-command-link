@@ -1,16 +1,7 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
-// Fix for default markers in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import 'leaflet/dist/leaflet.css';
 
 interface LocationMapProps {
   isOpen: boolean;
@@ -29,6 +20,66 @@ const LocationMap: React.FC<LocationMapProps> = ({
   guardName,
   timestamp
 }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !mapRef.current) return;
+
+    // Clean up existing map
+    if (mapInstance.current) {
+      mapInstance.current.remove();
+      mapInstance.current = null;
+    }
+
+    // Create map with a slight delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!mapRef.current) return;
+
+      // Initialize map
+      const map = L.map(mapRef.current).setView([latitude, longitude], 15);
+
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Configure marker icon
+      const icon = L.icon({
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+
+      // Add marker with popup
+      const marker = L.marker([latitude, longitude], { icon }).addTo(map);
+      
+      const popupContent = `
+        <div style="text-align: center;">
+          <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
+          ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
+          <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
+        </div>
+      `;
+      
+      marker.bindPopup(popupContent).openPopup();
+
+      mapInstance.current = map;
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [isOpen, latitude, longitude, guardName, timestamp]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -42,33 +93,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
             )}
           </DialogTitle>
         </DialogHeader>
-        <div className="w-full h-96 rounded-lg overflow-hidden border">
-          <MapContainer
-            center={[latitude, longitude]}
-            zoom={15}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Marker position={[latitude, longitude]}>
-              <Popup>
-                <div className="text-center">
-                  <p className="font-medium">{guardName}</p>
-                  {timestamp && (
-                    <p className="text-sm text-gray-600">
-                      {new Date(timestamp).toLocaleString()}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {latitude.toFixed(6)}, {longitude.toFixed(6)}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          </MapContainer>
-        </div>
+        <div 
+          ref={mapRef} 
+          className="w-full h-96 rounded-lg overflow-hidden border"
+          style={{ minHeight: '384px' }}
+        />
       </DialogContent>
     </Dialog>
   );
