@@ -179,6 +179,7 @@ const CompanyShifts = () => {
         return;
       }
 
+      console.log('Fetched shifts data:', data);
       setShifts(data || []);
     } catch (error) {
       console.error('Error fetching shifts:', error);
@@ -255,15 +256,22 @@ const CompanyShifts = () => {
                       </td>
                     </tr>
                   ) : (
-                    shifts.map((shift) => {
-                      const checkInTime = new Date(shift.check_in_time);
-                      const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
-                      const duration = checkOutTime 
-                        ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
-                        : null;
-                      const isActive = !shift.check_out_time;
-                      
-                      return (
+                     shifts.map((shift) => {
+                       const checkInTime = new Date(shift.check_in_time);
+                       const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
+                       const duration = checkOutTime 
+                         ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
+                         : null;
+                       const isActive = !shift.check_out_time;
+                       
+                       console.log('Shift data:', {
+                         guard: `${shift.guard?.first_name} ${shift.guard?.last_name}`,
+                         check_out_time: shift.check_out_time,
+                         isActive,
+                         checkOutTime
+                       });
+                       
+                       return (
                         <tr 
                           key={shift.id} 
                           className="border-b border-border/50 hover:bg-muted/50 cursor-pointer"
