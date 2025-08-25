@@ -310,48 +310,74 @@ async function generateHTMLReport(reports: Report[], company: Company, reportFil
 }
 
 async function convertHTMLToPDF(htmlContent: string): Promise<Uint8Array> {
-  // For now, we'll use a simple HTML-to-PDF conversion
-  // In production, you might want to use Puppeteer or similar
+  // Create a simple PDF with basic report content
+  // This is a minimal PDF implementation - in production you'd use proper PDF libraries
   
-  // This is a simplified approach - you could integrate with services like:
-  // - Puppeteer (requires Chrome in container)
-  // - PDFShift API
-  // - html-pdf library
-  
-  // For demo purposes, we'll create a basic PDF structure
-  // In real implementation, use proper PDF generation library
-  
-  const encoder = new TextEncoder()
-  return encoder.encode(`%PDF-1.4
+  const pdfHeader = `%PDF-1.4
 1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
 endobj
+
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
 endobj
+
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+>>
+>>
+>>
 endobj
+
 4 0 obj
-<< /Length ${htmlContent.length} >>
+<<
+/Length ${htmlContent.length + 200}
+>>
 stream
 BT
 /F1 12 Tf
 50 750 Td
-(Security Report - Generated from HTML) Tj
+(Security Report - Generated ${new Date().toLocaleDateString()}) Tj
+0 -20 Td
+(Generated in background for faster performance) Tj
 ET
 endstream
 endobj
+
 xref
 0 5
 0000000000 65535 f 
 0000000010 00000 n 
-0000000053 00000 n 
+0000000068 00000 n 
 0000000125 00000 n 
-0000000230 00000 n 
+0000000290 00000 n 
 trailer
-<< /Size 5 /Root 1 0 R >>
+<<
+/Size 5
+/Root 1 0 R
+>>
 startxref
-${300 + htmlContent.length}
-%%EOF`)
+${400 + htmlContent.length}
+%%EOF`
+
+  const encoder = new TextEncoder()
+  return encoder.encode(pdfHeader)
 }

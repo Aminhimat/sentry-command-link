@@ -234,6 +234,36 @@ export type Database = {
           },
         ]
       }
+      pdf_generation_status: {
+        Row: {
+          created_at: string
+          download_url: string | null
+          error_message: string | null
+          filename: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          filename: string
+          id?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          filename?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           assigned_property_id: string | null
