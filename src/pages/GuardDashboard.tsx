@@ -536,35 +536,51 @@ const GuardDashboard = () => {
         return;
       }
 
-      // Show the scanner UI
+      // Show the scanner UI first
       setShowQrScanner(true);
       
-      // Wait for video element with better error handling
-      const waitForVideoElement = () => {
-        return new Promise<HTMLVideoElement>((resolve, reject) => {
-          let attempts = 0;
-          const maxAttempts = 100; // 10 seconds max wait
-          
-          const checkVideo = () => {
-            if (videoElement) {
-              resolve(videoElement);
-            } else if (attempts >= maxAttempts) {
-              reject(new Error('Video element not available after 10 seconds'));
-            } else {
-              attempts++;
-              setTimeout(checkVideo, 100);
-            }
-          };
-          
-          checkVideo();
-        });
-      };
-
+      // Wait a moment for UI to render, then create video element directly
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       try {
-        console.log('⏳ Waiting for video element...');
-        const video = await waitForVideoElement();
-        console.log('✅ Video element ready, initializing scanner...');
+        console.log('🎥 Creating video element...');
         
+        // Create video element programmatically
+        const video = document.createElement('video');
+        video.playsInline = true;
+        video.muted = true;
+        video.autoplay = true;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        
+        // Get camera stream
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+        
+        video.srcObject = stream;
+        
+        // Wait for video to load
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Video failed to load after 5 seconds'));
+          }, 5000);
+          
+          video.addEventListener('loadedmetadata', () => {
+            clearTimeout(timeout);
+            resolve();
+          }, { once: true });
+        });
+        
+        console.log('✅ Video element created and ready');
+        setVideoElement(video);
+        
+        // Initialize QR scanner with the video element
         const scanner = new QrScanner(
           video, 
           (result) => {
@@ -576,7 +592,7 @@ const GuardDashboard = () => {
             preferredCamera: 'environment',
             highlightScanRegion: true,
             highlightCodeOutline: true,
-            maxScansPerSecond: 5,
+            maxScansPerSecond: 3,
           }
         );
         
@@ -1181,24 +1197,26 @@ const GuardDashboard = () => {
                   
                    <TabsContent value="qr" className="space-y-2">
                      <div className="text-center space-y-4">
-                       <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center relative overflow-hidden">
-                         {showQrScanner ? (
-                           <>
-                             <video
-                               ref={(el) => setVideoElement(el)}
-                               className="w-full h-full object-cover rounded-lg"
-                               autoPlay
-                               playsInline
-                               muted
-                             />
-                             <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none">
-                               <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary"></div>
-                               <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary"></div>
-                               <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary"></div>
-                               <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary"></div>
-                             </div>
-                           </>
-                         ) : (
+                        <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center relative overflow-hidden" id="qr-scanner-container">
+                          {showQrScanner ? (
+                            <>
+                              <div 
+                                ref={(container) => {
+                                  if (container && videoElement && !container.querySelector('video')) {
+                                    videoElement.className = 'w-full h-full object-cover rounded-lg';
+                                    container.appendChild(videoElement);
+                                  }
+                                }}
+                                className="w-full h-full relative"
+                              />
+                              <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none">
+                                <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary"></div>
+                                <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary"></div>
+                                <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary"></div>
+                                <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary"></div>
+                              </div>
+                            </>
+                          ) : (
                            <>
                              <Camera className="h-12 w-12 text-muted-foreground mb-2" />
                              <p className="text-sm text-muted-foreground mb-2 px-2 text-center">
