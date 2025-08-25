@@ -331,6 +331,7 @@ const CompanyShifts = () => {
                                   className="flex items-center gap-1 text-sm text-primary cursor-pointer hover:underline"
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    console.log('Coordinates clicked:', shift.location_lat, shift.location_lng);
                                     setMapShift(shift);
                                   }}
                                 >
@@ -414,7 +415,10 @@ const CompanyShifts = () => {
                     <div className="text-sm space-y-1">
                       <div 
                         className="flex items-center gap-2 text-primary cursor-pointer hover:underline"
-                        onClick={() => setMapShift(selectedShift)}
+                        onClick={() => {
+                          console.log('Modal coordinates clicked:', selectedShift.location_lat, selectedShift.location_lng);
+                          setMapShift(selectedShift);
+                        }}
                       >
                         <MapPin className="h-4 w-4" />
                         {selectedShift.location_lat.toFixed(6)}, {selectedShift.location_lng.toFixed(6)}
@@ -434,12 +438,22 @@ const CompanyShifts = () => {
         {mapShift && mapShift.location_lat && mapShift.location_lng && (
           <LocationMap
             isOpen={!!mapShift}
-            onClose={() => setMapShift(null)}
+            onClose={() => {
+              console.log('Map closing');
+              setMapShift(null);
+            }}
             latitude={mapShift.location_lat}
             longitude={mapShift.location_lng}
             guardName={`${mapShift.guard?.first_name} ${mapShift.guard?.last_name}`}
             timestamp={mapShift.check_in_time}
           />
+        )}
+        
+        {/* Debug info */}
+        {mapShift && (
+          <div className="fixed top-4 right-4 bg-black text-white p-2 rounded text-xs z-50">
+            Map Shift: {mapShift.location_lat}, {mapShift.location_lng}
+          </div>
         )}
       </div>
     </div>
