@@ -539,20 +539,31 @@ const GuardDashboard = () => {
       // Show the scanner UI first
       setShowQrScanner(true);
       
-      // Wait a moment for UI to render, then create video element directly
+      // Wait a moment for UI to render, then create video elements
       await new Promise(resolve => setTimeout(resolve, 200));
       
       try {
-        console.log('🎥 Creating video element...');
+        console.log('🎥 Creating video elements...');
         
-        // Create video element programmatically
-        const video = document.createElement('video');
-        video.playsInline = true;
-        video.muted = true;
-        video.autoplay = true;
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.objectFit = 'cover';
+        // Create the visible video element for display
+        const displayVideo = document.createElement('video');
+        displayVideo.playsInline = true;
+        displayVideo.muted = true;
+        displayVideo.autoplay = true;
+        displayVideo.style.width = '100%';
+        displayVideo.style.height = '100%';
+        displayVideo.style.objectFit = 'cover';
+        
+        // Create a hidden video element for QR scanning
+        const scannerVideo = document.createElement('video');
+        scannerVideo.playsInline = true;
+        scannerVideo.muted = true;
+        scannerVideo.autoplay = true;
+        scannerVideo.style.position = 'absolute';
+        scannerVideo.style.left = '-9999px';
+        scannerVideo.style.top = '-9999px';
+        scannerVideo.style.width = '1px';
+        scannerVideo.style.height = '1px';
         
         // Get camera stream
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -563,48 +574,62 @@ const GuardDashboard = () => {
           } 
         });
         
-        video.srcObject = stream;
+        // Apply the same stream to both video elements
+        displayVideo.srcObject = stream;
+        scannerVideo.srcObject = stream.clone();
         
-        // Wait for video to load
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('Video failed to load after 5 seconds'));
-          }, 5000);
-          
-          video.addEventListener('loadedmetadata', () => {
-            clearTimeout(timeout);
-            resolve();
-          }, { once: true });
-        });
+        // Wait for both videos to load
+        await Promise.all([
+          new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Display video failed to load'));
+            }, 5000);
+            
+            displayVideo.addEventListener('loadedmetadata', () => {
+              clearTimeout(timeout);
+              resolve();
+            }, { once: true });
+          }),
+          new Promise<void>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Scanner video failed to load'));
+            }, 5000);
+            
+            scannerVideo.addEventListener('loadedmetadata', () => {
+              clearTimeout(timeout);
+              resolve();
+            }, { once: true });
+          })
+        ]);
         
-        console.log('✅ Video element created and ready');
-        setVideoElement(video);
+        console.log('✅ Video elements created and ready');
         
-        // Initialize QR scanner with the video element
+        // Store the display video element for UI
+        setVideoElement(displayVideo);
+        
+        // Add the hidden scanner video to the page
+        document.body.appendChild(scannerVideo);
+        
+        // Initialize QR scanner with the hidden video element
         const scanner = new QrScanner(
-          video, 
+          scannerVideo, 
           (result) => {
             const data = typeof result === 'string' ? result : result.data;
             console.log('🎯 QR Code detected:', data);
-            handleQrCodeScan(data);
+            if (data && data.trim()) { // Only process non-empty QR codes
+              handleQrCodeScan(data);
+            }
           },
           {
             preferredCamera: 'environment',
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
+            highlightScanRegion: false, // Don't highlight on hidden video
+            highlightCodeOutline: false,
             maxScansPerSecond: 3,
           }
         );
         
         setQrScanner(scanner);
         await scanner.start();
-        
-        // Force video visibility after scanner starts
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.opacity = '1';
-        video.style.display = 'block';
-        video.style.objectFit = 'cover';
         
         console.log('✅ QR Scanner started successfully');
         
@@ -662,6 +687,27 @@ const GuardDashboard = () => {
       qrScanner.destroy();
       setQrScanner(null);
     }
+    
+    // Clean up video elements and streams
+    if (videoElement && videoElement.srcObject) {
+      const stream = videoElement.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoElement.srcObject = null;
+    }
+    
+    // Remove any hidden scanner video elements
+    const hiddenVideos = document.querySelectorAll('video[style*="position: absolute"][style*="left: -9999px"]');
+    hiddenVideos.forEach(video => {
+      const videoEl = video as HTMLVideoElement;
+      if (videoEl.srcObject) {
+        const stream = videoEl.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoEl.srcObject = null;
+      }
+      video.remove();
+    });
+    
+    setVideoElement(null);
     setShowQrScanner(false);
   };
 
