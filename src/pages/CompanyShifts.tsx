@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import LocationMap from "@/components/LocationMap";
 
 interface Profile {
   id: string;
@@ -55,6 +56,7 @@ const CompanyShifts = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [mapShift, setMapShift] = useState<Shift | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -323,12 +325,25 @@ const CompanyShifts = () => {
                             </Badge>
                           </td>
                           <td className="p-4">
-                            {shift.location_address ? (
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                <span className="truncate max-w-[200px]" title={shift.location_address}>
-                                  {shift.location_address}
-                                </span>
+                            {shift.location_lat && shift.location_lng ? (
+                              <div className="flex flex-col gap-1">
+                                <div 
+                                  className="flex items-center gap-1 text-sm text-primary cursor-pointer hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMapShift(shift);
+                                  }}
+                                >
+                                  <MapPin className="h-3 w-3" />
+                                  <span>
+                                    {shift.location_lat.toFixed(6)}, {shift.location_lng.toFixed(6)}
+                                  </span>
+                                </div>
+                                {shift.location_address && (
+                                  <span className="text-xs text-muted-foreground truncate max-w-[200px]" title={shift.location_address}>
+                                    {shift.location_address}
+                                  </span>
+                                )}
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">No location</span>
@@ -393,19 +408,39 @@ const CompanyShifts = () => {
                   </div>
                 )}
 
-                {selectedShift.location_address && (
+                {(selectedShift.location_lat && selectedShift.location_lng) && (
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground mb-2">Location</h4>
-                    <p className="text-sm flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {selectedShift.location_address}
-                    </p>
+                    <div className="text-sm space-y-1">
+                      <div 
+                        className="flex items-center gap-2 text-primary cursor-pointer hover:underline"
+                        onClick={() => setMapShift(selectedShift)}
+                      >
+                        <MapPin className="h-4 w-4" />
+                        {selectedShift.location_lat.toFixed(6)}, {selectedShift.location_lng.toFixed(6)}
+                      </div>
+                      {selectedShift.location_address && (
+                        <p className="text-muted-foreground ml-6">{selectedShift.location_address}</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Location Map Modal */}
+        {mapShift && mapShift.location_lat && mapShift.location_lng && (
+          <LocationMap
+            isOpen={!!mapShift}
+            onClose={() => setMapShift(null)}
+            latitude={mapShift.location_lat}
+            longitude={mapShift.location_lng}
+            guardName={`${mapShift.guard?.first_name} ${mapShift.guard?.last_name}`}
+            timestamp={mapShift.check_in_time}
+          />
+        )}
       </div>
     </div>
   );
