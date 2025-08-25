@@ -598,6 +598,14 @@ const GuardDashboard = () => {
         
         setQrScanner(scanner);
         await scanner.start();
+        
+        // Force video visibility after scanner starts
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.opacity = '1';
+        video.style.display = 'block';
+        video.style.objectFit = 'cover';
+        
         console.log('✅ QR Scanner started successfully');
         
         toast({
