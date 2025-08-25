@@ -32,44 +32,62 @@ const LocationMap: React.FC<LocationMapProps> = ({
       mapInstance.current = null;
     }
 
-    // Create map with a slight delay to ensure DOM is ready
+    // Create map with a longer delay to ensure dialog is fully rendered
     const timer = setTimeout(() => {
       if (!mapRef.current) return;
 
-      // Initialize map
-      const map = L.map(mapRef.current).setView([latitude, longitude], 15);
+      try {
+        // Force container to have dimensions
+        mapRef.current.style.width = '100%';
+        mapRef.current.style.height = '384px';
 
-      // Add tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
+        // Initialize map
+        const map = L.map(mapRef.current, {
+          preferCanvas: true,
+          attributionControl: true,
+        }).setView([latitude, longitude], 15);
 
-      // Configure marker icon
-      const icon = L.icon({
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(map);
 
-      // Add marker with popup
-      const marker = L.marker([latitude, longitude], { icon }).addTo(map);
-      
-      const popupContent = `
-        <div style="text-align: center;">
-          <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
-          ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
-          <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
-        </div>
-      `;
-      
-      marker.bindPopup(popupContent).openPopup();
+        // Configure marker icon
+        const icon = L.icon({
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        });
 
-      mapInstance.current = map;
-    }, 100);
+        // Add marker with popup
+        const marker = L.marker([latitude, longitude], { icon }).addTo(map);
+        
+        const popupContent = `
+          <div style="text-align: center;">
+            <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
+            ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
+            <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
+          </div>
+        `;
+        
+        marker.bindPopup(popupContent).openPopup();
+
+        // Force map to resize and invalidate size
+        setTimeout(() => {
+          map.invalidateSize();
+        }, 100);
+
+        mapInstance.current = map;
+        console.log('Map initialized successfully');
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    }, 300);
 
     return () => {
       clearTimeout(timer);
@@ -95,9 +113,18 @@ const LocationMap: React.FC<LocationMapProps> = ({
         </DialogHeader>
         <div 
           ref={mapRef} 
-          className="w-full h-96 rounded-lg overflow-hidden border"
-          style={{ minHeight: '384px' }}
-        />
+          className="w-full rounded-lg overflow-hidden border bg-gray-100"
+          style={{ 
+            height: '384px',
+            minHeight: '384px',
+            width: '100%',
+            position: 'relative'
+          }}
+        >
+          <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+            Loading map...
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
