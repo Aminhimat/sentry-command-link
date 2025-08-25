@@ -322,6 +322,45 @@ const CompanyGuards = () => {
     }
   };
 
+  const handleDeleteGuard = async (guard: Guard) => {
+    if (!confirm(`Are you sure you want to delete ${guard.first_name} ${guard.last_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('delete-guard', {
+        body: {
+          guardId: guard.id
+        }
+      });
+
+      if (error) {
+        console.error('Guard deletion error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Guard ${guard.first_name} ${guard.last_name} deleted successfully!`,
+      });
+
+      if (userProfile?.company_id) {
+        await fetchGuards(userProfile.company_id);
+      }
+    } catch (error) {
+      console.error('Error deleting guard:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete guard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -610,6 +649,16 @@ const CompanyGuards = () => {
                             >
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleDeleteGuard(guard)}
+                              className="text-destructive hover:text-destructive"
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
                             </Button>
                           </div>
                         </div>
