@@ -130,6 +130,18 @@ const GuardDashboard = () => {
         .single();
 
       setCurrentShift(activeShift);
+
+      // If there's an active shift, ensure the profile is marked as active
+      if (activeShift) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ is_active: true })
+          .eq('id', profile.id);
+
+        if (profileError) {
+          console.error('Failed to update guard status:', profileError);
+        }
+      }
     } catch (error) {
       console.log('No active shift found');
     }
@@ -943,6 +955,16 @@ const GuardDashboard = () => {
         throw error;
       }
 
+      // Update guard profile to show as active
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ is_active: true })
+        .eq('id', profile.id);
+
+      if (profileError) {
+        console.error('Failed to update guard status:', profileError);
+      }
+
       setCurrentShift(newShift);
       
       if (latitude) {
@@ -1022,6 +1044,16 @@ const GuardDashboard = () => {
       if (error) {
         console.error('End shift database error:', error);
         throw error;
+      }
+
+      // Update guard profile to show as inactive
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ is_active: false })
+        .eq('id', profile.id);
+
+      if (profileError) {
+        console.error('Failed to update guard status:', profileError);
       }
 
       setCurrentShift(null);
