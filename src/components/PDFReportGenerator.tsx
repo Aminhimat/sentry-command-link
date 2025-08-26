@@ -102,8 +102,17 @@ export class PDFReportGenerator {
     this.doc.setTextColor(0, 0, 0);
     const startDate = new Date(reportFilters.startDate);
     const endDate = new Date(reportFilters.endDate);
-    const startText = `Start: ${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()}`;
-    const endText = `End: ${endDate.toLocaleDateString()} ${endDate.toLocaleTimeString()}`;
+    const startTime = reportFilters.startTime || '00:00';
+    const endTime = reportFilters.endTime || '23:59';
+    
+    let startText, endText;
+    if (reportFilters.reportType === 'daily') {
+      startText = `Date: ${startDate.toLocaleDateString()}`;
+      endText = `Time: ${startTime} - ${endTime}`;
+    } else {
+      startText = `Start: ${startDate.toLocaleDateString()} ${startTime}`;
+      endText = `End: ${endDate.toLocaleDateString()} ${endTime}`;
+    }
     
     this.doc.text(startText, this.pageWidth - this.margin - this.doc.getTextWidth(startText), this.currentY - 6);
     this.doc.text(endText, this.pageWidth - this.margin - this.doc.getTextWidth(endText), this.currentY);

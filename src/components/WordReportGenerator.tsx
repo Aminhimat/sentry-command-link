@@ -91,7 +91,7 @@ export class WordReportGenerator {
       new Paragraph({
         children: [
           new TextRun({
-            text: `Report Period: ${new Date(reportFilters.startDate).toLocaleDateString()} - ${new Date(reportFilters.endDate).toLocaleDateString()}`,
+            text: this.getReportPeriodText(reportFilters),
             size: 24,
           }),
         ],
@@ -101,6 +101,19 @@ export class WordReportGenerator {
     );
 
     return headerParagraphs;
+  }
+
+  private getReportPeriodText(reportFilters: any): string {
+    const startDate = new Date(reportFilters.startDate);
+    const endDate = new Date(reportFilters.endDate);
+    const startTime = reportFilters.startTime || '00:00';
+    const endTime = reportFilters.endTime || '23:59';
+    
+    if (reportFilters.reportType === 'daily') {
+      return `Report Period: ${startDate.toLocaleDateString()} from ${startTime} to ${endTime}`;
+    } else {
+      return `Report Period: ${startDate.toLocaleDateString()} ${startTime} - ${endDate.toLocaleDateString()} ${endTime}`;
+    }
   }
 
   private async createReportEntry(report: Report): Promise<Paragraph[]> {

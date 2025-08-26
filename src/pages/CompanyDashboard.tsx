@@ -731,8 +731,13 @@ const CompanyDashboard = () => {
         endDateTime = new Date(startDateObj);
         endDateTime.setHours(eh || 23, em || 59, 59, 999);
       } else {
+        // For range reports, also apply time filters
+        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
         startDateTime = new Date(startDateObj);
+        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
         endDateTime = new Date(endDateObj);
+        endDateTime.setHours(eh || 23, em || 59, 59, 999);
       }
       query = query
         .gte('created_at', startDateTime.toISOString())
@@ -1278,26 +1283,23 @@ const CompanyDashboard = () => {
                   </div>
                 )}
 
-                {reportFilters.reportType === 'daily' && (
-                  <>
-                    <div>
-                      <Label>From (Time)</Label>
-                      <Input
-                        type="time"
-                        value={reportFilters.startTime}
-                        onChange={(e) => setReportFilters({ ...reportFilters, startTime: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label>To (Time)</Label>
-                      <Input
-                        type="time"
-                        value={reportFilters.endTime}
-                        onChange={(e) => setReportFilters({ ...reportFilters, endTime: e.target.value })}
-                      />
-                    </div>
-                  </>
-                )}
+                {/* Time selection for all report types */}
+                <div>
+                  <Label>{reportFilters.reportType === 'daily' ? 'From (Time)' : 'Start Time'}</Label>
+                  <Input
+                    type="time"
+                    value={reportFilters.startTime}
+                    onChange={(e) => setReportFilters({ ...reportFilters, startTime: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>{reportFilters.reportType === 'daily' ? 'To (Time)' : 'End Time'}</Label>
+                  <Input
+                    type="time"
+                    value={reportFilters.endTime}
+                    onChange={(e) => setReportFilters({ ...reportFilters, endTime: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Button 
