@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, Upload, MapPin, ImageIcon } from "lucide-react";
+import { Camera, Upload, MapPin } from "lucide-react";
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 
@@ -112,61 +112,6 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
     }
   };
 
-  const handleGallerySelect = async () => {
-    try {
-      if (Capacitor.isNativePlatform()) {
-        // Use native photo library on mobile
-        const image = await CapCamera.getPhoto({
-          quality: 90,
-          allowEditing: false,
-          resultType: CameraResultType.Uri,
-          source: CameraSource.Photos,
-        });
-
-        // Convert to blob and then to File
-        const response = await fetch(image.webPath!);
-        const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-          toast({
-            title: "File too large",
-            description: "Please select an image smaller than 5MB.",
-            variant: "destructive",
-          });
-          return;
-        }
-        setSelectedImage(file);
-      } else {
-        // Fallback for web - trigger file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (event) => {
-          const file = (event.target as HTMLInputElement).files?.[0];
-          if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-              toast({
-                title: "File too large",
-                description: "Please select an image smaller than 5MB.",
-                variant: "destructive",
-              });
-              return;
-            }
-            setSelectedImage(file);
-          }
-        };
-        input.click();
-      }
-    } catch (error) {
-      console.error('Error accessing photo library:', error);
-      toast({
-        title: "Photo Library Error",
-        description: "Could not access photo library. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const uploadImage = async (file: File): Promise<string | null> => {
     const fileExt = file.name.split('.').pop();
@@ -276,26 +221,15 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
 
           <div className="space-y-2">
             <Label>Photo (Optional)</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCameraCapture}
-                className="flex-1"
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                Take Photo
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleGallerySelect}
-                className="flex-1"
-              >
-                <ImageIcon className="w-4 h-4 mr-2" />
-                Choose Photo
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCameraCapture}
+              className="w-full"
+            >
+              <Camera className="w-4 h-4 mr-2" />
+              Take Photo
+            </Button>
             {selectedImage && (
               <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                 <Upload className="w-4 h-4 text-green-500" />
