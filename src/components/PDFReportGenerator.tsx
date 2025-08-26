@@ -50,7 +50,13 @@ export class PDFReportGenerator {
   private lineHeight: number = 6;
 
   constructor() {
-    this.doc = new jsPDF('p', 'mm', 'a4');
+    this.doc = new jsPDF({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4',
+      compress: true,
+      precision: 2
+    });
     this.pageWidth = this.doc.internal.pageSize.getWidth();
     this.pageHeight = this.doc.internal.pageSize.getHeight();
     this.currentY = this.margin;
@@ -290,9 +296,9 @@ export class PDFReportGenerator {
           // Draw and compress image
           ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
           
-          // Convert to JPEG with balanced quality for good image and small file size
-          const imageData = canvas.toDataURL('image/jpeg', 0.6);
-          this.doc.addImage(imageData, 'JPEG', x, y, width, height);
+          // Convert to JPEG with higher compression for smaller file size
+          const imageData = canvas.toDataURL('image/jpeg', 0.4);
+          this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM');
 
           // Draw watermark overlay (bottom of picture) if provided
           if (watermarkText) {
@@ -398,7 +404,7 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Save the PDF
+    // Save the PDF with compression
     this.doc.save(filename);
   }
 }
