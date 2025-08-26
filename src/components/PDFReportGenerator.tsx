@@ -123,7 +123,7 @@ export class PDFReportGenerator {
     this.currentY += 15;
   }
 
-  private async addReportEntry(report: Report, index: number, company: Company | null) {
+  private async addReportEntry(report: Report, index: number, company: Company | null, preloadedImages?: Map<string, HTMLImageElement>) {
     const entryHeight = 50; // Reduced from 80 to fit 5 reports per page
     // No automatic page addition here since we handle it manually in generateReport
 
@@ -258,7 +258,7 @@ export class PDFReportGenerator {
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
       // Larger landscape image positioned right below the ID with watermark overlay at bottom
-      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 2, 50, 35, wmText);
+      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 2, 50, 35, wmText, preloadedImages?.get(report.image_url));
     } else {
       // Show issue ID even without image
       this.doc.setTextColor(0, 0, 0);
@@ -270,79 +270,20 @@ export class PDFReportGenerator {
     this.currentY += entryHeight;
   }
 
-  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
+  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string, preloadedImage?: HTMLImageElement): Promise<void> {
     return new Promise((resolve) => {
+      // Use preloaded image if available, otherwise load normally
+      if (preloadedImage) {
+        this.processImageToPDF(preloadedImage, x, y, width, height, watermarkText);
+        resolve();
+        return;
+      }
+
       const img = new Image();
       img.crossOrigin = 'anonymous';
       
       img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) {
-            console.warn('Canvas context not available');
-            resolve();
-            return;
-          }
-
-          // Optimized canvas size balancing speed and quality
-          const maxWidth = 150;
-          const maxHeight = 150;
-          
-          let { width: imgWidth, height: imgHeight } = img;
-          
-          // Calculate scaled dimensions
-          if (imgWidth > maxWidth || imgHeight > maxHeight) {
-            const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-            imgWidth = imgWidth * ratio;
-            imgHeight = imgHeight * ratio;
-          }
-
-          canvas.width = imgWidth;
-          canvas.height = imgHeight;
-          
-          // Draw and compress image
-          ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
-          
-          // Convert to JPEG with balanced compression for good quality and speed
-          const imageData = canvas.toDataURL('image/jpeg', 0.3);
-          this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
-
-          // Draw watermark overlay (bottom of picture) if provided
-          if (watermarkText) {
-            const padding = 1.2;
-            const barHeight = Math.max(3, Math.min(6, height * 0.2));
-
-            // Background bar
-            this.doc.setFillColor(0, 0, 0);
-            this.doc.rect(x, y + height - barHeight, width, barHeight, 'F');
-
-            // Text settings
-            this.doc.setTextColor(255, 255, 255);
-            this.doc.setFont('helvetica', 'bold');
-            const fontSize = Math.max(3, Math.min(5, barHeight - 1));
-            this.doc.setFontSize(fontSize);
-
-            // Truncate text to fit available width
-            const maxTextWidth = width - padding * 2;
-            let text = watermarkText;
-            while (this.doc.getTextWidth(text) > maxTextWidth && text.length > 1) {
-              text = text.slice(0, -2) + '…';
-            }
-
-            const textX = x + padding;
-            const textY = y + height - barHeight + (barHeight / 2) + (fontSize / 2) - 1;
-            this.doc.text(text, textX, textY);
-
-            // Reset
-            this.doc.setTextColor(0, 0, 0);
-            this.doc.setFont('helvetica', 'normal');
-          }
-          
-        } catch (error) {
-          console.error('Error processing image:', imageUrl, error);
-        }
+        this.processImageToPDF(img, x, y, width, height, watermarkText);
         resolve();
       };
 
@@ -351,10 +292,77 @@ export class PDFReportGenerator {
         resolve();
       };
 
-      // Add timestamp to avoid cache issues
-      const separator = imageUrl.includes('?') ? '&' : '?';
-      img.src = `${imageUrl}${separator}t=${Date.now()}`;
+      img.src = imageUrl;
     });
+  }
+
+  private processImageToPDF(img: HTMLImageElement, x: number, y: number, width: number, height: number, watermarkText?: string): void {
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        console.warn('Canvas context not available');
+        return;
+      }
+
+      // Optimized canvas size balancing speed and quality
+      const maxWidth = 150;
+      const maxHeight = 150;
+      
+      let { width: imgWidth, height: imgHeight } = img;
+      
+      // Calculate scaled dimensions
+      if (imgWidth > maxWidth || imgHeight > maxHeight) {
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+        imgWidth = imgWidth * ratio;
+        imgHeight = imgHeight * ratio;
+      }
+
+      canvas.width = imgWidth;
+      canvas.height = imgHeight;
+      
+      // Draw and compress image
+      ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
+      
+      // Convert to JPEG with balanced compression for good quality and speed
+      const imageData = canvas.toDataURL('image/jpeg', 0.3);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+
+      // Draw watermark overlay (bottom of picture) if provided
+      if (watermarkText) {
+        const padding = 1.2;
+        const barHeight = Math.max(3, Math.min(6, height * 0.2));
+
+        // Background bar
+        this.doc.setFillColor(0, 0, 0);
+        this.doc.rect(x, y + height - barHeight, width, barHeight, 'F');
+
+        // Text settings
+        this.doc.setTextColor(255, 255, 255);
+        this.doc.setFont('helvetica', 'bold');
+        const fontSize = Math.max(3, Math.min(5, barHeight - 1));
+        this.doc.setFontSize(fontSize);
+
+        // Truncate text to fit available width
+        const maxTextWidth = width - padding * 2;
+        let text = watermarkText;
+        while (this.doc.getTextWidth(text) > maxTextWidth && text.length > 1) {
+          text = text.slice(0, -2) + '…';
+        }
+
+        const textX = x + padding;
+        const textY = y + height - barHeight + (barHeight / 2) + (fontSize / 2) - 1;
+        this.doc.text(text, textX, textY);
+
+        // Reset
+        this.doc.setTextColor(0, 0, 0);
+        this.doc.setFont('helvetica', 'normal');
+      }
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+    }
   }
 
   private addSummary(reports: Report[]) {
@@ -388,7 +396,46 @@ export class PDFReportGenerator {
     });
   }
 
+  private async preloadAllImages(reports: Report[]): Promise<Map<string, HTMLImageElement>> {
+    const imageMap = new Map<string, HTMLImageElement>();
+    const imagePromises: Promise<void>[] = [];
+
+    reports.forEach(report => {
+      if (report.image_url) {
+        const promise = new Promise<void>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          img.onload = () => {
+            imageMap.set(report.image_url!, img);
+            resolve();
+          };
+          
+          img.onerror = () => {
+            console.warn('Failed to preload image:', report.image_url);
+            resolve(); // Don't block on failed images
+          };
+          
+          // Remove cache-busting for better performance
+          img.src = report.image_url!;
+        });
+        imagePromises.push(promise);
+      }
+    });
+
+    // Wait for all images to load (or fail) with 10s timeout
+    await Promise.race([
+      Promise.all(imagePromises),
+      new Promise(resolve => setTimeout(resolve, 10000))
+    ]);
+
+    return imageMap;
+  }
+
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
+    // Preload all images in parallel first
+    const preloadedImages = await this.preloadAllImages(reports);
+
     // Add header to first page
     await this.drawHeader(company, reportFilters);
 
@@ -401,7 +448,7 @@ export class PDFReportGenerator {
         await this.drawHeader(company, reportFilters);
       }
       
-      await this.addReportEntry(reports[i], i, company);
+      await this.addReportEntry(reports[i], i, company, preloadedImages);
     }
 
     // Generate filename
