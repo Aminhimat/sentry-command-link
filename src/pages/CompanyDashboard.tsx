@@ -759,12 +759,6 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // Show immediate feedback
-      toast({
-        title: "Generating Report",
-        description: `Starting PDF generation for ${data.length} reports. You'll be notified when it's ready.`,
-      });
-
       // Convert property IDs to names in reports for PDF generation
       const reportsForPDF = data.map(report => {
         if (report.location_address && properties.length > 0) {
@@ -779,37 +773,23 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Call background PDF generation edge function
-      const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-report', {
-        body: {
-          reports: reportsForPDF,
-          company: company,
-          reportFilters: {
-            ...reportFilters,
-            startDate: startDateTime.toISOString(),
-            endDate: endDateTime.toISOString()
-          },
-          userId: user?.id
-        }
+      // Generate PDF directly on client-side
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
       });
-
-      if (pdfError) {
-        throw pdfError;
-      }
 
       toast({
-        title: "Processing Started",
-        description: "Your PDF is being generated in the background. Check back in a few moments for the download link.",
+        title: "Success",
+        description: `Report generated successfully with ${data.length} reports.`,
       });
-
-      // Start polling for completion
-      pollForPDFCompletion(pdfData.filename);
 
     } catch (error: any) {
       console.error('Error generating report:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to start report generation",
+        description: error.message || "Failed to generate report",
         variant: "destructive",
       });
     } finally {
@@ -817,71 +797,6 @@ const CompanyDashboard = () => {
     }
   };
 
-  const pollForPDFCompletion = async (filename: string) => {
-    const maxAttempts = 30; // Poll for up to 5 minutes (30 * 10s)
-    let attempts = 0;
-
-    const checkStatus = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('pdf_generation_status')
-          .select('*')
-          .eq('filename', filename)
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-          console.error('Error checking PDF status:', error);
-          return;
-        }
-
-        if (data) {
-          if (data.status === 'completed' && data.download_url) {
-            toast({
-              title: "Report Ready!",
-              description: "Your PDF report has been generated successfully.",
-            });
-            
-            // Create download link
-            const link = document.createElement('a');
-            link.href = data.download_url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            return; // Stop polling
-          } else if (data.status === 'failed') {
-            toast({
-              title: "Generation Failed",
-              description: data.error_message || "Failed to generate PDF report",
-              variant: "destructive",
-            });
-            return; // Stop polling
-          }
-        }
-
-        // Continue polling if still processing
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 10000); // Check every 10 seconds
-        } else {
-          toast({
-            title: "Timeout",
-            description: "PDF generation is taking longer than expected. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Error in PDF status polling:', error);
-      }
-    };
-
-    // Start checking after a short delay
-    setTimeout(checkStatus, 5000);
-  };
 
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
