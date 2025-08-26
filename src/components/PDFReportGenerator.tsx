@@ -86,7 +86,22 @@ export class PDFReportGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
     const companyNameX = company?.logo_url ? this.margin + 25 : this.margin;
-    this.doc.text(company?.name || 'Security Company', companyNameX, this.currentY);
+    
+    // Calculate available width for company name
+    const availableWidth = this.pageWidth - companyNameX - this.margin - 60; // Leave space for title and date
+    const companyName = company?.name || 'Security Company';
+    
+    // Use splitTextToSize to handle long company names
+    const wrappedName = this.doc.splitTextToSize(companyName, availableWidth);
+    
+    // Display company name (potentially on multiple lines)
+    if (Array.isArray(wrappedName)) {
+      wrappedName.forEach((line, index) => {
+        this.doc.text(line, companyNameX, this.currentY + (index * 5));
+      });
+    } else {
+      this.doc.text(wrappedName, companyNameX, this.currentY);
+    }
 
     // Title centered
     this.doc.setFontSize(18);
