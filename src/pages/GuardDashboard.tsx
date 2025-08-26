@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, ImageIcon } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building } from "lucide-react";
 import QrScanner from 'qr-scanner';
 import jsQR from 'jsqr';
 import { Geolocation } from '@capacitor/geolocation';
@@ -199,45 +199,6 @@ const GuardDashboard = () => {
     }
   };
 
-  const handleGallerySelect = async () => {
-    try {
-      if (Capacitor.isNativePlatform()) {
-        // Use native photo library on mobile
-        const image = await CapCamera.getPhoto({
-          quality: 90,
-          allowEditing: false,
-          resultType: CameraResultType.Uri,
-          source: CameraSource.Photos,
-        });
-
-        // Convert to blob and then to File
-        const response = await fetch(image.webPath!);
-        const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        
-        setTaskData({ ...taskData, image: file });
-      } else {
-        // Fallback for web - trigger file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = (event) => {
-          const file = (event.target as HTMLInputElement).files?.[0];
-          if (file) {
-            setTaskData({ ...taskData, image: file });
-          }
-        };
-        input.click();
-      }
-    } catch (error) {
-      console.error('Error accessing photo library:', error);
-      toast({
-        title: "Photo Library Error",
-        description: "Could not access photo library. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1390,26 +1351,15 @@ const GuardDashboard = () => {
               {/* Photo Upload */}
               <div className="space-y-2">
                 <Label>Take Photo</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCameraCapture}
-                    className="flex-1"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Take Photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleGallerySelect}
-                    className="flex-1"
-                  >
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    Choose Photo
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCameraCapture}
+                  className="w-full"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Take Photo
+                </Button>
                 {taskData.image && (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                     <Camera className="w-4 h-4 text-green-500" />
