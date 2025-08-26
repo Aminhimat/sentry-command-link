@@ -34,8 +34,8 @@ interface PDFReportGeneratorProps {
   reports: Report[];
   company: Company | null;
   reportFilters: {
-    startDate: Date;
-    endDate: Date;
+    startDate: Date | string;
+    endDate: Date | string;
     guardId: string;
     reportType: string;
   };
@@ -94,8 +94,10 @@ export class PDFReportGenerator {
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
     this.doc.setTextColor(0, 0, 0);
-    const startText = `Start: ${reportFilters.startDate.toLocaleDateString()} ${reportFilters.startDate.toLocaleTimeString()}`;
-    const endText = `End: ${reportFilters.endDate.toLocaleDateString()} ${reportFilters.endDate.toLocaleTimeString()}`;
+    const startDate = new Date(reportFilters.startDate);
+    const endDate = new Date(reportFilters.endDate);
+    const startText = `Start: ${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()}`;
+    const endText = `End: ${endDate.toLocaleDateString()} ${endDate.toLocaleTimeString()}`;
     
     this.doc.text(startText, this.pageWidth - this.margin - this.doc.getTextWidth(startText), this.currentY - 6);
     this.doc.text(endText, this.pageWidth - this.margin - this.doc.getTextWidth(endText), this.currentY);

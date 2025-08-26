@@ -91,7 +91,7 @@ export class WordReportGenerator {
       new Paragraph({
         children: [
           new TextRun({
-            text: `Report Period: ${reportFilters.startDate.toLocaleDateString()} - ${reportFilters.endDate.toLocaleDateString()}`,
+            text: `Report Period: ${new Date(reportFilters.startDate).toLocaleDateString()} - ${new Date(reportFilters.endDate).toLocaleDateString()}`,
             size: 24,
           }),
         ],
