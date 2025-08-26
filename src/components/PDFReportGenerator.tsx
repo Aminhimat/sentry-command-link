@@ -390,9 +390,11 @@ export class PDFReportGenerator {
     }
 
     // Generate filename
+    const startDate = new Date(reportFilters.startDate);
+    const endDate = new Date(reportFilters.endDate);
     const dateStr = reportFilters.reportType === 'daily' 
-      ? reportFilters.startDate.toISOString().split('T')[0]
-      : `${reportFilters.startDate.toISOString().split('T')[0]}_to_${reportFilters.endDate.toISOString().split('T')[0]}`;
+      ? startDate.toISOString().split('T')[0]
+      : `${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}`;
     
     const filename = `security_report_${dateStr}.pdf`;
 

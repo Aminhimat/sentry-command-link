@@ -715,16 +715,24 @@ const CompanyDashboard = () => {
         .eq('company_id', userProfile.company_id);
 
       // Apply date & time filters
-      let startDateTime = new Date(reportFilters.startDate);
-      let endDateTime = new Date(reportFilters.endDate);
+      let startDateTime: Date;
+      let endDateTime: Date;
+      
+      // Ensure we have valid Date objects
+      const startDateObj = reportFilters.startDate instanceof Date ? reportFilters.startDate : new Date(reportFilters.startDate);
+      const endDateObj = reportFilters.endDate instanceof Date ? reportFilters.endDate : new Date(reportFilters.endDate);
+      
       if (reportFilters.reportType === 'daily') {
         // Merge selected times with the chosen date
         const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
         const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
-        startDateTime = new Date(reportFilters.startDate);
+        startDateTime = new Date(startDateObj);
         startDateTime.setHours(sh || 0, sm || 0, 0, 0);
-        endDateTime = new Date(reportFilters.startDate);
+        endDateTime = new Date(startDateObj);
         endDateTime.setHours(eh || 23, em || 59, 59, 999);
+      } else {
+        startDateTime = new Date(startDateObj);
+        endDateTime = new Date(endDateObj);
       }
       query = query
         .gte('created_at', startDateTime.toISOString())
