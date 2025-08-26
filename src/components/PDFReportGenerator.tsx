@@ -72,7 +72,7 @@ export class PDFReportGenerator {
   }
 
   private async drawHeader(company: Company | null, reportFilters: any) {
-    // Company logo on the left (if available)
+    // Company logo and name on top row
     if (company?.logo_url) {
       try {
         await this.addImageToEntry(company.logo_url, this.margin, this.currentY - 5, 20, 15);
@@ -81,37 +81,44 @@ export class PDFReportGenerator {
       }
     }
 
-    // Company name next to logo or on left if no logo
-    this.doc.setFontSize(14);
+    // Company name next to logo or on left if no logo - with full width available
+    this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
     const companyNameX = company?.logo_url ? this.margin + 25 : this.margin;
     
-    // Calculate available width for company name
-    const availableWidth = this.pageWidth - companyNameX - this.margin - 60; // Leave space for title and date
+    // Use full available width for company name (from logo to right margin)
+    const availableWidth = this.pageWidth - companyNameX - this.margin - 10;
     const companyName = company?.name || 'Security Company';
     
     // Use splitTextToSize to handle long company names
     const wrappedName = this.doc.splitTextToSize(companyName, availableWidth);
     
     // Display company name (potentially on multiple lines)
+    let maxCompanyNameLines = 0;
     if (Array.isArray(wrappedName)) {
       wrappedName.forEach((line, index) => {
         this.doc.text(line, companyNameX, this.currentY + (index * 5));
       });
+      maxCompanyNameLines = wrappedName.length;
     } else {
       this.doc.text(wrappedName, companyNameX, this.currentY);
+      maxCompanyNameLines = 1;
     }
 
-    // Title centered
+    // Move to next line after company name
+    this.currentY += Math.max(15, maxCompanyNameLines * 5 + 5);
+
+    // Title centered on its own line
     this.doc.setFontSize(18);
+    this.doc.setFont('helvetica', 'bold');
     this.doc.setTextColor(0, 0, 0);
     const title = 'Daily Activity Report';
     const titleWidth = this.doc.getTextWidth(title);
     const titleX = (this.pageWidth - titleWidth) / 2;
     this.doc.text(title, titleX, this.currentY);
 
-    // Start/End times on the right
+    // Start/End times on the right side of title line
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'normal');
     this.doc.setTextColor(0, 0, 0);
@@ -132,9 +139,6 @@ export class PDFReportGenerator {
     this.doc.text(startText, this.pageWidth - this.margin - this.doc.getTextWidth(startText), this.currentY - 6);
     this.doc.text(endText, this.pageWidth - this.margin - this.doc.getTextWidth(endText), this.currentY);
 
-    this.currentY += 8;
-
-    // Remove duplicate company name - it's already shown next to logo
     this.currentY += 15;
   }
 
