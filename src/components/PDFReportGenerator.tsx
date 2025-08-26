@@ -286,9 +286,9 @@ export class PDFReportGenerator {
             return;
           }
 
-          // Ultra-lightweight canvas size for maximum speed
-          const maxWidth = 120;
-          const maxHeight = 120;
+          // Optimized canvas size balancing speed and quality
+          const maxWidth = 150;
+          const maxHeight = 150;
           
           let { width: imgWidth, height: imgHeight } = img;
           
@@ -305,8 +305,8 @@ export class PDFReportGenerator {
           // Draw and compress image
           ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
           
-          // Convert to JPEG with maximum compression for smallest file size
-          const imageData = canvas.toDataURL('image/jpeg', 0.1);
+          // Convert to JPEG with balanced compression for good quality and speed
+          const imageData = canvas.toDataURL('image/jpeg', 0.3);
           this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
 
           // Draw watermark overlay (bottom of picture) if provided
