@@ -19,7 +19,7 @@ interface Company {
   phone: string | null;
   address: string | null;
   license_limit: number;
-  status: string;
+  status: "active" | "inactive" | "suspended";
   created_at: string;
   updated_at: string;
   logo_url: string | null;
@@ -79,6 +79,8 @@ const AdminDashboard = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -535,6 +537,54 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleEditCompany = (company: Company) => {
+    setEditingCompany(company);
+    setShowEditForm(true);
+  };
+
+  const handleUpdateCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompany) return;
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          name: editingCompany.name,
+          email: editingCompany.email,
+          phone: editingCompany.phone,
+          address: editingCompany.address,
+          license_limit: editingCompany.license_limit,
+          status: editingCompany.status
+        })
+        .eq('id', editingCompany.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Company "${editingCompany.name}" updated successfully!`,
+      });
+
+      setShowEditForm(false);
+      setEditingCompany(null);
+      await fetchCompanies();
+    } catch (error) {
+      console.error('Error updating company:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update company",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     window.location.href = '/auth';
@@ -811,6 +861,106 @@ const AdminDashboard = () => {
           </Card>
         )}
 
+            {/* Edit Company Form */}
+            {showEditForm && editingCompany && (
+              <Card className="mb-6 shadow-elevated">
+                <CardHeader>
+                  <CardTitle>Edit Company: {editingCompany.name}</CardTitle>
+                  <CardDescription>
+                    Update company information
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleUpdateCompany} className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name">Company Name</Label>
+                      <Input
+                        id="edit-name"
+                        value={editingCompany.name}
+                        onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-email">Company Email</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editingCompany.email || ""}
+                        onChange={(e) => setEditingCompany({ ...editingCompany, email: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phone">Company Phone</Label>
+                      <Input
+                        id="edit-phone"
+                        value={editingCompany.phone || ""}
+                        onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-license_limit">License Limit</Label>
+                      <Input
+                        id="edit-license_limit"
+                        type="number"
+                        min="1"
+                        value={editingCompany.license_limit}
+                        onChange={(e) => setEditingCompany({ ...editingCompany, license_limit: parseInt(e.target.value) })}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-status">Status</Label>
+                      <Select 
+                        value={editingCompany.status} 
+                        onValueChange={(value: "active" | "inactive" | "suspended") => 
+                          setEditingCompany({ ...editingCompany, status: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="suspended">Suspended</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="edit-address">Company Address</Label>
+                      <Input
+                        id="edit-address"
+                        value={editingCompany.address || ""}
+                        onChange={(e) => setEditingCompany({ ...editingCompany, address: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2 flex gap-4">
+                      <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                        {isLoading ? "Updating..." : "Update Company"}
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowEditForm(false);
+                          setEditingCompany(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Companies List */}
             <div className="grid gap-6">
               {companies.map((company) => (
@@ -839,7 +989,7 @@ const AdminDashboard = () => {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditCompany(company)}>
                           Edit
                         </Button>
                         <Button variant="outline" size="sm">
