@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Users, ArrowLeft, Eye, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 
 interface Profile {
@@ -598,41 +599,48 @@ const CompanyGuards = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-4">
-                  {guards.map((guard) => (
-                    <Card key={guard.id} className="shadow-card hover:shadow-elevated transition-smooth">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary">
-                                  {guard.first_name?.charAt(0) || 'G'}
-                                </span>
-                              </div>
-                              <div>
-                                <h3 className="text-xl font-semibold">{guard.first_name} {guard.last_name}</h3>
-                                <p className="text-sm text-muted-foreground">{guard.email}</p>
-                              </div>
-                              <Badge variant={guard.is_active ? "default" : "secondary"}>
-                                {guard.is_active ? 'Active' : 'Inactive'}
-                              </Badge>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Guard Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Assigned Property</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {guards.map((guard) => (
+                      <TableRow key={guard.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
+                                {guard.first_name?.charAt(0) || 'G'}
+                              </span>
                             </div>
-                            <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                              <div>
-                                <p><strong>Phone:</strong> {guard.phone || 'Not provided'}</p>
-                                <p><strong>Assigned Property:</strong> {guard.assigned_property?.name || 'None'}</p>
-                              </div>
-                              <div>
-                                <p><strong>Created:</strong> {new Date(guard.created_at).toLocaleDateString()}</p>
-                                <p><strong>Status:</strong> {guard.is_active ? 'Active' : 'Inactive'}</p>
-                              </div>
+                            <div>
+                              <div className="font-medium">{guard.first_name} {guard.last_name}</div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{guard.email}</TableCell>
+                        <TableCell className="text-sm">{guard.phone || 'Not provided'}</TableCell>
+                        <TableCell className="text-sm">{guard.assigned_property?.name || 'None'}</TableCell>
+                        <TableCell>
+                          <Badge variant={guard.is_active ? "default" : "secondary"}>
+                            {guard.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(guard.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
+                              <Eye className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -649,8 +657,7 @@ const CompanyGuards = () => {
                                 setShowEditGuardForm(true);
                               }}
                             >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
+                              <Edit className="h-4 w-4" />
                             </Button>
                             <Button 
                               variant="outline" 
@@ -659,15 +666,14 @@ const CompanyGuards = () => {
                               className="text-destructive hover:text-destructive"
                               disabled={isLoading}
                             >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
           </CardContent>
