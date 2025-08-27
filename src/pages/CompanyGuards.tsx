@@ -32,6 +32,7 @@ interface Guard {
   company_id?: string;
   role?: string;
   updated_at?: string;
+  assigned_property_id?: string;
   assigned_property?: {
     id: string;
     name: string;
@@ -192,7 +193,8 @@ const CompanyGuards = () => {
       const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
         ...guard,
         email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-        assigned_property: guard.properties
+        assigned_property: guard.properties,
+        assigned_property_id: guard.assigned_property_id // Make sure this is available for the edit form
       }));
 
       setGuards(guardsWithPlaceholderEmails);
@@ -642,7 +644,7 @@ const CompanyGuards = () => {
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
                                   newPassword: "",
-                                  assignedPropertyId: (guard as any).assigned_property_id || "none"
+                                  assignedPropertyId: guard.assigned_property_id || "none"
                                 });
                                 setShowEditGuardForm(true);
                               }}
