@@ -61,10 +61,10 @@ const GuardDashboard = () => {
     
     setLoadingProperties(true);
     try {
-      // First get user's profile to find their company_id
+      // First get user's profile to find their assigned property
       const { data: profile } = await supabase
         .from('profiles')
-        .select('company_id')
+        .select('company_id, assigned_property_id')
         .eq('user_id', user.id)
         .single();
 
@@ -74,27 +74,48 @@ const GuardDashboard = () => {
         return;
       }
 
-      // Fetch properties belonging to user's company
-      const { data, error } = await supabase
-        .from('properties')
-        .select(`
-          id,
-          name,
-          location_address
-        `)
-        .eq('company_id', profile.company_id)
-        .eq('is_active', true)
-        .order('name');
+      // If guard has an assigned property, only show that one
+      if (profile.assigned_property_id) {
+        const { data, error } = await supabase
+          .from('properties')
+          .select(`
+            id,
+            name,
+            location_address
+          `)
+          .eq('id', profile.assigned_property_id)
+          .eq('is_active', true)
+          .single();
 
-      if (error) {
-        console.error('Error fetching properties:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load work sites",
-          variant: "destructive",
-        });
+        if (error) {
+          console.error('Error fetching assigned property:', error);
+          setProperties([]);
+        } else {
+          setProperties(data ? [data] : []);
+        }
       } else {
-        setProperties(data || []);
+        // If no specific property assigned, show all company properties (fallback)
+        const { data, error } = await supabase
+          .from('properties')
+          .select(`
+            id,
+            name,
+            location_address
+          `)
+          .eq('company_id', profile.company_id)
+          .eq('is_active', true)
+          .order('name');
+
+        if (error) {
+          console.error('Error fetching properties:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load work sites",
+            variant: "destructive",
+          });
+        } else {
+          setProperties(data || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
