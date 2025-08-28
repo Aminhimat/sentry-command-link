@@ -206,49 +206,22 @@ const GuardDashboard = () => {
 
 
   const handleCameraCapture = async () => {
-    // Auto-populate required fields for ultra-fast submission
-    const quickDefaults = {
-      taskType: taskData.taskType || "security-patrol",
-      customTaskType: taskData.customTaskType || "",
-      site: taskData.site || (properties.length > 0 ? properties[0].name : "Security Patrol"),
-      severity: taskData.severity || "none",
-      description: taskData.description || "Security Patrol",
-      image: null as File | null
-    };
-
-    // Update form with defaults immediately
-    setTaskData(prev => ({ 
-      ...prev, 
-      ...quickDefaults
-    }));
-
-    // Show immediate feedback
     toast({
-      title: "📸 Quick Capture Mode",
-      description: "Opening camera for instant submission...",
+      title: "📸 Camera",
+      description: "Opening camera...",
     });
 
     try {
       if (Capacitor.isNativePlatform()) {
-        // Maximum speed camera settings
         const image = await CapCamera.getPhoto({
-          quality: 60, // Lower quality for maximum speed
+          quality: 80,
           allowEditing: false,
           resultType: CameraResultType.DataUrl,
           source: CameraSource.Camera,
-          width: 800, // Smaller resolution for speed
-          height: 600,
           correctOrientation: true,
         });
 
         if (image.dataUrl) {
-          // Show processing feedback
-          toast({
-            title: "✅ Photo Captured",
-            description: "Auto-submitting now...",
-          });
-
-          // Quick conversion and immediate submission
           const response = await fetch(image.dataUrl);
           const blob = await response.blob();
           const file = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
@@ -256,15 +229,15 @@ const GuardDashboard = () => {
             lastModified: Date.now()
           });
           
-          // Set image and auto-submit immediately
-          const finalData = { ...quickDefaults, image: file };
-          setTaskData(finalData);
+          setTaskData(prev => ({ ...prev, image: file }));
           
-          // Auto-submit without user action
-          await handleQuickSubmit(finalData);
+          toast({
+            title: "✅ Photo Captured",
+            description: "Photo ready - click Submit to send report",
+          });
         }
       } else {
-        // Web fallback with auto-submit
+        // Web fallback
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/jpeg,image/jpg';
@@ -273,15 +246,11 @@ const GuardDashboard = () => {
         input.onchange = async (event) => {
           const file = (event.target as HTMLInputElement).files?.[0];
           if (file) {
+            setTaskData(prev => ({ ...prev, image: file }));
             toast({
               title: "✅ Photo Selected",
-              description: "Auto-submitting now...",
+              description: "Photo ready - click Submit to send report",
             });
-            
-            // Set data and auto-submit
-            const finalData = { ...quickDefaults, image: file };
-            setTaskData(finalData);
-            await handleQuickSubmit(finalData);
           }
         };
         
