@@ -1004,9 +1004,6 @@ const GuardDashboard = () => {
     setShiftLoading(true);
     
     try {
-      // Check location permissions first
-      await checkLocationPermissions();
-      
       // Get user's profile
       const { data: profile } = await supabase
         .from('profiles')
@@ -1018,53 +1015,41 @@ const GuardDashboard = () => {
         throw new Error('User profile not found');
       }
 
-      let latitude = null;
-      let longitude = null;
-      let locationAddress = 'Location not available';
-      let locationWarning = '';
+      // MANDATORY location access for starting shift
+      toast({
+        title: "Location Required",
+        description: "Please allow location access to start your shift...",
+      });
 
-      // Try to get location with better user feedback
+      let position;
       try {
-        toast({
-          title: "Getting Location",
-          description: "Please allow location access for accurate shift tracking...",
-        });
-        
-        const position = await getLocation();
-        latitude = position.latitude;
-        longitude = position.longitude;
-        
-        // Validate that this is not a default San Francisco location
-        const isSanFrancisco = (
-          Math.abs(latitude - 37.785834) < 0.001 && 
-          Math.abs(longitude - (-122.406417)) < 0.001
-        );
-        
-        if (isSanFrancisco) {
-          console.warn('Detected San Francisco default location, likely mock/cached data');
-          toast({
-            title: "Location Warning",
-            description: "Using mock location detected. Please ensure location services are enabled and you're not using a simulator.",
-            variant: "destructive",
-          });
-          // Still use the coordinates but warn the user
-        }
-        
-        locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-        console.log('Location obtained:', { latitude, longitude, isSanFrancisco });
+        await checkLocationPermissions();
+        position = await getLocation();
       } catch (locationError: any) {
-        console.warn('Location access failed:', locationError);
-        locationWarning = locationError.message || 'Location access failed';
-        
-        // Show specific warning about location
+        console.error('Location access failed:', locationError);
+        throw new Error(`Location access is required to start shift. ${locationError.message || 'Please enable location services and try again.'}`);
+      }
+
+      const latitude = position.latitude;
+      const longitude = position.longitude;
+      const locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      
+      // Validate that this is not a default San Francisco location
+      const isSanFrancisco = (
+        Math.abs(latitude - 37.785834) < 0.001 && 
+        Math.abs(longitude - (-122.406417)) < 0.001
+      );
+      
+      if (isSanFrancisco) {
+        console.warn('Detected San Francisco default location, likely mock/cached data');
         toast({
           title: "Location Warning",
-          description: locationWarning + " Shift will be recorded without precise location.",
+          description: "Mock location detected. Please ensure location services are enabled and you're not using a simulator.",
           variant: "destructive",
         });
       }
 
-      // Create new shift
+      // Create new shift with required location
       const { data: newShift, error } = await supabase
         .from('guard_shifts')
         .insert({
@@ -1094,18 +1079,10 @@ const GuardDashboard = () => {
 
       setCurrentShift(newShift);
       
-      if (latitude) {
-        toast({
-          title: "Shift Started",
-          description: "Your shift has been started successfully with location tracking.",
-        });
-      } else {
-        toast({
-          title: "Shift Started (No Location)",
-          description: "Your shift has been started but without location tracking. Enable location access for better tracking.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Shift Started",
+        description: "Your shift has been started successfully with location tracking.",
+      });
       
     } catch (error: any) {
       console.error('Start shift error:', error);
@@ -1140,31 +1117,12 @@ const GuardDashboard = () => {
       if (currentShift.guard_id !== profile.id) {
         throw new Error('Shift does not belong to current user');
       }
-
-      let latitude = currentShift.location_lat;
-      let longitude = currentShift.location_lng;
-      let locationAddress = 'Location not available';
-
-      // Try to get current location, but don't fail if it's not available
-      try {
-        const position = await getLocation();
-        latitude = position.latitude;
-        longitude = position.longitude;
-        locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-      } catch (locationError) {
-        console.warn('Location access failed for end shift:', locationError);
-        // Use original shift location or default
-        locationAddress = currentShift.location_address || 'Location not available';
-      }
       
-      // Update shift with end time and location
+      // Update shift with end time only - no location tracking needed
       const { error } = await supabase
         .from('guard_shifts')
         .update({
-          check_out_time: new Date().toISOString(),
-          location_lat: latitude,
-          location_lng: longitude,
-          location_address: locationAddress
+          check_out_time: new Date().toISOString()
         })
         .eq('id', currentShift.id);
 
