@@ -26,13 +26,9 @@ const LocationMap: React.FC<LocationMapProps> = ({
   const [mapError, setMapError] = React.useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen) {
-      setIsLoading(true);
-      setMapError(null);
-      return;
-    }
+    if (!isOpen || !mapRef.current) return;
 
-    if (!mapRef.current) return;
+    console.log('LocationMap: Initializing map for coordinates:', latitude, longitude);
 
     // Clean up existing map
     if (mapInstance.current) {
@@ -43,99 +39,75 @@ const LocationMap: React.FC<LocationMapProps> = ({
     setIsLoading(true);
     setMapError(null);
 
-    // Create map with proper error handling
-    const timer = setTimeout(() => {
-      if (!mapRef.current) return;
+    try {
+      // Initialize map immediately
+      const map = L.map(mapRef.current).setView([latitude, longitude], 15);
 
-      try {
-        // Force container to have dimensions
-        mapRef.current.style.width = '100%';
-        mapRef.current.style.height = '384px';
+      // Use OpenStreetMap tiles (most reliable)
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      });
 
-        // Initialize map
-        const map = L.map(mapRef.current, {
-          preferCanvas: true,
-          attributionControl: true,
-        }).setView([latitude, longitude], 15);
+      // Handle tile loading
+      let tilesLoaded = false;
+      
+      tileLayer.on('loading', () => {
+        console.log('LocationMap: Tiles loading...');
+      });
 
-        // Add tile layer with more reliable provider
-        const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-          maxZoom: 20,
-          detectRetina: true,
-          errorTileUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjEyOCIgeT0iMTI4IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5Q0EzQUYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIj5NYXAgVGlsZTwvdGV4dD4KPC9zdmc+Cg=='
-        });
-
-        tileLayer.on('load', () => {
-          setIsLoading(false);
-        });
-
-        tileLayer.on('tileerror', () => {
-          console.warn('Tile loading error, but continuing...');
-          setIsLoading(false);
-        });
-
-        tileLayer.addTo(map);
-
-        // Configure marker icon with fallback
-        const icon = L.icon({
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        });
-
-        // Add marker with popup
-        const marker = L.marker([latitude, longitude], { icon }).addTo(map);
-        
-        const popupContent = `
-          <div style="text-align: center;">
-            <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
-            ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
-            <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
-          </div>
-        `;
-        
-        marker.bindPopup(popupContent).openPopup();
-
-        // Force map to resize and invalidate size
-        setTimeout(() => {
-          map.invalidateSize();
-          setIsLoading(false);
-        }, 100);
-
-        mapInstance.current = map;
-        console.log('Map initialized successfully');
-      } catch (error) {
-        console.error('Error initializing map:', error);
-        setMapError('Failed to load map. Please try again.');
+      tileLayer.on('load', () => {
+        console.log('LocationMap: Tiles loaded successfully');
+        tilesLoaded = true;
         setIsLoading(false);
-      }
-    }, 300);
+      });
 
-    // Fallback timeout in case map doesn't load
-    const fallbackTimer = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        if (!mapInstance.current) {
-          setMapError('Map is taking too long to load. Please check your internet connection.');
+      tileLayer.on('tileerror', (e) => {
+        console.warn('LocationMap: Tile error:', e);
+        if (!tilesLoaded) {
+          setIsLoading(false); // Still show the map even with tile errors
         }
-      }
-    }, 10000); // 10 second timeout
+      });
 
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(fallbackTimer);
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
-  }, [isOpen, latitude, longitude, guardName, timestamp]);
+      tileLayer.addTo(map);
+
+      // Add marker
+      const marker = L.marker([latitude, longitude]).addTo(map);
+      
+      const popupContent = `
+        <div style="text-align: center;">
+          <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
+          ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
+          <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
+        </div>
+      `;
+      
+      marker.bindPopup(popupContent).openPopup();
+
+      // Set loading to false after a short delay even if tiles don't fire load event
+      const loadingTimeout = setTimeout(() => {
+        if (!tilesLoaded) {
+          console.log('LocationMap: Forcing load completion after timeout');
+          setIsLoading(false);
+        }
+      }, 3000);
+
+      mapInstance.current = map;
+      console.log('LocationMap: Map setup complete');
+
+      return () => {
+        clearTimeout(loadingTimeout);
+        if (mapInstance.current) {
+          mapInstance.current.remove();
+          mapInstance.current = null;
+        }
+      };
+    } catch (error) {
+      console.error('LocationMap: Error initializing map:', error);
+      setMapError('Failed to load map. Showing coordinates instead.');
+      setIsLoading(false);
+    }
+  }, [isOpen, latitude, longitude]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
