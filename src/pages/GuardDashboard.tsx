@@ -204,153 +204,6 @@ const GuardDashboard = () => {
     setUser(user);
   };
 
-  const handleQuickPhoto = async () => {
-    // Auto-fill form with defaults for quick submission
-    const quickDefaults = {
-      taskType: "security-patrol",
-      customTaskType: "",
-      site: properties.length > 0 ? properties[0].name : "Security Patrol",
-      description: "Quick security patrol photo report",
-      severity: "none",
-      image: null as File | null
-    };
-
-    // Show immediate feedback
-    toast({
-      title: "📸 Quick Photo Mode",
-      description: "Opening camera for instant submission...",
-    });
-
-    try {
-      if (Capacitor.isNativePlatform()) {
-        // Optimized native camera settings for speed
-        const image = await CapCamera.getPhoto({
-          quality: 70, // Lower quality for maximum speed
-          allowEditing: false,
-          resultType: CameraResultType.DataUrl,
-          source: CameraSource.Camera,
-          width: 1024, // Smaller size for speed
-          height: 768,
-          correctOrientation: true,
-        });
-
-        if (image.dataUrl) {
-          // Show processing feedback
-          toast({
-            title: "✅ Photo Captured",
-            description: "Auto-submitting report...",
-          });
-
-          // Convert and prepare data
-          const response = await fetch(image.dataUrl);
-          const blob = await response.blob();
-          const file = new File([blob], `quick_patrol_${Date.now()}.jpg`, { 
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-
-          // Set data with photo and defaults
-          const quickData = { ...quickDefaults, image: file };
-          setTaskData(quickData);
-
-          // Auto-submit immediately
-          await submitQuickReport(quickData);
-        }
-      } else {
-        // Web fallback - but still auto-submit
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/jpeg,image/jpg';
-        input.capture = 'environment';
-        
-        input.onchange = async (event) => {
-          const file = (event.target as HTMLInputElement).files?.[0];
-          if (file) {
-            toast({
-              title: "✅ Photo Selected",
-              description: "Auto-submitting report...",
-            });
-            
-            // Set data and auto-submit
-            const quickData = { ...quickDefaults, image: file };
-            setTaskData(quickData);
-            await submitQuickReport(quickData);
-          }
-        };
-        
-        input.click();
-      }
-    } catch (error) {
-      console.error('Quick photo error:', error);
-      toast({
-        title: "❌ Quick Photo Failed",
-        description: "Could not capture photo. Try manual mode.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const submitQuickReport = async (quickData: typeof taskData) => {
-    setIsLoading(true);
-
-    try {
-      // Get current location quickly
-      let location = null;
-      try {
-        location = await getLocation();
-      } catch (error) {
-        console.log('Could not get location for quick photo:', error);
-      }
-
-      if (quickData.image) {
-        // Use optimized edge function for faster image upload
-        const formData = new FormData();
-        formData.append('image', quickData.image);
-        formData.append('reportData', JSON.stringify({
-          taskType: quickData.taskType,
-          site: quickData.site,
-          severity: quickData.severity,
-          description: quickData.description,
-          location
-        }));
-
-        const { data, error } = await supabase.functions.invoke('upload-guard-image', {
-          body: formData
-        });
-
-        if (error) {
-          throw new Error(error.message || 'Failed to submit quick report');
-        }
-
-        // Play success sound
-        playSuccessSound();
-        
-        toast({
-          title: "🎯 Quick Report Submitted!",
-          description: "Your patrol photo was sent to admin instantly!",
-        });
-
-        // Reset form
-        setTaskData({
-          taskType: "",
-          customTaskType: "",
-          site: "",
-          description: "",
-          severity: "none",
-          image: null
-        });
-      }
-    } catch (error: any) {
-      console.error('Error submitting quick report:', error);
-      toast({
-        title: "❌ Quick Submit Failed",
-        description: error.message || "Failed to submit quick report",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCameraCapture = async () => {
     // Show immediate feedback
@@ -1585,33 +1438,15 @@ const GuardDashboard = () => {
               <div className="space-y-2">
                 <Label>Take Photo</Label>
                 
-                {/* Quick Photo Mode - Auto-submit after capture */}
-                <div className="grid grid-cols-1 gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleQuickPhoto}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    size="lg"
-                    disabled={isLoading}
-                  >
-                    <Camera className="w-5 h-5 mr-2" />
-                    📸 Quick Photo & Submit
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCameraCapture}
-                    className="w-full"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Take Photo (Manual Submit)
-                  </Button>
-                </div>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  Quick Photo: Auto-fills form and submits immediately after capture
-                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCameraCapture}
+                  className="w-full"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Take Photo
+                </Button>
                 
                 {taskData.image && (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
