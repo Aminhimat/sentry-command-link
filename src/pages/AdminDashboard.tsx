@@ -972,16 +972,17 @@ const AdminDashboard = () => {
                           <h3 className="text-xl font-semibold">{company.name}</h3>
                           {getStatusBadge(company.status)}
                         </div>
-                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                          <div>
-                            <p><strong>Email:</strong> {company.email || 'Not provided'}</p>
-                            <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
-                          </div>
-                          <div>
-                            <p><strong>License Limit:</strong> {company.license_limit} users</p>
-                            <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
-                          </div>
-                        </div>
+                         <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                           <div>
+                             <p><strong>Email:</strong> {company.email || 'Not provided'}</p>
+                             <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
+                           </div>
+                           <div>
+                             <p><strong>License Limit:</strong> {company.license_limit} users</p>
+                             <p><strong>Guards Created:</strong> <span className="font-semibold text-primary">{guards.filter(guard => guard.company_id === company.id).length}</span> guards</p>
+                             <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
+                           </div>
+                         </div>
                         {company.address && (
                           <p className="text-sm text-muted-foreground mt-2">
                             <strong>Address:</strong> {company.address}
