@@ -129,12 +129,8 @@ const AuthPage = () => {
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Success",
-          description: "Signed in successfully!",
-        });
       }
+      // Remove success toast for faster login - navigation will happen immediately
     } catch (error) {
       toast({
         title: "Error",

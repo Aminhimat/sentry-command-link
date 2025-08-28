@@ -25,10 +25,8 @@ const GuardAuthPage = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Navigate to guard dashboard
-          setTimeout(() => {
-            navigate('/guard');
-          }, 0);
+          // Navigate to guard dashboard immediately
+          navigate('/guard');
         }
       }
     );
@@ -58,12 +56,8 @@ const GuardAuthPage = () => {
           title: "Sign in failed",
           description: error.message,
         });
-      } else {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
       }
+      // Remove success toast for faster login - navigation will happen immediately
     } catch (error) {
       toast({
         variant: "destructive",
