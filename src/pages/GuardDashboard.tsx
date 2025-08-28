@@ -204,41 +204,222 @@ const GuardDashboard = () => {
     setUser(user);
   };
 
-  const handleCameraCapture = async () => {
+  const handleQuickPhoto = async () => {
+    // Auto-fill form with defaults for quick submission
+    const quickDefaults = {
+      taskType: "security-patrol",
+      customTaskType: "",
+      site: properties.length > 0 ? properties[0].name : "Security Patrol",
+      description: "Quick security patrol photo report",
+      severity: "none",
+      image: null as File | null
+    };
+
+    // Show immediate feedback
+    toast({
+      title: "📸 Quick Photo Mode",
+      description: "Opening camera for instant submission...",
+    });
+
     try {
       if (Capacitor.isNativePlatform()) {
-        // Use native camera on mobile
+        // Optimized native camera settings for speed
         const image = await CapCamera.getPhoto({
-          quality: 90,
+          quality: 70, // Lower quality for maximum speed
           allowEditing: false,
-          resultType: CameraResultType.Uri,
+          resultType: CameraResultType.DataUrl,
           source: CameraSource.Camera,
+          width: 1024, // Smaller size for speed
+          height: 768,
+          correctOrientation: true,
         });
 
-        // Convert to blob and then to File
-        const response = await fetch(image.webPath!);
-        const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        
-        setTaskData({ ...taskData, image: file });
+        if (image.dataUrl) {
+          // Show processing feedback
+          toast({
+            title: "✅ Photo Captured",
+            description: "Auto-submitting report...",
+          });
+
+          // Convert and prepare data
+          const response = await fetch(image.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `quick_patrol_${Date.now()}.jpg`, { 
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+
+          // Set data with photo and defaults
+          const quickData = { ...quickDefaults, image: file };
+          setTaskData(quickData);
+
+          // Auto-submit immediately
+          await submitQuickReport(quickData);
+        }
       } else {
-        // Fallback for web - trigger file input
+        // Web fallback - but still auto-submit
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/*';
+        input.accept = 'image/jpeg,image/jpg';
         input.capture = 'environment';
+        
+        input.onchange = async (event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            toast({
+              title: "✅ Photo Selected",
+              description: "Auto-submitting report...",
+            });
+            
+            // Set data and auto-submit
+            const quickData = { ...quickDefaults, image: file };
+            setTaskData(quickData);
+            await submitQuickReport(quickData);
+          }
+        };
+        
+        input.click();
+      }
+    } catch (error) {
+      console.error('Quick photo error:', error);
+      toast({
+        title: "❌ Quick Photo Failed",
+        description: "Could not capture photo. Try manual mode.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const submitQuickReport = async (quickData: typeof taskData) => {
+    setIsLoading(true);
+
+    try {
+      // Get current location quickly
+      let location = null;
+      try {
+        location = await getLocation();
+      } catch (error) {
+        console.log('Could not get location for quick photo:', error);
+      }
+
+      if (quickData.image) {
+        // Use optimized edge function for faster image upload
+        const formData = new FormData();
+        formData.append('image', quickData.image);
+        formData.append('reportData', JSON.stringify({
+          taskType: quickData.taskType,
+          site: quickData.site,
+          severity: quickData.severity,
+          description: quickData.description,
+          location
+        }));
+
+        const { data, error } = await supabase.functions.invoke('upload-guard-image', {
+          body: formData
+        });
+
+        if (error) {
+          throw new Error(error.message || 'Failed to submit quick report');
+        }
+
+        // Play success sound
+        playSuccessSound();
+        
+        toast({
+          title: "🎯 Quick Report Submitted!",
+          description: "Your patrol photo was sent to admin instantly!",
+        });
+
+        // Reset form
+        setTaskData({
+          taskType: "",
+          customTaskType: "",
+          site: "",
+          description: "",
+          severity: "none",
+          image: null
+        });
+      }
+    } catch (error: any) {
+      console.error('Error submitting quick report:', error);
+      toast({
+        title: "❌ Quick Submit Failed",
+        description: error.message || "Failed to submit quick report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    // Show immediate feedback
+    toast({
+      title: "📸 Taking Photo",
+      description: "Camera opening...",
+    });
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        // Optimized native camera settings for speed
+        const image = await CapCamera.getPhoto({
+          quality: 75, // Reduced from 90 for faster processing
+          allowEditing: false,
+          resultType: CameraResultType.DataUrl, // Faster than Uri
+          source: CameraSource.Camera,
+          width: 1280, // Limit resolution for speed
+          height: 960,
+          correctOrientation: true,
+        });
+
+        // Immediate success feedback
+        toast({
+          title: "✅ Photo Captured",
+          description: "Processing image...",
+        });
+
+        // Quick conversion from DataUrl to File
+        if (image.dataUrl) {
+          const response = await fetch(image.dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          
+          setTaskData({ ...taskData, image: file });
+          
+          // Final success feedback
+          toast({
+            title: "🎯 Ready to Submit",
+            description: "Photo attached successfully!",
+          });
+        }
+      } else {
+        // Optimized web camera with constraints for speed
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/jpeg,image/jpg'; // Specific format for speed
+        input.capture = 'environment';
+        
         input.onchange = (event) => {
           const file = (event.target as HTMLInputElement).files?.[0];
           if (file) {
+            // Immediate feedback
+            toast({
+              title: "✅ Photo Selected",
+              description: "Ready to submit!",
+            });
             setTaskData({ ...taskData, image: file });
           }
         };
+        
         input.click();
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
       toast({
-        title: "Camera Error",
+        title: "❌ Camera Error",
         description: "Could not access camera. Please try again.",
         variant: "destructive",
       });
@@ -1403,15 +1584,35 @@ const GuardDashboard = () => {
               {/* Photo Upload */}
               <div className="space-y-2">
                 <Label>Take Photo</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCameraCapture}
-                  className="w-full"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Take Photo
-                </Button>
+                
+                {/* Quick Photo Mode - Auto-submit after capture */}
+                <div className="grid grid-cols-1 gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleQuickPhoto}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    size="lg"
+                    disabled={isLoading}
+                  >
+                    <Camera className="w-5 h-5 mr-2" />
+                    📸 Quick Photo & Submit
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCameraCapture}
+                    className="w-full"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Take Photo (Manual Submit)
+                  </Button>
+                </div>
+                
+                <p className="text-xs text-muted-foreground text-center">
+                  Quick Photo: Auto-fills form and submits immediately after capture
+                </p>
+                
                 {taskData.image && (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                     <Camera className="w-4 h-4 text-green-500" />
