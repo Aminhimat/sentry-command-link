@@ -385,7 +385,7 @@ const AdminDashboard = () => {
 
   const handleDeleteCompany = async (companyId: string, companyName: string) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${companyName}"?\n\nThis action will permanently delete:\n- The company record\n- All associated user profiles\n- All guard shifts\n- All incidents\n\nThis action cannot be undone.`
+      `Are you sure you want to delete company "${companyName}"?\n\nThis action will ONLY delete the company record.\nGuards, incidents, reports, and other data will remain in the system.\n\nThis action cannot be undone.`
     );
     
     if (!confirmed) return;
@@ -393,118 +393,9 @@ const AdminDashboard = () => {
     try {
       setIsLoading(true);
       
-      console.log(`Starting deletion process for company: ${companyId}`);
+      console.log(`Deleting company record only: ${companyId}`);
       
-      // Step 1: Get all profile IDs for this company first
-      console.log('Fetching all profiles for company...');
-      const { data: profiles, error: profilesFetchError } = await supabase
-        .from('profiles')
-        .select('id, user_id')
-        .eq('company_id', companyId);
-
-      if (profilesFetchError) {
-        console.error('Error fetching profiles:', profilesFetchError);
-        throw new Error(`Failed to fetch profiles: ${profilesFetchError.message}`);
-      }
-
-      const profileIds = profiles?.map(p => p.id) || [];
-      console.log(`Found ${profileIds.length} profiles:`, profileIds);
-
-      // Step 2: Delete ALL guard reports for this company (by company_id AND by guard_id)
-      console.log('Deleting all guard reports for company...');
-      
-      // First delete by company_id
-      const { error: reportsCompanyError } = await supabase
-        .from('guard_reports')
-        .delete()
-        .eq('company_id', companyId);
-
-      if (reportsCompanyError) {
-        console.error('Error deleting reports by company_id:', reportsCompanyError);
-      }
-
-      // Then delete any remaining by guard_id (profile_id)
-      if (profileIds.length > 0) {
-        const { error: reportsGuardError } = await supabase
-          .from('guard_reports')
-          .delete()
-          .in('guard_id', profileIds);
-
-        if (reportsGuardError) {
-          console.error('Error deleting reports by guard_id:', reportsGuardError);
-        }
-      }
-
-      // Step 3: Delete guard shifts
-      console.log('Deleting guard shifts...');
-      const { error: shiftsError } = await supabase
-        .from('guard_shifts')
-        .delete()
-        .eq('company_id', companyId);
-
-      if (shiftsError) {
-        console.error('Error deleting guard shifts:', shiftsError);
-      }
-
-      // Step 4: Delete incidents
-      console.log('Deleting incidents...');
-      const { error: incidentsError } = await supabase
-        .from('incidents')
-        .delete()
-        .eq('company_id', companyId);
-
-      if (incidentsError) {
-        console.error('Error deleting incidents:', incidentsError);
-      }
-
-      // Step 5: Delete properties
-      console.log('Deleting properties...');
-      const { error: propertiesError } = await supabase
-        .from('properties')
-        .delete()
-        .eq('company_id', companyId);
-
-      if (propertiesError) {
-        console.error('Error deleting properties:', propertiesError);
-      }
-
-      // Step 6: Double-check no guard_reports remain that reference our profiles
-      console.log('Checking for remaining guard_reports...');
-      if (profileIds.length > 0) {
-        const { data: remainingReports, error: checkError } = await supabase
-          .from('guard_reports')
-          .select('id, guard_id')
-          .in('guard_id', profileIds);
-
-        if (remainingReports && remainingReports.length > 0) {
-          console.log('Found remaining reports, force deleting:', remainingReports);
-          const { error: forceDeleteError } = await supabase
-            .from('guard_reports')
-            .delete()
-            .in('guard_id', profileIds);
-          
-          if (forceDeleteError) {
-            console.error('Force delete failed:', forceDeleteError);
-            throw new Error(`Cannot delete remaining guard reports: ${forceDeleteError.message}`);
-          }
-        }
-      }
-
-      // Step 7: Now delete profiles
-      console.log('Deleting profiles...');
-      const { error: profilesError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('company_id', companyId);
-
-      if (profilesError) {
-        console.error('Error deleting profiles:', profilesError);
-        throw new Error(`Failed to delete user profiles: ${profilesError.message}`);
-      }
-      console.log('Profiles deleted successfully');
-
-      // Step 8: Finally delete the company
-      console.log('Deleting company...');
+      // Only delete the company record - preserve all other data
       const { error: companyError } = await supabase
         .from('companies')
         .delete()
@@ -514,11 +405,12 @@ const AdminDashboard = () => {
         console.error('Error deleting company:', companyError);
         throw new Error(`Failed to delete company: ${companyError.message}`);
       }
-      console.log('Company deleted successfully');
+      
+      console.log('Company record deleted successfully');
 
       toast({
         title: "Success",
-        description: `Company "${companyName}" has been permanently deleted`,
+        description: `Company "${companyName}" record has been deleted. All guards and data preserved.`,
         variant: "default",
       });
 
