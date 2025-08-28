@@ -332,6 +332,8 @@ const GuardDashboard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Starting submit process...');
+    
     // Check which required fields are missing
     const missingFields = [];
     if (!taskData.taskType) missingFields.push("Task Type");
@@ -339,6 +341,7 @@ const GuardDashboard = () => {
     if (!taskData.severity) missingFields.push("Type of Issue");
     
     if (missingFields.length > 0) {
+      console.log('❌ Missing fields:', missingFields);
       toast({
         title: "Missing Required Fields",
         description: `Please fill in: ${missingFields.join(", ")}`,
@@ -349,6 +352,7 @@ const GuardDashboard = () => {
 
     // If "other" is selected, check for custom task type
     if (taskData.taskType === "other" && !taskData.customTaskType.trim()) {
+      console.log('❌ Custom task type required');
       toast({
         title: "Error",
         description: "Please specify what kind of task you're performing",
@@ -357,18 +361,23 @@ const GuardDashboard = () => {
       return;
     }
 
+    console.log('✅ Validation passed, setting loading state...');
     setIsLoading(true);
 
     try {
-      // Get current location
+      console.log('📍 Getting location...');
+      // Get current location (optional - don't block submission if it fails)
       let location = null;
       try {
         location = await getLocation();
-      } catch (error) {
-        console.log('Could not get location:', error);
+        console.log('✅ Location obtained successfully:', location);
+      } catch (locationError) {
+        console.log('⚠️ Location access failed, continuing without location:', locationError);
+        // Continue without location - don't block the submission
       }
 
       if (taskData.image) {
+        console.log('📸 Submitting with image...');
         // Use optimized edge function for faster image upload
         const formData = new FormData();
         formData.append('image', taskData.image);
@@ -380,14 +389,18 @@ const GuardDashboard = () => {
           location
         }));
 
+        console.log('📤 Invoking upload-guard-image function...');
         const { data, error } = await supabase.functions.invoke('upload-guard-image', {
           body: formData
         });
 
         if (error) {
+          console.error('❌ Edge function error:', error);
           throw new Error(error.message || 'Failed to submit report');
         }
 
+        console.log('✅ Image upload successful');
+        
         // Play success sound
         playSuccessSound();
         
@@ -397,6 +410,7 @@ const GuardDashboard = () => {
         });
 
       } else {
+        console.log('📝 Submitting without image...');
         // Submit report without image (faster path)
         const { data: profile } = await supabase
           .from('profiles')
@@ -405,9 +419,11 @@ const GuardDashboard = () => {
           .single();
 
         if (!profile) {
+          console.error('❌ Profile not found');
           throw new Error('User profile not found');
         }
 
+        console.log('👤 Profile found, inserting report...');
         const { error: reportError } = await supabase
           .from('guard_reports')
           .insert({
@@ -420,9 +436,12 @@ const GuardDashboard = () => {
           });
 
         if (reportError) {
+          console.error('❌ Report insert error:', reportError);
           throw new Error(`Failed to submit report: ${reportError.message}`);
         }
 
+        console.log('✅ Report submitted successfully');
+        
         // Play success sound
         playSuccessSound();
         
@@ -432,6 +451,7 @@ const GuardDashboard = () => {
         });
       }
 
+      console.log('🧹 Resetting form...');
       // Reset form completely
       setTaskData({
         taskType: "",
@@ -447,13 +467,14 @@ const GuardDashboard = () => {
       if (fileInput) fileInput.value = '';
 
     } catch (error: any) {
-      console.error('Error submitting task:', error);
+      console.error('❌ Error submitting task:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to submit report to admin",
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Setting loading to false...');
       setIsLoading(false);
     }
   };
