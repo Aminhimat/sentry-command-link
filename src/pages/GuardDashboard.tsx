@@ -37,6 +37,7 @@ const GuardDashboard = () => {
   const [qrScanner, setQrScanner] = useState<QrScanner | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [qrScanSuccess, setQrScanSuccess] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const { toast } = useToast();
 
   // Function to play success sound
@@ -404,10 +405,13 @@ const GuardDashboard = () => {
         // Play success sound
         playSuccessSound();
         
-        toast({
-          title: "Report Submitted",
-          description: "Your task report with photo has been sent to admin successfully!",
-        });
+        // Show success message
+        setShowSuccessMessage(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 3000);
 
       } else {
         console.log('📝 Submitting without image...');
@@ -1155,7 +1159,20 @@ const GuardDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Success Message Overlay */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card p-8 rounded-lg shadow-lg text-center max-w-md mx-4">
+            <div className="text-green-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p className="text-lg font-medium">Your task report with photo has been sent to admin successfully.</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="border-b bg-card">
         <div className="flex h-16 items-center px-6">
