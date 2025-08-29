@@ -234,7 +234,7 @@ const GuardDashboard = () => {
           
           toast({
             title: "✅ Photo Captured",
-            description: "Photo ready - click Submit to send report",
+            description: "Photo captured successfully",
           });
         }
       } else {
@@ -250,7 +250,7 @@ const GuardDashboard = () => {
             setTaskData(prev => ({ ...prev, image: file }));
             toast({
               title: "✅ Photo Selected",
-              description: "Photo ready - click Submit to send report",
+              description: "Photo selected successfully",
             });
           }
         };
