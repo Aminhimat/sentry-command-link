@@ -112,6 +112,10 @@ const CompanyDashboard = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isCreatingGuard, setIsCreatingGuard] = useState(false);
+  const [isUpdatingGuard, setIsUpdatingGuard] = useState(false);
+  const [isCreatingProperty, setIsCreatingProperty] = useState(false);
   const [showCreateGuardForm, setShowCreateGuardForm] = useState(false);
   const [showEditGuardForm, setShowEditGuardForm] = useState(false);
   const [showGenerateReportForm, setShowGenerateReportForm] = useState(false);
@@ -500,7 +504,7 @@ const CompanyDashboard = () => {
     if (!userProfile?.company_id) return;
 
     try {
-      setIsLoading(true);
+      setIsCreatingProperty(true);
       
       const { data, error } = await supabase
         .from('properties')
@@ -540,7 +544,7 @@ const CompanyDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsCreatingProperty(false);
     }
   };
 
@@ -549,7 +553,7 @@ const CompanyDashboard = () => {
     if (!editingGuard) return;
 
     try {
-      setIsLoading(true);
+      setIsUpdatingGuard(true);
       
       // Prepare update data
       const updateData: any = {
@@ -596,7 +600,7 @@ const CompanyDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsUpdatingGuard(false);
     }
   };
 
@@ -617,7 +621,7 @@ const CompanyDashboard = () => {
       }
     }
 
-    setIsLoading(true);
+    setIsCreatingGuard(true);
 
     try {
       // Get current session for user token
@@ -696,7 +700,7 @@ const CompanyDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsCreatingGuard(false);
     }
   };
 
@@ -704,7 +708,7 @@ const CompanyDashboard = () => {
     if (!userProfile?.company_id || !company) return;
 
     try {
-      setIsLoading(true);
+      setIsGeneratingReport(true);
       
       let query = supabase
         .from('guard_reports')
@@ -806,7 +810,7 @@ const CompanyDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsGeneratingReport(false);
     }
   };
 
@@ -1149,8 +1153,8 @@ const CompanyDashboard = () => {
                   </Select>
                 </div>
                 <div className="flex items-end md:col-span-5">
-                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isLoading ? "Creating..." : "Create Guard"}
+                  <Button type="submit" disabled={isCreatingGuard} className="w-full">
+                    {isCreatingGuard ? "Creating..." : "Create Guard"}
                   </Button>
                 </div>
               </form>
@@ -1304,11 +1308,11 @@ const CompanyDashboard = () => {
               <div className="flex gap-2 mt-4">
                 <Button 
                   onClick={handleGenerateReport}
-                  disabled={isLoading || reports.length === 0}
+                  disabled={isGeneratingReport || reports.length === 0}
                   className="flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  {isLoading ? "Generating..." : "Generate & Download Report"}
+                  {isGeneratingReport ? "Generating..." : "Generate & Download Report"}
                 </Button>
               </div>
             </CardContent>
@@ -1389,8 +1393,8 @@ const CompanyDashboard = () => {
                   </Select>
                 </div>
                 <div className="flex gap-2 md:col-span-4">
-                  <Button type="submit" disabled={isLoading}>
-                    {isLoading ? "Updating..." : "Save Changes"}
+                  <Button type="submit" disabled={isUpdatingGuard}>
+                    {isUpdatingGuard ? "Updating..." : "Save Changes"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setShowEditGuardForm(false)}>
                     Cancel
