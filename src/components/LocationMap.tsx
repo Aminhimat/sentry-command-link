@@ -10,6 +10,7 @@ interface LocationMapProps {
   longitude: number;
   guardName?: string;
   timestamp?: string;
+  locationAddress?: string;
 }
 
 const LocationMap: React.FC<LocationMapProps> = ({
@@ -18,7 +19,8 @@ const LocationMap: React.FC<LocationMapProps> = ({
   latitude,
   longitude,
   guardName,
-  timestamp
+  timestamp,
+  locationAddress
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
@@ -76,6 +78,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
       
       const popupContent = `
         <div style="text-align: center;">
+          ${locationAddress ? `<p style="font-weight: bold; font-size: 14px; margin: 0 0 6px 0; color: #2563eb;">📍 ${locationAddress}</p>` : ''}
           <p style="font-weight: 500; margin: 0 0 4px 0;">${guardName || 'Guard Location'}</p>
           ${timestamp ? `<p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">${new Date(timestamp).toLocaleString()}</p>` : ''}
           <p style="font-size: 10px; color: #999; margin: 0;">${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
@@ -121,6 +124,11 @@ const LocationMap: React.FC<LocationMapProps> = ({
               </span>
             )}
           </DialogTitle>
+          {locationAddress && (
+            <div className="text-lg font-semibold text-foreground bg-muted/50 px-3 py-2 rounded-md">
+              📍 {locationAddress}
+            </div>
+          )}
         </DialogHeader>
         <div 
           ref={mapRef} 
@@ -133,7 +141,7 @@ const LocationMap: React.FC<LocationMapProps> = ({
           }}
         >
           {(isLoading || mapError) && (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-500 bg-gray-100 z-10">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 bg-gray-50 z-10 rounded-lg">
               {mapError ? (
                 <div className="text-center">
                   <p className="text-red-500 mb-2">{mapError}</p>
@@ -145,10 +153,17 @@ const LocationMap: React.FC<LocationMapProps> = ({
                   </button>
                 </div>
               ) : (
-                <>
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mr-3"></div>
-                  Loading map...
-                </>
+                <div className="text-center">
+                  {locationAddress && (
+                    <div className="text-xl font-bold text-primary mb-3">
+                      📍 {locationAddress}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+                    <span className="text-sm">Loading map details...</span>
+                  </div>
+                </div>
               )}
             </div>
           )}

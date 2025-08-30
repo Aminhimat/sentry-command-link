@@ -452,8 +452,9 @@ const CompanyShifts = () => {
             }}
             latitude={mapShift.location_lat}
             longitude={mapShift.location_lng}
-            guardName={`${mapShift.guard?.first_name} ${mapShift.guard?.last_name}`}
+            guardName={mapShift.guard ? `${mapShift.guard.first_name} ${mapShift.guard.last_name}` : undefined}
             timestamp={mapShift.check_in_time}
+            locationAddress={mapShift.location_address || undefined}
           />
         )}
         
