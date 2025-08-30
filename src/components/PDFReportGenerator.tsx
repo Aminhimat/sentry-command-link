@@ -325,9 +325,9 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Higher resolution canvas for better image quality
-      const maxWidth = 400;
-      const maxHeight = 400;
+      // Optimized canvas size for smaller PDF while maintaining quality
+      const maxWidth = 200;
+      const maxHeight = 200;
       
       let { width: imgWidth, height: imgHeight } = img;
       
