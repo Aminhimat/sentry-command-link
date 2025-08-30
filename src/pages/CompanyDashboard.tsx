@@ -750,8 +750,11 @@ const CompanyDashboard = () => {
 
       // Apply property filter
       if (reportFilters.propertyId !== 'all') {
-        // Filter reports by property ID stored in location_address field
-        query = query.eq('location_address', reportFilters.propertyId);
+        const selectedProperty = properties.find(p => p.id === reportFilters.propertyId);
+        if (selectedProperty) {
+          // Filter reports by property name since guards save property names in location_address
+          query = query.eq('location_address', selectedProperty.name);
+        }
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
