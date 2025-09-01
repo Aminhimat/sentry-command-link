@@ -18,6 +18,7 @@ import IncidentsTable from "@/components/IncidentsTable";
 import { generatePDFReport } from "@/components/PDFReportGenerator";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import LiveGuardMap from "@/components/LiveGuardMap";
 
 interface Profile {
   id: string;
@@ -1077,6 +1078,11 @@ const CompanyDashboard = () => {
         </Card>
 
 <StatsCards guards={guards} incidents={reports} />
+
+        {/* Live Guard Map */}
+        {userProfile?.company_id && (
+          <LiveGuardMap companyId={userProfile.company_id} />
+        )}
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
