@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      guard_locations: {
+        Row: {
+          accuracy: number | null
+          battery_level: number | null
+          company_id: string
+          created_at: string
+          guard_id: string
+          id: string
+          location_address: string | null
+          location_lat: number
+          location_lng: number
+          shift_id: string
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          battery_level?: number | null
+          company_id: string
+          created_at?: string
+          guard_id: string
+          id?: string
+          location_address?: string | null
+          location_lat: number
+          location_lng: number
+          shift_id: string
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          battery_level?: number | null
+          company_id?: string
+          created_at?: string
+          guard_id?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number
+          location_lng?: number
+          shift_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guard_reports: {
         Row: {
           company_id: string
