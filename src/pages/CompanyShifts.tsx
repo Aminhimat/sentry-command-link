@@ -160,6 +160,16 @@ const CompanyShifts = () => {
 
     console.log('Fetching shifts for company:', targetCompanyId);
     try {
+      // First fetch properties to resolve location names
+      const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .select('id, name')
+        .eq('company_id', targetCompanyId);
+
+      if (propertiesError) {
+        console.error('Error fetching properties:', propertiesError);
+      }
+
       const { data, error } = await supabase
         .from('guard_shifts')
         .select(`
@@ -179,8 +189,23 @@ const CompanyShifts = () => {
         return;
       }
 
-      console.log('Fetched shifts data:', data);
-      setShifts(data || []);
+      // Process shifts to resolve property names from location_address
+      const processedShifts = data?.map(shift => {
+        if (shift.location_address && properties) {
+          // Check if location_address is a property ID (UUID format)
+          const propertyMatch = properties.find(prop => prop.id === shift.location_address);
+          if (propertyMatch) {
+            return {
+              ...shift,
+              location_address: propertyMatch.name
+            };
+          }
+        }
+        return shift;
+      }) || [];
+
+      console.log('Fetched shifts data:', processedShifts);
+      setShifts(processedShifts);
     } catch (error) {
       console.error('Error fetching shifts:', error);
     }
