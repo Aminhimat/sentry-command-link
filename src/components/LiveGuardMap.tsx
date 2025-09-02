@@ -85,17 +85,34 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
     }
 
     try {
-      // Initialize map with a default center
-      const map = L.map(mapRef.current).setView([34.0522, -118.2437], 10); // Default to LA area
+      // Initialize map with a default center - wait a bit for the DOM to be ready
+      setTimeout(() => {
+        if (!mapRef.current) return;
+        
+        const map = L.map(mapRef.current, {
+          center: [34.0522, -118.2437], // Default to LA area
+          zoom: 10,
+          zoomControl: true,
+          scrollWheelZoom: true
+        });
 
-      // Use OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      }).addTo(map);
+        // Use OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(map);
 
-      mapInstance.current = map;
-      console.log('LiveGuardMap: Map initialized successfully');
+        mapInstance.current = map;
+        console.log('LiveGuardMap: Map initialized successfully');
+        
+        // Force map to resize and refresh
+        setTimeout(() => {
+          if (mapInstance.current) {
+            mapInstance.current.invalidateSize();
+            console.log('LiveGuardMap: Map size invalidated');
+          }
+        }, 100);
+      }, 100);
     } catch (error) {
       console.error('LiveGuardMap: Error initializing map:', error);
       toast({
@@ -200,12 +217,18 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
     const bounds = L.latLngBounds([]);
     
     locations.forEach(location => {
-      if (!location.guard || !mapInstance.current) return;
+      if (!mapInstance.current) return;
 
-      const guardName = `${location.guard.first_name} ${location.guard.last_name}`;
+      // Handle cases where guard data might be missing
+      const guardName = location.guard 
+        ? `${location.guard.first_name} ${location.guard.last_name}`
+        : `Guard ${location.guard_id.substring(0, 8)}`;
+      
       const isActiveShift = location.shift && !location.shift.check_out_time;
       const timeSinceUpdate = new Date().getTime() - new Date(location.updated_at).getTime();
       const minutesSinceUpdate = Math.floor(timeSinceUpdate / 60000);
+
+      console.log('LiveGuardMap: Creating marker for guard:', guardName, 'at', location.location_lat, location.location_lng);
 
       const icon = createGuardIcon(guardName, isActiveShift);
       const marker = L.marker([location.location_lat, location.location_lng], { icon });
@@ -229,6 +252,7 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       markersRef.current.set(location.guard_id, marker);
 
       bounds.extend([location.location_lat, location.location_lng]);
+      console.log('LiveGuardMap: Marker added successfully for', guardName);
     });
 
     // Fit map to show all markers
