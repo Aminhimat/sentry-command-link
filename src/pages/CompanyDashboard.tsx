@@ -18,6 +18,7 @@ import IncidentsTable from "@/components/IncidentsTable";
 import { generatePDFReport } from "@/components/PDFReportGenerator";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
 
 interface Profile {
@@ -1077,12 +1078,29 @@ const CompanyDashboard = () => {
           </CardContent>
         </Card>
 
-<StatsCards guards={guards} incidents={reports} />
-
-        {/* Live Guard Map */}
-        {userProfile?.company_id && (
-          <LiveGuardMap companyId={userProfile.company_id} />
-        )}
+        {/* Dashboard Tabs */}
+        <Tabs defaultValue="dashboard" className="mb-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-sm">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="tracking" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Live Tracking
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard">
+            <StatsCards guards={guards} incidents={reports} />
+          </TabsContent>
+          
+          <TabsContent value="tracking">
+            {userProfile?.company_id && (
+              <LiveGuardMap companyId={userProfile.company_id} />
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
