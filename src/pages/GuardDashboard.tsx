@@ -38,6 +38,7 @@ const GuardDashboard = () => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [qrScanSuccess, setQrScanSuccess] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showMissingFieldsError, setShowMissingFieldsError] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Function to play success sound
@@ -343,11 +344,7 @@ const GuardDashboard = () => {
     
     if (missingFields.length > 0) {
       console.log('❌ Missing fields:', missingFields);
-      toast({
-        title: "Missing Required Fields",
-        description: `Please fill in: ${missingFields.join(", ")}`,
-        variant: "destructive",
-      });
+      setShowMissingFieldsError(missingFields);
       return;
     }
 
@@ -456,19 +453,22 @@ const GuardDashboard = () => {
       }
 
       console.log('🧹 Resetting form...');
-      // Reset form completely
-      setTaskData({
-        taskType: "",
-        customTaskType: "",
-        site: "",
-        description: "",
-        severity: "none",
-        image: null
-      });
+        // Clear any error messages
+        setShowMissingFieldsError([]);
+        
+        // Reset form completely
+        setTaskData({
+          taskType: "",
+          customTaskType: "",
+          site: "",
+          description: "",
+          severity: "none",
+          image: null
+        });
 
-      // Reset file input
-      const fileInput = document.getElementById('image-upload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
+        // Reset file input
+        const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
 
     } catch (error: any) {
       console.error('❌ Error submitting task:', error);
@@ -1250,6 +1250,22 @@ const GuardDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Missing Fields Error Display */}
+            {showMissingFieldsError.length > 0 && (
+              <div className="mb-6 p-4 border border-destructive bg-destructive/10 rounded-lg text-center">
+                <h3 className="text-lg font-semibold text-destructive mb-2">Missing Required Fields</h3>
+                <p className="text-destructive">Please fill in: {showMissingFieldsError.join(", ")}</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3" 
+                  onClick={() => setShowMissingFieldsError([])}
+                >
+                  OK
+                </Button>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Task Type */}
               <div className="space-y-2">
@@ -1262,7 +1278,13 @@ const GuardDashboard = () => {
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓</span>
                   )}
                 </Label>
-                <Select value={taskData.taskType} onValueChange={(value) => setTaskData({ ...taskData, taskType: value, customTaskType: "" })}>
+                <Select value={taskData.taskType} onValueChange={(value) => {
+                  setTaskData({ ...taskData, taskType: value, customTaskType: "" });
+                  // Clear error when user selects a task type
+                  if (showMissingFieldsError.includes("Task Type")) {
+                    setShowMissingFieldsError(prev => prev.filter(field => field !== "Task Type"));
+                  }
+                }}>
                   <SelectTrigger className={!taskData.taskType ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select a task type" />
                   </SelectTrigger>
@@ -1330,15 +1352,19 @@ const GuardDashboard = () => {
                          return (
                            <Select 
                              value={selectedPropertyValue}
-                             onValueChange={(value) => {
-                               // Find the selected property to get its name
-                               const selectedProperty = properties.find(prop => prop.id === value);
-                               const siteName = selectedProperty ? selectedProperty.name : value;
-                               setTaskData({ 
-                                 ...taskData, 
-                                 site: siteName 
-                               });
-                             }}
+                              onValueChange={(value) => {
+                                // Find the selected property to get its name
+                                const selectedProperty = properties.find(prop => prop.id === value);
+                                const siteName = selectedProperty ? selectedProperty.name : value;
+                                setTaskData({ 
+                                  ...taskData, 
+                                  site: siteName 
+                                });
+                                // Clear error when user selects a work site
+                                if (showMissingFieldsError.includes("Work Site")) {
+                                  setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
+                                }
+                              }}
                            >
                              <SelectTrigger className="pl-10">
                                <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
@@ -1453,7 +1479,13 @@ const GuardDashboard = () => {
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">✓</span>
                   )}
                 </Label>
-                <Select value={taskData.severity} onValueChange={(value) => setTaskData({ ...taskData, severity: value })}>
+                <Select value={taskData.severity} onValueChange={(value) => {
+                  setTaskData({ ...taskData, severity: value });
+                  // Clear error when user selects a severity
+                  if (showMissingFieldsError.includes("Type of Issue")) {
+                    setShowMissingFieldsError(prev => prev.filter(field => field !== "Type of Issue"));
+                  }
+                }}>
                   <SelectTrigger className={!taskData.severity ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select issue severity" />
                   </SelectTrigger>
