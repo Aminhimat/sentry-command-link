@@ -39,6 +39,8 @@ const GuardDashboard = () => {
   const [qrScanSuccess, setQrScanSuccess] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showMissingFieldsError, setShowMissingFieldsError] = useState<string[]>([]);
+  const [locationTracking, setLocationTracking] = useState(false);
+  const [locationInterval, setLocationInterval] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // Function to play success sound
@@ -75,6 +77,15 @@ const GuardDashboard = () => {
       checkActiveShift();
     }
   }, [user]);
+
+  // Cleanup location tracking on unmount
+  useEffect(() => {
+    return () => {
+      if (locationInterval) {
+        clearInterval(locationInterval);
+      }
+    };
+  }, [locationInterval]);
 
   // Fetch properties for work site dropdown - only from user's company
   useEffect(() => {
@@ -156,6 +167,67 @@ const GuardDashboard = () => {
     }
   };
 
+  const startLocationTracking = async (shiftId: string, guardId: string) => {
+    if (locationInterval) {
+      clearInterval(locationInterval);
+    }
+
+    console.log('🌍 Starting location tracking for shift:', shiftId);
+    setLocationTracking(true);
+
+    // Function to update location
+    const updateLocation = async () => {
+      try {
+        const position = await getLocation();
+        
+        // Get user's company_id for the location record
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', guardId)
+          .single();
+
+        if (profile) {
+          const { error } = await supabase
+            .from('guard_locations')
+            .insert({
+              guard_id: guardId,
+              shift_id: shiftId,
+              company_id: profile.company_id,
+              location_lat: position.latitude,
+              location_lng: position.longitude,
+              location_address: `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
+            });
+
+          if (error) {
+            console.error('Failed to update guard location:', error);
+          } else {
+            console.log('📍 Location updated successfully');
+          }
+        }
+      } catch (error) {
+        console.error('Location tracking error:', error);
+      }
+    };
+
+    // Update location immediately
+    updateLocation();
+
+    // Set up interval to update location every 30 seconds
+    const interval = setInterval(updateLocation, 30000);
+    setLocationInterval(interval);
+  };
+
+  const stopLocationTracking = () => {
+    console.log('🛑 Stopping location tracking');
+    setLocationTracking(false);
+    
+    if (locationInterval) {
+      clearInterval(locationInterval);
+      setLocationInterval(null);
+    }
+  };
+
   const checkActiveShift = async () => {
     if (!user) return;
     
@@ -179,7 +251,7 @@ const GuardDashboard = () => {
 
       setCurrentShift(activeShift);
 
-      // If there's an active shift, ensure the profile is marked as active
+      // If there's an active shift, ensure the profile is marked as active and start location tracking
       if (activeShift) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -189,6 +261,9 @@ const GuardDashboard = () => {
         if (profileError) {
           console.error('Failed to update guard status:', profileError);
         }
+
+        // Start location tracking for active shift
+        startLocationTracking(activeShift.id, profile.id);
       }
     } catch (error) {
       console.log('No active shift found');
@@ -1073,9 +1148,12 @@ const GuardDashboard = () => {
 
       setCurrentShift(newShift);
       
+      // Start location tracking
+      startLocationTracking(newShift.id, profile.id);
+      
       toast({
         title: "Shift Started",
-        description: "Your shift has been started successfully with location tracking.",
+        description: "Your shift has been started successfully with live location tracking.",
       });
       
     } catch (error: any) {
@@ -1135,6 +1213,9 @@ const GuardDashboard = () => {
         console.error('Failed to update guard status:', profileError);
       }
 
+      // Stop location tracking
+      stopLocationTracking();
+      
       setCurrentShift(null);
       toast({
         title: "Shift Ended",
@@ -1203,8 +1284,18 @@ const GuardDashboard = () => {
             </CardTitle>
             <CardDescription>
               {currentShift 
-                ? `Shift started at ${new Date(currentShift.check_in_time).toLocaleString()}`
-                : "Start your shift to begin tracking your work hours"
+                ? (
+                  <div className="space-y-2">
+                    <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
+                    {locationTracking && (
+                      <div className="flex items-center justify-center gap-2 text-green-600">
+                        <MapPin className="h-4 w-4 animate-pulse" />
+                        <span className="text-sm font-medium">Live location tracking active</span>
+                      </div>
+                    )}
+                  </div>
+                )
+                : "Start your shift to begin location tracking and work hours"
               }
             </CardDescription>
           </CardHeader>
