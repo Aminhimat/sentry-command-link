@@ -161,7 +161,27 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
     try {
       console.log('LiveGuardMap: Fetching guard locations for company:', companyId);
       
-      // First get the raw location data
+      // Get all active shifts (not checked out) and recent shifts
+      const { data: activeShifts, error: shiftsError } = await supabase
+        .from('guard_shifts')
+        .select(`
+          id, guard_id, check_in_time, check_out_time, location_lat, location_lng, location_address,
+          guard:profiles!guard_shifts_guard_id_fkey(id, first_name, last_name)
+        `)
+        .eq('company_id', companyId)
+        .order('check_in_time', { ascending: false });
+
+      if (shiftsError) {
+        console.error('LiveGuardMap: Error fetching shifts:', shiftsError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch guard shifts",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the latest location data from guard_locations table
       const { data: locationData, error: locationError } = await supabase
         .from('guard_locations')
         .select('*')
@@ -170,57 +190,90 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
 
       if (locationError) {
         console.error('LiveGuardMap: Error fetching guard locations:', locationError);
-        toast({
-          title: "Error",
-          description: "Failed to fetch guard locations",
-          variant: "destructive",
-        });
-        return;
       }
 
-      // Get unique guard IDs and fetch their profiles
-      const guardIds = [...new Set(locationData?.map(loc => loc.guard_id) || [])];
+      console.log('LiveGuardMap: Fetched data:', { activeShifts, locationData });
       
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', guardIds);
+      // Create a map to store the best location data for each guard
+      const guardLocationMap = new Map<string, any>();
 
-      if (profilesError) {
-        console.error('LiveGuardMap: Error fetching profiles:', profilesError);
-      }
-
-      // Get shift data for the location shift IDs
-      const shiftIds = [...new Set(locationData?.map(loc => loc.shift_id) || [])];
-      
-      const { data: shiftsData, error: shiftsError } = await supabase
-        .from('guard_shifts')
-        .select('id, check_in_time, check_out_time')
-        .in('id', shiftIds);
-
-      if (shiftsError) {
-        console.error('LiveGuardMap: Error fetching shifts:', shiftsError);
-      }
-
-      console.log('LiveGuardMap: Fetched data:', { locationData, profilesData, shiftsData });
-      
-      // Group by guard_id to get the latest location for each guard
-      const latestLocations = new Map<string, any>();
-      locationData?.forEach(location => {
-        const existing = latestLocations.get(location.guard_id);
-        if (!existing || new Date(location.updated_at) > new Date(existing.updated_at)) {
-          const profile = profilesData?.find(p => p.id === location.guard_id);
-          const shift = shiftsData?.find(s => s.id === location.shift_id);
-          
-          latestLocations.set(location.guard_id, {
-            ...location,
-            guard: profile,
-            shift: shift
+      // First, add all guards from active shifts (using check-in location as fallback)
+      activeShifts?.forEach(shift => {
+        if (!shift.guard || !shift.location_lat || !shift.location_lng) return;
+        
+        const isActive = !shift.check_out_time;
+        const guardId = shift.guard_id;
+        
+        // Only show recent shifts (within last 24 hours for context)
+        const shiftTime = new Date(shift.check_in_time);
+        const hoursSinceCheckIn = (new Date().getTime() - shiftTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceCheckIn < 72) { // Show guards from last 3 days
+          guardLocationMap.set(guardId, {
+            id: `shift-${shift.id}`,
+            guard_id: guardId,
+            shift_id: shift.id,
+            location_lat: shift.location_lat,
+            location_lng: shift.location_lng,
+            location_address: shift.location_address || 'Check-in Location',
+            battery_level: null,
+            accuracy: null,
+            created_at: shift.check_in_time,
+            updated_at: shift.check_in_time,
+            guard: shift.guard,
+            shift: {
+              check_in_time: shift.check_in_time,
+              check_out_time: shift.check_out_time
+            },
+            isFromShift: true
           });
         }
       });
 
-      const locations = Array.from(latestLocations.values());
+      // Then, overlay with more recent live location data if available
+      if (locationData) {
+        // Group by guard_id to get the latest location for each guard
+        const latestLocationData = new Map<string, any>();
+        locationData.forEach(location => {
+          const existing = latestLocationData.get(location.guard_id);
+          if (!existing || new Date(location.updated_at) > new Date(existing.updated_at)) {
+            latestLocationData.set(location.guard_id, location);
+          }
+        });
+
+        // Get profiles for location data guards
+        const locationGuardIds = Array.from(latestLocationData.keys());
+        const { data: locationProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', locationGuardIds);
+
+        // Update with live location data where available
+        latestLocationData.forEach((location, guardId) => {
+          const profile = locationProfiles?.find(p => p.id === guardId);
+          const matchingShift = activeShifts?.find(s => s.guard_id === guardId);
+          
+          // Only show if it's a recent update (within last 4 hours)
+          const timeSinceUpdate = new Date().getTime() - new Date(location.updated_at).getTime();
+          const hoursSinceUpdate = timeSinceUpdate / (1000 * 60 * 60);
+          
+          if (hoursSinceUpdate < 4) {
+            guardLocationMap.set(guardId, {
+              ...location,
+              guard: profile,
+              shift: matchingShift ? {
+                check_in_time: matchingShift.check_in_time,
+                check_out_time: matchingShift.check_out_time
+              } : null,
+              isFromShift: false
+            });
+          }
+        });
+      }
+
+      const locations = Array.from(guardLocationMap.values());
+      console.log('LiveGuardMap: Final locations to display:', locations);
+      
       setGuardLocations(locations);
       setLastUpdated(new Date());
       updateMapMarkers(locations);
