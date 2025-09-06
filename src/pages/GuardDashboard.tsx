@@ -423,6 +423,17 @@ const GuardDashboard = () => {
       return;
     }
 
+    // Check if photo is required
+    if (!taskData.image) {
+      console.log('❌ Photo required');
+      toast({
+        title: "Photo Required",
+        description: "Please take a photo before submitting your report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // If "other" is selected, check for custom task type
     if (taskData.taskType === "other" && !taskData.customTaskType.trim()) {
       console.log('❌ Custom task type required');
