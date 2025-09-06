@@ -74,28 +74,41 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
 
   // Initialize map
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.log('LiveGuardMap: mapRef.current is null, skipping initialization');
+      return;
+    }
 
     console.log('LiveGuardMap: Initializing map for company:', companyId);
+    console.log('LiveGuardMap: Map container element:', mapRef.current);
 
     // Clean up existing map
     if (mapInstance.current) {
+      console.log('LiveGuardMap: Cleaning up existing map');
       mapInstance.current.remove();
       mapInstance.current = null;
     }
 
     try {
-      // Initialize map with a default center - wait a bit for the DOM to be ready
-      setTimeout(() => {
-        if (!mapRef.current) return;
+      // Initialize map immediately if DOM is ready, otherwise wait
+      const initializeMap = () => {
+        if (!mapRef.current) {
+          console.log('LiveGuardMap: mapRef.current became null, aborting initialization');
+          return;
+        }
+
+        console.log('LiveGuardMap: Creating Leaflet map instance...');
         
         const map = L.map(mapRef.current, {
           center: [34.0522, -118.2437], // Default to LA area
           zoom: 10,
           zoomControl: true,
-          scrollWheelZoom: true
+          scrollWheelZoom: true,
+          preferCanvas: false
         });
 
+        console.log('LiveGuardMap: Adding tile layer...');
+        
         // Use OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -105,14 +118,30 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
         mapInstance.current = map;
         console.log('LiveGuardMap: Map initialized successfully');
         
-        // Force map to resize and refresh
+        // Force map to resize and refresh after a short delay
         setTimeout(() => {
           if (mapInstance.current) {
+            console.log('LiveGuardMap: Invalidating map size...');
             mapInstance.current.invalidateSize();
-            console.log('LiveGuardMap: Map size invalidated');
+            console.log('LiveGuardMap: Map size invalidated successfully');
           }
-        }, 100);
-      }, 100);
+        }, 200);
+        
+        // Additional resize attempt after more time
+        setTimeout(() => {
+          if (mapInstance.current) {
+            console.log('LiveGuardMap: Second invalidateSize call...');
+            mapInstance.current.invalidateSize();
+          }
+        }, 1000);
+      };
+
+      // Check if DOM is ready, otherwise wait
+      if (document.readyState === 'complete') {
+        initializeMap();
+      } else {
+        setTimeout(initializeMap, 200);
+      }
     } catch (error) {
       console.error('LiveGuardMap: Error initializing map:', error);
       toast({
@@ -357,10 +386,12 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
           
           <div 
             ref={mapRef} 
-            className="w-full rounded-lg overflow-hidden border"
+            className="w-full rounded-lg overflow-hidden border relative"
             style={{ 
               height: '500px',
-              minHeight: '500px'
+              minHeight: '500px',
+              width: '100%',
+              display: 'block'
             }}
           />
           
