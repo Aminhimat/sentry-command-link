@@ -9,8 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download, Database } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, CalendarIcon, FileText, Download, Database } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Company {
   id: string;
@@ -81,6 +85,10 @@ const AdminDashboard = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [deleteStartDate, setDeleteStartDate] = useState<Date>();
+  const [deleteEndDate, setDeleteEndDate] = useState<Date>();
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedCompanyForDelete, setSelectedCompanyForDelete] = useState<{ id: string; name: string } | null>(null);
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -482,36 +490,55 @@ const AdminDashboard = () => {
     window.location.href = '/auth';
   };
 
-  const handleBulkDeleteReports = async (companyId: string, companyName: string) => {
-    const confirmed = window.confirm(
-      `⚠️ DANGER: Delete ALL Reports for "${companyName}"?\n\n` +
-      `This will permanently delete:\n` +
-      `• ALL guard reports for this company\n` +
-      `• ALL associated images from storage\n\n` +
-      `This action CANNOT be undone!\n\n` +
-      `Are you absolutely sure you want to proceed?`
-    );
+  const handleBulkDeleteReports = (companyId: string, companyName: string) => {
+    setSelectedCompanyForDelete({ id: companyId, name: companyName });
+    setShowDatePicker(true);
+  };
+
+  const executeBulkDelete = async () => {
+    if (!selectedCompanyForDelete) return;
+
+    let confirmMessage = `⚠️ DANGER: Delete Reports for "${selectedCompanyForDelete.name}"?\n\n`;
+    
+    if (deleteStartDate && deleteEndDate) {
+      confirmMessage += `This will permanently delete:\n` +
+        `• Guard reports from ${format(deleteStartDate, "PPP")} to ${format(deleteEndDate, "PPP")}\n` +
+        `• Associated images from storage\n\n`;
+    } else {
+      confirmMessage += `This will permanently delete:\n` +
+        `• ALL guard reports for this company\n` +
+        `• ALL associated images from storage\n\n`;
+    }
+    
+    confirmMessage += `This action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`;
+    
+    const confirmed = window.confirm(confirmMessage);
     
     if (!confirmed) return;
-
-    // Double confirmation for this dangerous action
-    const doubleConfirmed = window.confirm(
-      `FINAL CONFIRMATION\n\n` +
-      `You are about to permanently delete ALL reports for "${companyName}".\n\n` +
-      `Type the company name to confirm: "${companyName}"`
-    );
-
-    if (!doubleConfirmed) return;
 
     try {
       setIsLoading(true);
       
-      console.log(`Bulk deleting all reports for company: ${companyId}`);
+      const requestBody: any = { 
+        companyId: selectedCompanyForDelete.id
+      };
+
+      // If date range is selected, calculate days to delete
+      if (deleteStartDate && deleteEndDate) {
+        const now = new Date();
+        const endDate = new Date(deleteEndDate);
+        endDate.setHours(23, 59, 59, 999); // End of day
+        
+        if (endDate < now) {
+          const daysOld = Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+          requestBody.deleteOlderThanDays = daysOld;
+        }
+      }
+      
+      console.log(`Bulk deleting reports for company: ${selectedCompanyForDelete.id}`, requestBody);
       
       const { data, error } = await supabase.functions.invoke('bulk-delete-reports', {
-        body: { 
-          companyId: companyId
-        }
+        body: requestBody
       });
 
       if (error) {
@@ -523,9 +550,14 @@ const AdminDashboard = () => {
 
       toast({
         title: "Reports Deleted Successfully",
-        description: `Deleted ${data.deletedCount} reports and ${data.deletedImagesCount} images for "${companyName}". Storage space has been freed.`,
+        description: `Deleted ${data.deletedCount} reports and ${data.deletedImagesCount} images for "${selectedCompanyForDelete.name}". Storage space has been freed.`,
         variant: "default",
       });
+
+      setShowDatePicker(false);
+      setSelectedCompanyForDelete(null);
+      setDeleteStartDate(undefined);
+      setDeleteEndDate(undefined);
 
     } catch (error) {
       console.error('Error deleting reports:', error);
@@ -991,6 +1023,98 @@ const AdminDashboard = () => {
 
 
         </Tabs>
+
+        {/* Date Range Picker Modal for Bulk Delete */}
+        {showDatePicker && selectedCompanyForDelete && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader>
+                <CardTitle>Delete Reports for {selectedCompanyForDelete.name}</CardTitle>
+                <CardDescription>
+                  Select date range to delete reports, or leave empty to delete all reports
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>From Date (optional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !deleteStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {deleteStartDate ? format(deleteStartDate, "PPP") : "Select start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={deleteStartDate}
+                        onSelect={setDeleteStartDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>To Date (optional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !deleteEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {deleteEndDate ? format(deleteEndDate, "PPP") : "Select end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={deleteEndDate}
+                        onSelect={setDeleteEndDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDatePicker(false);
+                      setSelectedCompanyForDelete(null);
+                      setDeleteStartDate(undefined);
+                      setDeleteEndDate(undefined);
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={executeBulkDelete}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading ? "Deleting..." : "Delete Reports"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
       </div>
 
