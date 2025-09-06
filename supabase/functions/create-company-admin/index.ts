@@ -31,16 +31,20 @@ const sendWelcomeEmail = async (adminEmail: string, adminFirstName: string, temp
   const emailData = {
     personalizations: [{
       to: [{ email: adminEmail, name: adminFirstName }],
-      subject: "Welcome to SecureOps - Your Admin Account"
+      subject: "Welcome to GuardHeadquarter - Your Admin Account"
     }],
-    from: { email: fromEmail, name: "SecureOps Platform" },
+    from: { email: fromEmail, name: "GuardHeadquarter Security" },
     content: [{
       type: "text/html",
       value: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #333; text-align: center;">Welcome to SecureOps</h1>
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #1e40af; margin: 0; font-size: 28px;">GuardHeadquarter</h1>
+            <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Professional Security Management Platform</p>
+          </div>
+          <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Welcome to Your Admin Account</h2>
           <p>Hello ${adminFirstName},</p>
-          <p>Your admin account has been created for the SecureOps platform. Here are your login credentials:</p>
+          <p>Your administrator account has been created for the GuardHeadquarter platform. Here are your login credentials:</p>
           
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Email:</strong> ${adminEmail}</p>
@@ -51,15 +55,21 @@ const sendWelcomeEmail = async (adminEmail: string, adminFirstName: string, temp
           
           <p>To access your admin dashboard:</p>
           <ol>
-            <li>Go to the SecureOps platform</li>
+            <li>Go to <a href="https://www.guardheadquarter.com" style="color: #1e40af; text-decoration: none;">www.guardheadquarter.com</a></li>
             <li>Click "Sign In"</li>
             <li>Use the credentials above</li>
             <li>You'll be prompted to create a new password</li>
           </ol>
           
-          <p>If you have any questions, please contact our support team.</p>
+          <p>If you have any questions, please contact our support team at <a href="mailto:support@guardheadquarter.com" style="color: #1e40af;">support@guardheadquarter.com</a></p>
           
-          <p>Best regards,<br>The SecureOps Team</p>
+          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666;">
+            <p style="margin: 0;"><strong>GuardHeadquarter Security</strong></p>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">Professional Security Management Solutions</p>
+            <p style="margin: 10px 0 0 0; font-size: 12px;">
+              Visit us at <a href="https://www.guardheadquarter.com" style="color: #1e40af;">www.guardheadquarter.com</a>
+            </p>
+          </div>
         </div>
       `
     }]
