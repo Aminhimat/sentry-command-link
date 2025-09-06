@@ -1285,6 +1285,18 @@ const GuardDashboard = () => {
       // Stop location tracking
       stopLocationTracking();
       
+      // Clear guard's location data so admin can't see their location after shift ends
+      const { error: locationError } = await supabase
+        .from('guard_locations')
+        .delete()
+        .eq('guard_id', profile.id)
+        .eq('shift_id', currentShift.id);
+
+      if (locationError) {
+        console.error('Failed to clear location data:', locationError);
+        // Don't throw error here - shift ending is more important
+      }
+      
       setCurrentShift(null);
       toast({
         title: "Shift Ended",
