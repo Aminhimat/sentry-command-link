@@ -74,32 +74,38 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
 
   // Initialize map
   useEffect(() => {
-    if (!mapRef.current) {
-      console.log('LiveGuardMap: mapRef.current is null, skipping initialization');
-      return;
-    }
+    let timeoutId: NodeJS.Timeout;
+    
+    const initializeMap = () => {
+      // Wait for the container to be available
+      if (!mapRef.current) {
+        console.log('LiveGuardMap: Container not ready, retrying...');
+        timeoutId = setTimeout(initializeMap, 100);
+        return;
+      }
 
-    console.log('LiveGuardMap: Initializing map for company:', companyId);
-    console.log('LiveGuardMap: Map container element:', mapRef.current);
+      console.log('LiveGuardMap: Initializing map for company:', companyId);
+      console.log('LiveGuardMap: Map container element:', mapRef.current);
 
-    // Clean up existing map
-    if (mapInstance.current) {
-      console.log('LiveGuardMap: Cleaning up existing map');
-      mapInstance.current.remove();
-      mapInstance.current = null;
-    }
+      // Clean up existing map
+      if (mapInstance.current) {
+        console.log('LiveGuardMap: Cleaning up existing map');
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
 
-    try {
-      // Initialize map immediately if DOM is ready, otherwise wait
-      const initializeMap = () => {
-        if (!mapRef.current) {
-          console.log('LiveGuardMap: mapRef.current became null, aborting initialization');
-          return;
-        }
-
+      try {
         console.log('LiveGuardMap: Creating Leaflet map instance...');
         
-        const map = L.map(mapRef.current, {
+        // Ensure container has proper dimensions
+        const container = mapRef.current;
+        if (!container.offsetHeight || !container.offsetWidth) {
+          console.log('LiveGuardMap: Container has no dimensions, waiting...');
+          timeoutId = setTimeout(initializeMap, 100);
+          return;
+        }
+        
+        const map = L.map(container, {
           center: [34.0522, -118.2437], // Default to LA area
           zoom: 10,
           zoomControl: true,
@@ -118,38 +124,36 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
         mapInstance.current = map;
         console.log('LiveGuardMap: Map initialized successfully');
         
-        // Force map to resize and refresh after a short delay
+        // Force map to resize and refresh after initialization
         setTimeout(() => {
           if (mapInstance.current) {
             console.log('LiveGuardMap: Invalidating map size...');
             mapInstance.current.invalidateSize();
-            console.log('LiveGuardMap: Map size invalidated successfully');
           }
-        }, 200);
+        }, 100);
         
-        // Additional resize attempt after more time
-        setTimeout(() => {
-          if (mapInstance.current) {
-            console.log('LiveGuardMap: Second invalidateSize call...');
-            mapInstance.current.invalidateSize();
-          }
-        }, 1000);
-      };
-
-      // Check if DOM is ready, otherwise wait
-      if (document.readyState === 'complete') {
-        initializeMap();
-      } else {
-        setTimeout(initializeMap, 200);
+      } catch (error) {
+        console.error('LiveGuardMap: Error initializing map:', error);
+        toast({
+          title: "Map Error",
+          description: "Failed to initialize the map",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
-      console.error('LiveGuardMap: Error initializing map:', error);
-      toast({
-        title: "Map Error",
-        description: "Failed to initialize the map",
-        variant: "destructive",
-      });
-    }
+    };
+
+    // Start initialization after a small delay to ensure DOM is ready
+    timeoutId = setTimeout(initializeMap, 50);
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
   }, [companyId]);
 
   // Fetch initial guard locations
@@ -230,7 +234,12 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
 
   // Update map markers
   const updateMapMarkers = (locations: GuardLocation[]) => {
-    if (!mapInstance.current) return;
+    // Wait for map to be initialized
+    if (!mapInstance.current) {
+      console.log('LiveGuardMap: Map not ready for markers, waiting...');
+      setTimeout(() => updateMapMarkers(locations), 100);
+      return;
+    }
 
     console.log('LiveGuardMap: Updating markers for', locations.length, 'guards');
 
