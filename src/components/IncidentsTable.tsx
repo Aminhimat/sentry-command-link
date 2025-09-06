@@ -77,7 +77,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     const severityConfig = {
       'low': { className: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Low' },
       'medium': { className: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Medium' },
-      'high': { className: 'bg-red-100 text-red-800 border-red-200', label: 'High' },
+      'high': { className: 'bg-red-500 text-white border-red-600 font-bold shadow-md animate-pulse', label: 'HIGH PRIORITY' },
       'none': { className: 'bg-gray-100 text-gray-800 border-gray-200', label: 'None' }
     };
     
@@ -162,48 +162,61 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                     </td>
                   </tr>
                 ) : (
-                  visibleIncidents.map((incident, index) => (
-                    <tr 
-                      key={incident.id} 
-                      className={`border-b border-green-100 transition-all duration-200 ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-green-25'
-                      }`}
-                    >
-                      <td 
-                        className="p-4 font-mono text-sm text-green-700 font-semibold bg-green-50 border-r border-green-100 cursor-pointer hover:bg-green-100"
-                        onClick={() => handleIncidentClick(incident)}
+                  visibleIncidents.map((incident, index) => {
+                    const severity = incident.report_text?.includes('Severity: ') ? 
+                      incident.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none';
+                    const isHighSeverity = severity.toLowerCase() === 'high';
+                    
+                    return (
+                      <tr 
+                        key={incident.id} 
+                        className={`border-b transition-all duration-200 ${
+                          isHighSeverity 
+                            ? 'bg-red-50 border-red-200 shadow-sm hover:bg-red-100' 
+                            : index % 2 === 0 
+                              ? 'bg-white border-green-100' 
+                              : 'bg-green-25 border-green-100'
+                        }`}
                       >
-                        {incident.id.split('-')[0].toUpperCase()}
-                      </td>
-                      <td className="p-4 text-sm font-medium text-gray-800">
-                        {incident.location_address || 'Unknown Site'}
-                      </td>
-                      <td className="p-4 text-sm text-gray-700">
-                        {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
-                      </td>
-                      <td className="p-4 text-sm text-gray-700">
-                        {new Date(incident.created_at).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'numeric',
-                          day: 'numeric',
-                          year: '2-digit',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                      </td>
-                      <td className="p-4 text-sm text-gray-700 font-medium">
-                        {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
-                      </td>
-                      <td className="p-4">
-                        {getSeverityBadge(incident.report_text?.includes('Severity: ') ? 
-                          incident.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none')}
-                      </td>
-                      <td className="p-4 text-sm text-gray-700 font-medium">
-                        {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
-                      </td>
-                    </tr>
-                  ))
+                        <td 
+                          className={`p-4 font-mono text-sm font-semibold border-r cursor-pointer hover:scale-105 transition-transform ${
+                            isHighSeverity 
+                              ? 'text-red-800 bg-red-100 border-red-200 hover:bg-red-200' 
+                              : 'text-green-700 bg-green-50 border-green-100 hover:bg-green-100'
+                          }`}
+                          onClick={() => handleIncidentClick(incident)}
+                        >
+                          {incident.id.split('-')[0].toUpperCase()}
+                        </td>
+                        <td className={`p-4 text-sm font-medium ${isHighSeverity ? 'text-red-900 font-semibold' : 'text-gray-800'}`}>
+                          {incident.location_address || 'Unknown Site'}
+                        </td>
+                        <td className={`p-4 text-sm ${isHighSeverity ? 'text-red-800 font-medium' : 'text-gray-700'}`}>
+                          {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
+                        </td>
+                        <td className={`p-4 text-sm ${isHighSeverity ? 'text-red-800 font-medium' : 'text-gray-700'}`}>
+                          {new Date(incident.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: '2-digit',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                        <td className={`p-4 text-sm font-medium ${isHighSeverity ? 'text-red-900 font-semibold' : 'text-gray-700'}`}>
+                          {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
+                        </td>
+                        <td className="p-4">
+                          {getSeverityBadge(severity)}
+                        </td>
+                        <td className={`p-4 text-sm font-medium ${isHighSeverity ? 'text-red-900 font-semibold' : 'text-gray-700'}`}>
+                          {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
