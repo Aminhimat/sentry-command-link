@@ -532,6 +532,14 @@ const GuardDashboard = () => {
         // Play success sound
         playSuccessSound();
         
+        // Show success message
+        setShowSuccessMessage(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 3000);
+        
         toast({
           title: "Report Submitted",
           description: "Your task report has been sent to admin successfully!",
@@ -1304,14 +1312,15 @@ const GuardDashboard = () => {
     <div className="min-h-screen bg-background relative">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card p-8 rounded-lg shadow-lg text-center max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-card p-8 rounded-lg shadow-lg text-center max-w-md mx-4 animate-scale-in">
             <div className="text-green-500 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-20 h-20 mx-auto animate-scale-in" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <p className="text-lg font-medium">Your task report with photo has been sent to admin successfully.</p>
+            <h3 className="text-xl font-bold text-green-600 mb-2">REPORT SUBMITTED!</h3>
+            <p className="text-lg font-medium text-foreground">Your security report has been sent to admin successfully.</p>
           </div>
         </div>
       )}
