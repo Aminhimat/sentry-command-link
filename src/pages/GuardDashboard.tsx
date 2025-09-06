@@ -982,7 +982,57 @@ const GuardDashboard = () => {
 
   const getLocation = async (): Promise<{ latitude: number; longitude: number }> => {
     try {
-      // Try Capacitor geolocation first (for mobile apps)
+      // Detect if running as PWA on iOS
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    (window.navigator as any).standalone === true;
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      // For PWA on iOS, use browser geolocation directly as it handles permissions better
+      if (isPWA && isIOS) {
+        console.log('Running as PWA on iOS, using browser geolocation');
+        
+        if (!navigator.geolocation) {
+          throw new Error('Geolocation is not supported by this device.');
+        }
+
+        // Get position using browser API with user-friendly error handling
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve, 
+            (error) => {
+              let errorMessage = 'Failed to get location. ';
+              switch (error.code) {
+                case error.PERMISSION_DENIED:
+                  errorMessage += 'Please allow location access when prompted and try again.';
+                  break;
+                case error.POSITION_UNAVAILABLE:
+                  errorMessage += 'Location information unavailable.';
+                  break;
+                case error.TIMEOUT:
+                  errorMessage += 'Location request timed out.';
+                  break;
+                default:
+                  errorMessage += 'Unknown location error.';
+                  break;
+              }
+              reject(new Error(errorMessage));
+            }, 
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 60000
+            }
+          );
+        });
+
+        console.log('Browser location success:', position);
+        return {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      }
+
+      // Try Capacitor geolocation first (for native mobile apps)
       try {
         // Check permissions first
         const permissions = await Geolocation.checkPermissions();
