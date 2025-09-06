@@ -135,6 +135,17 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Require photo before submission
+    if (!selectedImage) {
+      toast({
+        title: "Photo Required",
+        description: "Please take a photo before submitting your report.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -220,7 +231,7 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
           </div>
 
           <div className="space-y-2">
-            <Label>Photo (Optional)</Label>
+            <Label>Photo (Required)</Label>
             <Button
               type="button"
               variant="outline"
@@ -259,7 +270,7 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
 
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedImage}
             className="w-full"
           >
             {isSubmitting ? "Submitting..." : "Submit Report"}
