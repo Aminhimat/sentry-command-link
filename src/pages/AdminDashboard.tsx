@@ -603,47 +603,49 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b shadow-card">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center">
-            <Shield className="h-8 w-8 text-primary mr-3" />
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">GuardHQ</h1>
-              <p className="text-sm text-muted-foreground">Platform Administration</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center">
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary mr-2 sm:mr-3" />
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">GuardHQ</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">Platform Administration</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              Welcome, {userProfile?.first_name} {userProfile?.last_name}
-            </span>
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-full sm:max-w-none">
+                Welcome, {userProfile?.first_name} {userProfile?.last_name}
+              </span>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto">
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card className="shadow-card">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Building className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Companies</p>
-                  <p className="text-2xl font-bold">{companies.length}</p>
+                <Building className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Companies</p>
+                  <p className="text-xl sm:text-2xl font-bold">{companies.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-card">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-success" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Active Companies</p>
-                  <p className="text-2xl font-bold">
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-success" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Companies</p>
+                  <p className="text-xl sm:text-2xl font-bold">
                     {companies.filter(c => c.status === 'active').length}
                   </p>
                 </div>
@@ -652,12 +654,12 @@ const AdminDashboard = () => {
           </Card>
 
           <Card className="shadow-card">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Activity className="h-8 w-8 text-warning" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Licenses</p>
-                  <p className="text-2xl font-bold">
+                <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-warning" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Licenses</p>
+                  <p className="text-xl sm:text-2xl font-bold">
                     {companies.reduce((sum, c) => sum + c.license_limit, 0)}
                   </p>
                 </div>
@@ -666,12 +668,12 @@ const AdminDashboard = () => {
           </Card>
 
           <Card className="shadow-card">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-accent" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-muted-foreground">Total Guards</p>
-                  <p className="text-2xl font-bold">{guardsCount}</p>
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-accent" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Guards</p>
+                  <p className="text-xl sm:text-2xl font-bold">{guardsCount}</p>
                 </div>
               </div>
             </CardContent>
@@ -681,14 +683,14 @@ const AdminDashboard = () => {
         {/* Main Content with Tabs */}
         <Tabs defaultValue="companies" className="w-full">
           <TabsList className="grid w-full grid-cols-1">
-            <TabsTrigger value="companies">Companies</TabsTrigger>
+            <TabsTrigger value="companies" className="text-sm sm:text-base">Companies</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="companies" className="space-y-6">
+          <TabsContent value="companies" className="space-y-4 sm:space-y-6">
             {/* Companies Section */}
-            <div className="flex justify-between items-center">
-              <h2 className="text-3xl font-bold">Security Companies</h2>
-              <Button variant="hero" onClick={() => setShowCreateForm(!showCreateForm)}>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+              <h2 className="text-2xl sm:text-3xl font-bold">Security Companies</h2>
+              <Button variant="hero" onClick={() => setShowCreateForm(!showCreateForm)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Company
               </Button>
@@ -696,52 +698,55 @@ const AdminDashboard = () => {
 
             {/* Create Company Form */}
             {showCreateForm && (
-          <Card className="mb-6 shadow-elevated">
+            <Card className="mb-4 sm:mb-6 shadow-elevated">
             <CardHeader>
-              <CardTitle>Create New Security Company</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Create New Security Company</CardTitle>
+              <CardDescription className="text-sm">
                 Add a new security company to the platform
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateCompany} className="grid md:grid-cols-2 gap-4">
+              <form onSubmit={handleCreateCompany} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Company Information */}
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-semibold mb-4 text-primary">Company Information</h3>
+                <div className="sm:col-span-2">
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 text-primary">Company Information</h3>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="name">Company Name</Label>
+                  <Label htmlFor="name" className="text-sm">Company Name</Label>
                   <Input
                     id="name"
                     value={newCompany.name}
                     onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Company Email</Label>
+                  <Label htmlFor="email" className="text-sm">Company Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={newCompany.email}
                     onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Company Phone</Label>
+                  <Label htmlFor="phone" className="text-sm">Company Phone</Label>
                   <Input
                     id="phone"
                     value={newCompany.phone}
                     onChange={(e) => setNewCompany({ ...newCompany, phone: e.target.value })}
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="license_limit">License Limit</Label>
+                  <Label htmlFor="license_limit" className="text-sm">License Limit</Label>
                   <Input
                     id="license_limit"
                     type="number"
@@ -749,18 +754,19 @@ const AdminDashboard = () => {
                     value={newCompany.license_limit}
                     onChange={(e) => setNewCompany({ ...newCompany, license_limit: parseInt(e.target.value) })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status" className="text-sm">Status</Label>
                   <Select 
                     value={newCompany.status} 
                     onValueChange={(value: "active" | "inactive" | "suspended") => 
                       setNewCompany({ ...newCompany, status: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -771,68 +777,74 @@ const AdminDashboard = () => {
                   </Select>
                 </div>
                 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Company Address</Label>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="address" className="text-sm">Company Address</Label>
                   <Input
                     id="address"
                     value={newCompany.address}
                     onChange={(e) => setNewCompany({ ...newCompany, address: e.target.value })}
+                    className="text-sm"
                   />
                 </div>
 
                 {/* Admin Information */}
-                <div className="md:col-span-2 mt-6">
-                  <h3 className="text-lg font-semibold mb-4 text-primary">Company Admin Details</h3>
+                <div className="sm:col-span-2 mt-4 sm:mt-6">
+                  <h3 className="text-base sm:text-lg font-semibold mb-4 text-primary">Company Admin Details</h3>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="adminFirstName">Admin First Name</Label>
+                  <Label htmlFor="adminFirstName" className="text-sm">Admin First Name</Label>
                   <Input
                     id="adminFirstName"
                     value={newCompany.adminFirstName}
                     onChange={(e) => setNewCompany({ ...newCompany, adminFirstName: e.target.value })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="adminLastName">Admin Last Name</Label>
+                  <Label htmlFor="adminLastName" className="text-sm">Admin Last Name</Label>
                   <Input
                     id="adminLastName"
                     value={newCompany.adminLastName}
                     onChange={(e) => setNewCompany({ ...newCompany, adminLastName: e.target.value })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="adminEmail">Admin Email</Label>
+                  <Label htmlFor="adminEmail" className="text-sm">Admin Email</Label>
                   <Input
                     id="adminEmail"
                     type="email"
                     value={newCompany.adminEmail}
                     onChange={(e) => setNewCompany({ ...newCompany, adminEmail: e.target.value })}
                     required
+                    className="text-sm"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="adminPhone">Admin Phone</Label>
+                  <Label htmlFor="adminPhone" className="text-sm">Admin Phone</Label>
                   <Input
                     id="adminPhone"
                     value={newCompany.adminPhone}
                     onChange={(e) => setNewCompany({ ...newCompany, adminPhone: e.target.value })}
+                    className="text-sm"
                   />
                 </div>
                 
-                <div className="md:col-span-2 flex gap-4">
-                  <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto" disabled={isLoading}>
                     {isLoading ? "Creating..." : "Create Company"}
                   </Button>
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setShowCreateForm(false)}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
@@ -844,46 +856,49 @@ const AdminDashboard = () => {
 
             {/* Edit Company Form */}
             {showEditForm && editingCompany && (
-              <Card className="mb-6 shadow-elevated">
+              <Card className="mb-4 sm:mb-6 shadow-elevated">
                 <CardHeader>
-                  <CardTitle>Edit Company: {editingCompany.name}</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Edit Company: {editingCompany.name}</CardTitle>
+                  <CardDescription className="text-sm">
                     Update company information
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleUpdateCompany} className="grid md:grid-cols-2 gap-4">
+                  <form onSubmit={handleUpdateCompany} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-name">Company Name</Label>
+                      <Label htmlFor="edit-name" className="text-sm">Company Name</Label>
                       <Input
                         id="edit-name"
                         value={editingCompany.name}
                         onChange={(e) => setEditingCompany({ ...editingCompany, name: e.target.value })}
                         required
+                        className="text-sm"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="edit-email">Company Email</Label>
+                      <Label htmlFor="edit-email" className="text-sm">Company Email</Label>
                       <Input
                         id="edit-email"
                         type="email"
                         value={editingCompany.email || ""}
                         onChange={(e) => setEditingCompany({ ...editingCompany, email: e.target.value })}
+                        className="text-sm"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="edit-phone">Company Phone</Label>
+                      <Label htmlFor="edit-phone" className="text-sm">Company Phone</Label>
                       <Input
                         id="edit-phone"
                         value={editingCompany.phone || ""}
                         onChange={(e) => setEditingCompany({ ...editingCompany, phone: e.target.value })}
+                        className="text-sm"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="edit-license_limit">License Limit</Label>
+                      <Label htmlFor="edit-license_limit" className="text-sm">License Limit</Label>
                       <Input
                         id="edit-license_limit"
                         type="number"
@@ -891,18 +906,19 @@ const AdminDashboard = () => {
                         value={editingCompany.license_limit}
                         onChange={(e) => setEditingCompany({ ...editingCompany, license_limit: parseInt(e.target.value) })}
                         required
+                        className="text-sm"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="edit-status">Status</Label>
+                      <Label htmlFor="edit-status" className="text-sm">Status</Label>
                       <Select 
                         value={editingCompany.status} 
                         onValueChange={(value: "active" | "inactive" | "suspended") => 
                           setEditingCompany({ ...editingCompany, status: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -913,17 +929,18 @@ const AdminDashboard = () => {
                       </Select>
                     </div>
                     
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="edit-address">Company Address</Label>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="edit-address" className="text-sm">Company Address</Label>
                       <Input
                         id="edit-address"
                         value={editingCompany.address || ""}
                         onChange={(e) => setEditingCompany({ ...editingCompany, address: e.target.value })}
+                        className="text-sm"
                       />
                     </div>
                     
-                    <div className="md:col-span-2 flex gap-4">
-                      <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                    <div className="sm:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                      <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto" disabled={isLoading}>
                         {isLoading ? "Updating..." : "Update Company"}
                       </Button>
                       <Button 
@@ -933,6 +950,7 @@ const AdminDashboard = () => {
                           setShowEditForm(false);
                           setEditingCompany(null);
                         }}
+                        className="w-full sm:w-auto"
                       >
                         Cancel
                       </Button>
@@ -943,38 +961,50 @@ const AdminDashboard = () => {
             )}
 
             {/* Companies List */}
-            <div className="grid gap-6">
+            <div className="grid gap-4 sm:gap-6">
               {companies.map((company) => (
                 <Card key={company.id} className="shadow-card hover:shadow-elevated transition-smooth">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{company.name}</h3>
-                          {getStatusBadge(company.status)}
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                        <div className="flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                            <h3 className="text-lg sm:text-xl font-semibold break-words">{company.name}</h3>
+                            {getStatusBadge(company.status)}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm text-muted-foreground">
+                            <div className="space-y-1">
+                              <p><strong>Email:</strong> <span className="break-all">{company.email || 'Not provided'}</span></p>
+                              <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p><strong>License Limit:</strong> {company.license_limit} users</p>
+                              <p><strong>Guards Created:</strong> <span className="font-semibold text-primary">{guards.filter(guard => guard.company_id === company.id).length}</span> guards</p>
+                              <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          {company.address && (
+                            <p className="text-sm text-muted-foreground mt-2 break-words">
+                              <strong>Address:</strong> {company.address}
+                            </p>
+                          )}
                         </div>
-                         <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                           <div>
-                             <p><strong>Email:</strong> {company.email || 'Not provided'}</p>
-                             <p><strong>Phone:</strong> {company.phone || 'Not provided'}</p>
-                           </div>
-                           <div>
-                             <p><strong>License Limit:</strong> {company.license_limit} users</p>
-                             <p><strong>Guards Created:</strong> <span className="font-semibold text-primary">{guards.filter(guard => guard.company_id === company.id).length}</span> guards</p>
-                             <p><strong>Created:</strong> {new Date(company.created_at).toLocaleDateString()}</p>
-                           </div>
-                         </div>
-                        {company.address && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            <strong>Address:</strong> {company.address}
-                          </p>
-                        )}
                       </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => handleEditCompany(company)}>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditCompany(company)}
+                          className="w-full sm:w-auto text-xs sm:text-sm"
+                        >
                           Edit
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto text-xs sm:text-sm"
+                        >
                           View Details
                         </Button>
                         <Button 
@@ -982,9 +1012,9 @@ const AdminDashboard = () => {
                           size="sm"
                           onClick={() => handleBulkDeleteReports(company.id, company.name)}
                           disabled={isLoading}
-                          className="bg-warning text-warning-foreground hover:bg-warning/90"
+                          className="bg-warning text-warning-foreground hover:bg-warning/90 w-full sm:w-auto text-xs sm:text-sm"
                         >
-                          <Database className="h-4 w-4 mr-1" />
+                          <Database className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Delete Reports
                         </Button>
                         <Button 
@@ -992,8 +1022,9 @@ const AdminDashboard = () => {
                           size="sm"
                           onClick={() => handleDeleteCompany(company.id, company.name)}
                           disabled={isLoading}
+                          className="w-full sm:w-auto text-xs sm:text-sm"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           Delete
                         </Button>
                       </div>
@@ -1004,13 +1035,13 @@ const AdminDashboard = () => {
 
               {companies.length === 0 && (
                 <Card className="shadow-card">
-                  <CardContent className="p-12 text-center">
-                    <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Companies Yet</h3>
-                    <p className="text-muted-foreground mb-4">
+                  <CardContent className="p-8 sm:p-12 text-center">
+                    <Building className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No Companies Yet</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground mb-4">
                       Get started by creating your first security company
                     </p>
-                    <Button variant="hero" onClick={() => setShowCreateForm(true)}>
+                    <Button variant="hero" onClick={() => setShowCreateForm(true)} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Company
                     </Button>
@@ -1026,23 +1057,23 @@ const AdminDashboard = () => {
 
         {/* Date Range Picker Modal for Bulk Delete */}
         {showDatePicker && selectedCompanyForDelete && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md mx-auto">
               <CardHeader>
-                <CardTitle>Delete Reports for {selectedCompanyForDelete.name}</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">Delete Reports for {selectedCompanyForDelete.name}</CardTitle>
+                <CardDescription className="text-sm">
                   Select date range to delete reports, or leave empty to delete all reports
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>From Date (optional)</Label>
+                  <Label className="text-sm">From Date (optional)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-left font-normal text-sm",
                           !deleteStartDate && "text-muted-foreground"
                         )}
                       >
@@ -1063,13 +1094,13 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>To Date (optional)</Label>
+                  <Label className="text-sm">To Date (optional)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal",
+                          "w-full justify-start text-left font-normal text-sm",
                           !deleteEndDate && "text-muted-foreground"
                         )}
                       >
@@ -1089,7 +1120,7 @@ const AdminDashboard = () => {
                   </Popover>
                 </div>
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex flex-col sm:flex-row gap-2 pt-4">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -1098,7 +1129,7 @@ const AdminDashboard = () => {
                       setDeleteStartDate(undefined);
                       setDeleteEndDate(undefined);
                     }}
-                    className="flex-1"
+                    className="flex-1 text-sm"
                   >
                     Cancel
                   </Button>
@@ -1106,20 +1137,20 @@ const AdminDashboard = () => {
                     variant="destructive"
                     onClick={executeBulkDelete}
                     disabled={isLoading}
-                    className="flex-1"
+                    className="flex-1 text-sm"
                   >
                     {isLoading ? "Deleting..." : "Delete Reports"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+         )}
 
-      </div>
+       </div>
 
-    </div>
-  );
-};
+     </div>
+   );
+ };
 
-export default AdminDashboard;
+ export default AdminDashboard;
