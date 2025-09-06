@@ -37,6 +37,9 @@ All colors MUST be HSL.
     /* Status Colors */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 95%;
+    --success-dark: 142 76% 25%;
+    --success-hover: 142 76% 40%;
     --warning: 43 96% 56%;
     --warning-foreground: 220 30% 15%;
     --destructive: 0 84% 60%;

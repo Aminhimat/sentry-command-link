@@ -92,85 +92,94 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="shadow-lg border-2 border-green-200">
+        <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold tracking-wide">INCIDENTS MONITOR</CardTitle>
-            <div className="flex items-center gap-4">
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
-                <SelectTrigger className="w-[200px] bg-white">
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                  <SelectItem value="all">All Sites</SelectItem>
-                  {uniqueSites.map((site) => (
-                    <SelectItem key={site} value={site}>
-                      {site}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedGuard} onValueChange={setSelectedGuard}>
-                <SelectTrigger className="w-[200px] bg-white">
-                  <SelectValue placeholder="Select guard" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                  <SelectItem value="all">All Guards</SelectItem>
-                  {uniqueGuards.map((guard) => (
-                    <SelectItem key={guard} value={guard}>
-                      {guard}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Total: {sortedIncidents.length}</span>
-                <span>•</span>
-                <span>Reports: {sortedIncidents.length}</span>
+            <CardTitle className="text-lg font-bold tracking-wide text-white">INCIDENTS MONITOR</CardTitle>
+              <div className="flex items-center gap-4">
+                <Select value={selectedSite} onValueChange={setSelectedSite}>
+                  <SelectTrigger className="w-[200px] bg-white/90 border-white/30 text-white placeholder:text-white/70">
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {uniqueSites.map((site) => (
+                      <SelectItem key={site} value={site}>
+                        {site}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedGuard} onValueChange={setSelectedGuard}>
+                  <SelectTrigger className="w-[200px] bg-white/90 border-white/30 text-white placeholder:text-white/70">
+                    <SelectValue placeholder="Select guard" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    <SelectItem value="all">All Guards</SelectItem>
+                    {uniqueGuards.map((guard) => (
+                      <SelectItem key={guard} value={guard}>
+                        {guard}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2 text-sm text-white/90 bg-white/10 px-3 py-2 rounded-lg">
+                  <span>Total: {sortedIncidents.length}</span>
+                  <span>•</span>
+                  <span>Reports: {sortedIncidents.length}</span>
+                </div>
               </div>
-            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr className="border-b">
-                  <th className="text-left p-4 font-medium text-sm">Issue ID</th>
-                  <th className="text-left p-4 font-medium text-sm">Property/Site</th>
-                  <th className="text-left p-4 font-medium text-sm">Reported Issue</th>
-                  <th className="text-left p-4 font-medium text-sm">Created Date</th>
-                  <th className="text-left p-4 font-medium text-sm">Created By</th>
-                  <th className="text-left p-4 font-medium text-sm">Severity</th>
-                  <th className="text-left p-4 font-medium text-sm">Assigned To</th>
+              <thead className="bg-gradient-to-r from-green-50 to-green-100 border-b-2 border-green-200">
+                <tr>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Issue ID</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Property/Site</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Reported Issue</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Created Date</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Created By</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Severity</th>
+                  <th className="text-left p-4 font-semibold text-sm text-green-800">Assigned To</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedIncidents.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {selectedSite === "all" && selectedGuard === "all" 
-                        ? "No incidents reported yet" 
-                        : `No incidents found for the selected filters`}
+                    <td colSpan={7} className="text-center py-12 text-green-600 bg-green-50/50">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="text-lg font-medium">
+                          {selectedSite === "all" && selectedGuard === "all" 
+                            ? "No incidents reported yet" 
+                            : `No incidents found for the selected filters`}
+                        </div>
+                        <div className="text-sm text-green-500">
+                          All systems secure
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  visibleIncidents.map((incident) => (
+                  visibleIncidents.map((incident, index) => (
                     <tr 
                       key={incident.id} 
-                      className="border-b hover:bg-muted/25 transition-colors cursor-pointer"
+                      className={`border-b border-green-100 hover:bg-green-50 transition-all duration-200 cursor-pointer ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-green-25'
+                      }`}
                       onClick={() => handleIncidentClick(incident)}
                     >
-                      <td className="p-4 font-mono text-sm text-red-600">
+                      <td className="p-4 font-mono text-sm text-green-700 font-semibold bg-green-50 border-r border-green-100">
                         {incident.id.split('-')[0].toUpperCase()}
                       </td>
-                      <td className="p-4 text-sm font-medium">
+                      <td className="p-4 text-sm font-medium text-gray-800">
                         {incident.location_address || 'Unknown Site'}
                       </td>
-                      <td className="p-4 text-sm">
+                      <td className="p-4 text-sm text-gray-700">
                         {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
                       </td>
-                      <td className="p-4 text-sm">
+                      <td className="p-4 text-sm text-gray-700">
                         {new Date(incident.created_at).toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'numeric',
@@ -181,14 +190,14 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                           hour12: true
                         })}
                       </td>
-                      <td className="p-4 text-sm">
+                      <td className="p-4 text-sm text-gray-700 font-medium">
                         {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
                       </td>
                       <td className="p-4">
                         {getSeverityBadge(incident.report_text?.includes('Severity: ') ? 
                           incident.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none')}
                       </td>
-                      <td className="p-4 text-sm">
+                      <td className="p-4 text-sm text-gray-700 font-medium">
                         {incident.guard?.first_name ? `${incident.guard.first_name} ${incident.guard.last_name}` : 'Unknown Guard'}
                       </td>
                     </tr>
