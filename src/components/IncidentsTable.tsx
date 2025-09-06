@@ -98,7 +98,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
             <CardTitle className="text-lg font-bold tracking-wide text-white">INCIDENTS MONITOR</CardTitle>
               <div className="flex items-center gap-4">
                 <Select value={selectedSite} onValueChange={setSelectedSite}>
-                  <SelectTrigger className="w-[200px] bg-white/90 border-white/30 text-white placeholder:text-white/70">
+                  <SelectTrigger className="w-[200px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
                     <SelectValue placeholder="Select site" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
@@ -111,7 +111,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                   </SelectContent>
                 </Select>
                 <Select value={selectedGuard} onValueChange={setSelectedGuard}>
-                  <SelectTrigger className="w-[200px] bg-white/90 border-white/30 text-white placeholder:text-white/70">
+                  <SelectTrigger className="w-[200px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
                     <SelectValue placeholder="Select guard" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
@@ -165,12 +165,14 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                   visibleIncidents.map((incident, index) => (
                     <tr 
                       key={incident.id} 
-                      className={`border-b border-green-100 hover:bg-green-50 transition-all duration-200 cursor-pointer ${
+                      className={`border-b border-green-100 transition-all duration-200 ${
                         index % 2 === 0 ? 'bg-white' : 'bg-green-25'
                       }`}
-                      onClick={() => handleIncidentClick(incident)}
                     >
-                      <td className="p-4 font-mono text-sm text-green-700 font-semibold bg-green-50 border-r border-green-100">
+                      <td 
+                        className="p-4 font-mono text-sm text-green-700 font-semibold bg-green-50 border-r border-green-100 cursor-pointer hover:bg-green-100"
+                        onClick={() => handleIncidentClick(incident)}
+                      >
                         {incident.id.split('-')[0].toUpperCase()}
                       </td>
                       <td className="p-4 text-sm font-medium text-gray-800">
