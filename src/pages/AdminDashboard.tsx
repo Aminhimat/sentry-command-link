@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, FileText, Download, Database } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Company {
@@ -482,6 +482,63 @@ const AdminDashboard = () => {
     window.location.href = '/auth';
   };
 
+  const handleBulkDeleteReports = async (companyId: string, companyName: string) => {
+    const confirmed = window.confirm(
+      `⚠️ DANGER: Delete ALL Reports for "${companyName}"?\n\n` +
+      `This will permanently delete:\n` +
+      `• ALL guard reports for this company\n` +
+      `• ALL associated images from storage\n\n` +
+      `This action CANNOT be undone!\n\n` +
+      `Are you absolutely sure you want to proceed?`
+    );
+    
+    if (!confirmed) return;
+
+    // Double confirmation for this dangerous action
+    const doubleConfirmed = window.confirm(
+      `FINAL CONFIRMATION\n\n` +
+      `You are about to permanently delete ALL reports for "${companyName}".\n\n` +
+      `Type the company name to confirm: "${companyName}"`
+    );
+
+    if (!doubleConfirmed) return;
+
+    try {
+      setIsLoading(true);
+      
+      console.log(`Bulk deleting all reports for company: ${companyId}`);
+      
+      const { data, error } = await supabase.functions.invoke('bulk-delete-reports', {
+        body: { 
+          companyId: companyId
+        }
+      });
+
+      if (error) {
+        console.error('Error in bulk delete:', error);
+        throw new Error(`Failed to delete reports: ${error.message}`);
+      }
+      
+      console.log('Bulk delete result:', data);
+
+      toast({
+        title: "Reports Deleted Successfully",
+        description: `Deleted ${data.deletedCount} reports and ${data.deletedImagesCount} images for "${companyName}". Storage space has been freed.`,
+        variant: "default",
+      });
+
+    } catch (error) {
+      console.error('Error deleting reports:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete reports",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const getStatusBadge = (status: string) => {
     const config = {
@@ -881,12 +938,22 @@ const AdminDashboard = () => {
                           </p>
                         )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => handleEditCompany(company)}>
                           Edit
                         </Button>
                         <Button variant="outline" size="sm">
                           View Details
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          size="sm"
+                          onClick={() => handleBulkDeleteReports(company.id, company.name)}
+                          disabled={isLoading}
+                          className="bg-warning text-warning-foreground hover:bg-warning/90"
+                        >
+                          <Database className="h-4 w-4 mr-1" />
+                          Delete Reports
                         </Button>
                         <Button 
                           variant="destructive" 

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-pdf-report]
 verify_jwt = false
+
+[functions.bulk-delete-reports]
+verify_jwt = false
