@@ -352,13 +352,23 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
     }
   };
 
-  // Set up real-time subscription
+  // Set up real-time subscription with throttling
   useEffect(() => {
     if (!companyId) return;
 
     fetchGuardLocations();
 
     console.log('LiveGuardMap: Setting up realtime subscription for company:', companyId);
+    
+    let updateTimeout: NodeJS.Timeout;
+    
+    const throttledUpdate = (payload: any) => {
+      clearTimeout(updateTimeout);
+      updateTimeout = setTimeout(() => {
+        console.log('LiveGuardMap: Real-time update received (throttled):', payload);
+        fetchGuardLocations(); // Refresh all data
+      }, 1000); // Throttle updates to once per second
+    };
     
     const channel = supabase
       .channel('guard-locations-changes')
@@ -370,15 +380,13 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
           table: 'guard_locations',
           filter: `company_id=eq.${companyId}`
         },
-        (payload) => {
-          console.log('LiveGuardMap: Real-time update received:', payload);
-          fetchGuardLocations(); // Refresh all data
-        }
+        throttledUpdate
       )
       .subscribe();
 
     return () => {
       console.log('LiveGuardMap: Cleaning up realtime subscription');
+      clearTimeout(updateTimeout);
       supabase.removeChannel(channel);
     };
   }, [companyId]);

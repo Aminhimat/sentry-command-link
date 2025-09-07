@@ -163,9 +163,22 @@ const CompanyDashboard = () => {
     checkUser();
   }, []);
 
-  // Set up real-time subscriptions for reports
+  // Set up real-time subscriptions for reports with throttling
   useEffect(() => {
     if (!userProfile?.company_id) return;
+
+    let reportsTimeout: NodeJS.Timeout;
+    let shiftsTimeout: NodeJS.Timeout;
+
+    const throttledReportsUpdate = () => {
+      clearTimeout(reportsTimeout);
+      reportsTimeout = setTimeout(() => fetchReports(), 1000);
+    };
+
+    const throttledShiftsUpdate = () => {
+      clearTimeout(shiftsTimeout);
+      shiftsTimeout = setTimeout(() => fetchShifts(), 1000);
+    };
 
     const reportsChannel = supabase
       .channel('reports-changes')
@@ -177,9 +190,7 @@ const CompanyDashboard = () => {
           table: 'guard_reports',
           filter: `company_id=eq.${userProfile.company_id}`
         },
-        () => {
-          fetchReports();
-        }
+        throttledReportsUpdate
       )
       .subscribe();
 
@@ -194,13 +205,13 @@ const CompanyDashboard = () => {
           table: 'guard_shifts',
           filter: `company_id=eq.${userProfile.company_id}`
         },
-        () => {
-          fetchShifts();
-        }
+        throttledShiftsUpdate
       )
       .subscribe();
 
     return () => {
+      clearTimeout(reportsTimeout);
+      clearTimeout(shiftsTimeout);
       supabase.removeChannel(reportsChannel);
       supabase.removeChannel(shiftsChannel);
     };
