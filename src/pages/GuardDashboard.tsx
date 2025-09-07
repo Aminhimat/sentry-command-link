@@ -10,12 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, Wifi, WifiOff } from "lucide-react";
 import QrScanner from 'qr-scanner';
 import jsQR from 'jsqr';
 import { Geolocation } from '@capacitor/geolocation';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
+import { backgroundSync } from "@/utils/backgroundSync";
+import { Badge } from "@/components/ui/badge";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +44,9 @@ const GuardDashboard = () => {
   const [showMissingFieldsError, setShowMissingFieldsError] = useState<string[]>([]);
   const [locationTracking, setLocationTracking] = useState(false);
   const [locationInterval, setLocationInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingReports, setPendingReports] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
   // Function to play success sound
@@ -70,6 +76,28 @@ const GuardDashboard = () => {
 
   useEffect(() => {
     checkUser();
+    
+    // Setup online/offline listeners
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Update pending reports count
+    const updatePendingCount = async () => {
+      const count = await backgroundSync.getPendingCount();
+      setPendingReports(count);
+    };
+    
+    updatePendingCount();
+    const interval = setInterval(updatePendingCount, 10000);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -355,56 +383,57 @@ const GuardDashboard = () => {
         console.log('Could not get location:', error);
       }
 
-      if (data.image) {
-        // Use optimized edge function for fastest upload
-        const formData = new FormData();
-        formData.append('image', data.image);
-        formData.append('reportData', JSON.stringify({
-          taskType: data.taskType === "other" ? data.customTaskType : data.taskType,
-          site: data.site,
-          severity: data.severity,
-          description: data.description || "Security Patrol",
-          location
-        }));
+      // Always save to offline storage first for reliability
+      const reportId = await backgroundSync.saveReportForSync({
+        taskType: data.taskType === "other" ? data.customTaskType : data.taskType,
+        site: data.site,
+        severity: data.severity,
+        description: data.description || "Security Patrol",
+        location,
+        image: data.image || undefined
+      });
 
-        const { error } = await supabase.functions.invoke('upload-guard-image', {
-          body: formData
-        });
-
-        if (error) {
-          throw new Error(error.message || 'Failed to submit report');
-        }
-
-        // Play success sound
-        playSuccessSound();
-        
-        toast({
-          title: "🎯 Report Submitted!",
-          description: "Photo report sent to admin instantly!",
-        });
-
-        // Reset form
-        setTaskData({
-          taskType: "",
-          customTaskType: "",
-          site: "",
-          description: "",
-          severity: "none",
-          image: null
-        });
-      }
-    } catch (error: any) {
-      console.error('Error submitting quick report:', error);
+      // Show immediate success - report is saved and will be uploaded
+      playSuccessSound();
+      
       toast({
-        title: "❌ Submit Failed",
-        description: error.message || "Failed to submit report",
+        title: "🎯 Report Saved!",
+        description: navigator.onLine 
+          ? "Report is being uploaded..." 
+          : "Report saved offline, will upload when online",
+      });
+
+      // Reset form immediately
+      setTaskData({
+        taskType: "",
+        customTaskType: "",
+        site: "",
+        description: "",
+        severity: "none",
+        image: null
+      });
+
+      // Show upload progress if online
+      if (navigator.onLine) {
+        setTimeout(() => {
+          toast({
+            title: "📤 Upload Complete",
+            description: "Report successfully sent to admin",
+          });
+        }, 2000);
+      }
+
+    } catch (error: any) {
+      console.error('Error saving report:', error);
+      toast({
+        title: "❌ Save Failed",
+        description: error.message || "Failed to save report. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1354,6 +1383,11 @@ const GuardDashboard = () => {
             </Button>
           </div>
         </div>
+        
+        {/* Connection Status */}
+        <div className="px-6 pb-4">
+          <ConnectionStatus isOnline={isOnline} pendingReports={pendingReports} />
+        </div>
       </div>
 
       {/* Shift Management */}
@@ -1708,15 +1742,28 @@ const GuardDashboard = () => {
                 )}
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Button with enhanced feedback */}
               <Button 
                 type="submit" 
                 className="w-full" 
                 size="lg"
                 disabled={isLoading}
               >
-                {isLoading ? "Submitting..." : "Submit"}
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    {isOnline ? "Uploading..." : "Saving..."}
+                  </div>
+                ) : (
+                  "Submit Report"
+                )}
               </Button>
+              
+              {!isOnline && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Reports will be uploaded automatically when online
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>

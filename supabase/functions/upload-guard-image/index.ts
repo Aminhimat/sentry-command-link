@@ -5,52 +5,84 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Utility function to compress image
-async function compressImage(file: File, maxSizeKB: number = 500): Promise<File> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')!
-    const img = new Image()
+// Optimized image compression for slow connections
+async function compressImage(file: File, maxSizeKB: number = 300): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
     
     img.onload = () => {
-      // Calculate new dimensions to maintain aspect ratio
-      const MAX_WIDTH = 1200
-      const MAX_HEIGHT = 1200
-      let { width, height } = img
-      
-      if (width > height) {
-        if (width > MAX_WIDTH) {
-          height = (height * MAX_WIDTH) / width
-          width = MAX_WIDTH
-        }
-      } else {
-        if (height > MAX_HEIGHT) {
-          width = (width * MAX_HEIGHT) / height
-          height = MAX_HEIGHT
-        }
-      }
-      
-      canvas.width = width
-      canvas.height = height
-      
-      // Draw and compress
-      ctx.drawImage(img, 0, 0, width, height)
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const compressedFile = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-          })
-          resolve(compressedFile)
+      try {
+        // Calculate optimal dimensions for slow connections
+        let { width, height } = calculateOptimalSize(img.width, img.height, maxSizeKB);
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        if (ctx) {
+          // Use better quality scaling
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Progressive quality reduction until target size is met
+          let quality = 0.8;
+          const tryCompress = () => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  if (blob.size <= maxSizeKB * 1024 || quality <= 0.3) {
+                    const compressedFile = new File([blob], file.name, {
+                      type: 'image/jpeg',
+                      lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                  } else {
+                    quality -= 0.1;
+                    tryCompress();
+                  }
+                } else {
+                  reject(new Error('Failed to compress image'));
+                }
+              },
+              'image/jpeg',
+              quality
+            );
+          };
+          
+          tryCompress();
         } else {
-          resolve(file) // Fallback to original
+          reject(new Error('Failed to get canvas context'));
         }
-      }, 'image/jpeg', 0.8) // 80% quality
-    }
+      } catch (error) {
+        reject(error);
+      }
+    };
     
-    img.src = URL.createObjectURL(file)
-  })
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function calculateOptimalSize(originalWidth: number, originalHeight: number, maxSizeKB: number) {
+  // More aggressive size reduction for slow connections
+  const maxDimension = maxSizeKB < 200 ? 1280 : maxSizeKB < 400 ? 1600 : 1920;
+  
+  let width = originalWidth;
+  let height = originalHeight;
+  
+  if (width > maxDimension || height > maxDimension) {
+    if (width > height) {
+      height = (height * maxDimension) / width;
+      width = maxDimension;
+    } else {
+      width = (width * maxDimension) / height;
+      height = maxDimension;
+    }
+  }
+  
+  return { width: Math.round(width), height: Math.round(height) };
 }
 
 Deno.serve(async (req) => {
@@ -100,14 +132,25 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get user profile
+    // Get user profile with better error handling
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('id, company_id, first_name, last_name')
       .eq('user_id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (profileError || !profile) {
+    if (profileError) {
+      console.error('Profile fetch error:', profileError)
+      return new Response(
+        JSON.stringify({ error: 'Database error while fetching profile' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    if (!profile) {
       return new Response(
         JSON.stringify({ error: 'User profile not found' }),
         { 
@@ -117,8 +160,11 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Compress image for better performance on slow connections
+    const compressedFile = await compressImage(file, 300); // 300KB max for better upload speed
+    
     // Generate filename
-    const fileExt = file.name.split('.').pop() || 'jpg'
+    const fileExt = compressedFile.name.split('.').pop() || 'jpg'
     const fileName = `${user.id}_${Date.now()}.${fileExt}`
 
     // Get public URL before upload for immediate response
@@ -128,7 +174,7 @@ Deno.serve(async (req) => {
 
     const imageUrl = urlData.publicUrl
 
-    // Submit report immediately with image URL
+    // Submit report immediately with image URL (optimistic update)
     const { error: reportError } = await supabaseClient
       .from('guard_reports')
       .insert({
@@ -141,30 +187,52 @@ Deno.serve(async (req) => {
         location_lng: reportData.location?.longitude
       })
 
-    // Upload image in background for better performance
-    EdgeRuntime.waitUntil(
-      supabaseClient.storage
-        .from('guard-reports')
-        .upload(fileName, file)
-        .then(({ error }) => {
-          if (error) {
-            console.error('Background image upload error:', error)
-          } else {
-            console.log('Background image upload completed for:', fileName)
-          }
-        })
-    )
-
     if (reportError) {
       console.error('Report submission error:', reportError)
       return new Response(
-        JSON.stringify({ error: 'Failed to submit report' }),
+        JSON.stringify({ error: 'Failed to submit report to database' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
+
+    // Upload compressed image in background with retry logic
+    EdgeRuntime.waitUntil(
+      (async () => {
+        let uploadAttempts = 0;
+        const maxAttempts = 3;
+        
+        while (uploadAttempts < maxAttempts) {
+          try {
+            const { error: uploadError } = await supabaseClient.storage
+              .from('guard-reports')
+              .upload(fileName, compressedFile, {
+                cacheControl: '3600',
+                upsert: true
+              });
+              
+            if (uploadError) {
+              throw uploadError;
+            }
+            
+            console.log(`Background image upload completed for: ${fileName}`);
+            break;
+          } catch (error) {
+            uploadAttempts++;
+            console.error(`Upload attempt ${uploadAttempts} failed:`, error);
+            
+            if (uploadAttempts < maxAttempts) {
+              // Wait before retry with exponential backoff
+              await new Promise(resolve => setTimeout(resolve, Math.pow(2, uploadAttempts) * 1000));
+            } else {
+              console.error(`Failed to upload image after ${maxAttempts} attempts:`, error);
+            }
+          }
+        }
+      })()
+    )
 
     return new Response(
       JSON.stringify({ 
