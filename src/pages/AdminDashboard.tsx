@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, CalendarIcon, FileText, Download, Database } from "lucide-react";
+import CompanyAnalytics from "@/components/CompanyAnalytics";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -681,10 +682,15 @@ const AdminDashboard = () => {
         </div>
 
         {/* Main Content with Tabs */}
-        <Tabs defaultValue="companies" className="w-full">
-          <TabsList className="grid w-full grid-cols-1">
+        <Tabs defaultValue="analytics" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="analytics" className="text-sm sm:text-base">Analytics</TabsTrigger>
             <TabsTrigger value="companies" className="text-sm sm:text-base">Companies</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
+            <CompanyAnalytics />
+          </TabsContent>
           
           <TabsContent value="companies" className="space-y-4 sm:space-y-6">
             {/* Companies Section */}
