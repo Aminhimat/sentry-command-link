@@ -15,6 +15,7 @@ const AuthPage = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -186,6 +187,42 @@ const AuthPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Password reset email sent! Check your inbox.",
+        });
+        setIsForgotPassword(false);
+        setFormData({ ...formData, email: "" });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast({
@@ -230,10 +267,19 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
           <CardTitle className="text-2xl">
-            {isSignUp ? "Create Admin Account" : isGuardLogin ? "GuardHQ Sign In" : "Admin Sign In"}
+            {isForgotPassword 
+              ? "Reset Password" 
+              : isSignUp 
+              ? "Create Admin Account" 
+              : isGuardLogin 
+              ? "GuardHQ Sign In" 
+              : "Admin Sign In"
+            }
           </CardTitle>
           <CardDescription>
-            {isSignUp 
+            {isForgotPassword
+              ? "Enter your email to receive a password reset link"
+              : isSignUp 
               ? "Create your platform administrator account" 
               : isGuardLogin
               ? "Sign in with your username and password"
@@ -242,8 +288,8 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
-            {isSignUp && (
+          <form onSubmit={isForgotPassword ? handleForgotPassword : isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+            {isSignUp && !isForgotPassword && (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -286,21 +332,23 @@ const AuthPage = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  className="pl-10"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
-                />
+            {!isForgotPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="pl-10"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
-            </div>
+            )}
             
             <Button 
               type="submit" 
@@ -309,26 +357,45 @@ const AuthPage = () => {
               disabled={isLoading}
             >
               {isLoading 
-                ? "Loading..." 
-                : isSignUp ? "Create Account" : "Sign In"
+                ? "Sending..." 
+                : isForgotPassword 
+                ? "Send Reset Email"
+                : isSignUp 
+                ? "Create Account" 
+                : "Sign In"
               }
             </Button>
             
             <div className="text-center space-y-2">
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => {
-                  if (!isSignUp) {
-                    setIsGuardLogin(!isGuardLogin);
-                    setFormData({ ...formData, email: "" });
-                  }
-                }}
-                className="text-sm"
-              >
-                {isGuardLogin ? "Admin Login" : "GuardHQ Login"}
-              </Button>
+              {!isForgotPassword && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => {
+                    if (!isSignUp) {
+                      setIsGuardLogin(!isGuardLogin);
+                      setFormData({ ...formData, email: "" });
+                    }
+                  }}
+                  className="text-sm"
+                >
+                  {isGuardLogin ? "Admin Login" : "GuardHQ Login"}
+                </Button>
+              )}
               
+              {!isSignUp && !isGuardLogin && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => {
+                    setIsForgotPassword(!isForgotPassword);
+                    setFormData({ ...formData, email: "", password: "" });
+                  }}
+                  className="text-sm"
+                >
+                  {isForgotPassword ? "Back to Sign In" : "Forgot Password?"}
+                </Button>
+              )}
             </div>
           </form>
         </CardContent>
