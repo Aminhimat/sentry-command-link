@@ -491,6 +491,10 @@ const AdminDashboard = () => {
     window.location.href = '/auth';
   };
 
+  const handleChangePassword = () => {
+    window.location.href = '/change-password?voluntary=true';
+  };
+
   const handleBulkDeleteReports = (companyId: string, companyName: string) => {
     setSelectedCompanyForDelete({ id: companyId, name: companyName });
     setShowDatePicker(true);
@@ -617,9 +621,14 @@ const AdminDashboard = () => {
               <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-full sm:max-w-none">
                 Welcome, {userProfile?.first_name} {userProfile?.last_name}
               </span>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full sm:w-auto">
-                Sign Out
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="outline" size="sm" onClick={handleChangePassword} className="flex-1 sm:flex-initial">
+                  Change Password
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="flex-1 sm:flex-initial">
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
         </div>

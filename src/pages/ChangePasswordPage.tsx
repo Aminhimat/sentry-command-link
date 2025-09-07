@@ -29,9 +29,13 @@ const ChangePasswordPage = () => {
         return;
       }
 
-      // Check if user needs to change password
+      // Check if this is a voluntary password change
+      const urlParams = new URLSearchParams(window.location.search);
+      const isVoluntary = urlParams.get('voluntary') === 'true';
+      
+      // If not voluntary, check if user needs to change password
       const mustChangePassword = user.user_metadata?.must_change_password;
-      if (!mustChangePassword) {
+      if (!mustChangePassword && !isVoluntary) {
         // Redirect to appropriate dashboard based on role
         const role = user.user_metadata?.role;
         if (role === 'platform_admin') {
@@ -127,7 +131,10 @@ const ChangePasswordPage = () => {
           </div>
           <CardTitle className="text-2xl">Change Your Password</CardTitle>
           <CardDescription>
-            You must change your temporary password before continuing
+            {user?.user_metadata?.must_change_password 
+              ? "You must change your temporary password before continuing"
+              : "Update your password to keep your account secure"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
