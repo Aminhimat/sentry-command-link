@@ -16,6 +16,7 @@ const SecurityPlatformLanding = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phoneNumber: "",
     message: ""
   });
@@ -30,7 +31,7 @@ const SecurityPlatformLanding = () => {
   const handleDemoRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.message) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber || !formData.message) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
@@ -57,6 +58,7 @@ const SecurityPlatformLanding = () => {
       setFormData({
         firstName: "",
         lastName: "",
+        email: "",
         phoneNumber: "",
         message: ""
       });
@@ -161,6 +163,21 @@ const SecurityPlatformLanding = () => {
                       required
                     />
                   </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-2">
+                    Email Address *
+                  </label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter your email address"
+                    required
+                  />
                 </div>
                 
                 <div>

@@ -12,6 +12,7 @@ const corsHeaders = {
 interface DemoRequest {
   firstName: string;
   lastName: string;
+  email: string;
   phoneNumber: string;
   message: string;
 }
@@ -23,9 +24,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { firstName, lastName, phoneNumber, message }: DemoRequest = await req.json();
+    const { firstName, lastName, email, phoneNumber, message }: DemoRequest = await req.json();
 
-    console.log("Demo request received:", { firstName, lastName, phoneNumber, message });
+    console.log("Demo request received:", { firstName, lastName, email, phoneNumber, message });
 
     const emailResponse = await resend.emails.send({
       from: "GuardHQ Demo <onboarding@resend.dev>",
@@ -36,6 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
           <h2 style="color: #2563eb;">New Demo Request - GuardHQ</h2>
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+            <p><strong>Email:</strong> ${email}</p>
             <p><strong>Phone Number:</strong> ${phoneNumber}</p>
             <p><strong>Message:</strong></p>
             <p style="background-color: white; padding: 15px; border-radius: 4px; border-left: 4px solid #2563eb;">${message}</p>
