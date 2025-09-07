@@ -119,9 +119,26 @@ const SecurityPlatformLanding = () => {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Demo on Demand</h2>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-lg mb-6">
               See GuardHQ in action with a personalized demo tailored to your security needs
             </p>
+            <div className="max-w-3xl mx-auto text-left">
+              <p className="text-muted-foreground mb-4">
+                GuardHQ is a comprehensive security management platform that streamlines operations for modern security companies. Our demo will showcase:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="space-y-2">
+                  <p className="text-sm"><strong>• Real-time Guard Tracking</strong> - Monitor guard locations and patrol routes live</p>
+                  <p className="text-sm"><strong>• Incident Management</strong> - Complete incident reporting and case tracking</p>
+                  <p className="text-sm"><strong>• Shift Scheduling</strong> - Automated scheduling and attendance management</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm"><strong>• Property Management</strong> - Centralized oversight of all secured locations</p>
+                  <p className="text-sm"><strong>• Analytics & Reports</strong> - Comprehensive dashboards and automated reporting</p>
+                  <p className="text-sm"><strong>• Mobile Guard App</strong> - Dedicated mobile interface for field operations</p>
+                </div>
+              </div>
+            </div>
           </div>
           
           <Card className="max-w-2xl mx-auto">
