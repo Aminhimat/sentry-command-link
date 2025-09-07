@@ -5,84 +5,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Optimized image compression for slow connections
-async function compressImage(file: File, maxSizeKB: number = 300): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      try {
-        // Calculate optimal dimensions for slow connections
-        let { width, height } = calculateOptimalSize(img.width, img.height, maxSizeKB);
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        if (ctx) {
-          // Use better quality scaling
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Progressive quality reduction until target size is met
-          let quality = 0.8;
-          const tryCompress = () => {
-            canvas.toBlob(
-              (blob) => {
-                if (blob) {
-                  if (blob.size <= maxSizeKB * 1024 || quality <= 0.3) {
-                    const compressedFile = new File([blob], file.name, {
-                      type: 'image/jpeg',
-                      lastModified: Date.now()
-                    });
-                    resolve(compressedFile);
-                  } else {
-                    quality -= 0.1;
-                    tryCompress();
-                  }
-                } else {
-                  reject(new Error('Failed to compress image'));
-                }
-              },
-              'image/jpeg',
-              quality
-            );
-          };
-          
-          tryCompress();
-        } else {
-          reject(new Error('Failed to get canvas context'));
-        }
-      } catch (error) {
-        reject(error);
-      }
-    };
-    
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-function calculateOptimalSize(originalWidth: number, originalHeight: number, maxSizeKB: number) {
-  // More aggressive size reduction for slow connections
-  const maxDimension = maxSizeKB < 200 ? 1280 : maxSizeKB < 400 ? 1600 : 1920;
-  
-  let width = originalWidth;
-  let height = originalHeight;
-  
-  if (width > maxDimension || height > maxDimension) {
-    if (width > height) {
-      height = (height * maxDimension) / width;
-      width = maxDimension;
-    } else {
-      width = (width * maxDimension) / height;
-      height = maxDimension;
-    }
+// Server-side image compression is not needed since we compress on client-side
+// This function now just validates and returns the file as-is
+async function validateImageFile(file: File): Promise<File> {
+  // Basic validation
+  if (!file.type.startsWith('image/')) {
+    throw new Error('File must be an image');
   }
   
-  return { width: Math.round(width), height: Math.round(height) };
+  // Size limit check (10MB max)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Image file too large (max 10MB)');
+  }
+  
+  return file;
 }
 
 Deno.serve(async (req) => {
@@ -160,11 +96,11 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Compress image for better performance on slow connections
-    const compressedFile = await compressImage(file, 300); // 300KB max for better upload speed
+    // Validate image file
+    const validatedFile = await validateImageFile(file);
     
     // Generate filename
-    const fileExt = compressedFile.name.split('.').pop() || 'jpg'
+    const fileExt = validatedFile.name.split('.').pop() || 'jpg'
     const fileName = `${user.id}_${Date.now()}.${fileExt}`
 
     // Get public URL before upload for immediate response
@@ -198,7 +134,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Upload compressed image in background with retry logic
+    // Upload validated image in background with retry logic
     EdgeRuntime.waitUntil(
       (async () => {
         let uploadAttempts = 0;
@@ -208,7 +144,7 @@ Deno.serve(async (req) => {
           try {
             const { error: uploadError } = await supabaseClient.storage
               .from('guard-reports')
-              .upload(fileName, compressedFile, {
+              .upload(fileName, validatedFile, {
                 cacheControl: '3600',
                 upsert: true
               });
