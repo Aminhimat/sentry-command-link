@@ -3,8 +3,11 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import IncidentDetailsModal from "./IncidentDetailsModal";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
+import { CalendarIcon } from "lucide-react";
 
 interface IncidentsTableProps {
   incidents: any[];
@@ -16,6 +19,8 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedGuard, setSelectedGuard] = useState<string>("all");
+  const [selectedDateFrom, setSelectedDateFrom] = useState<string>("");
+  const [selectedDateTo, setSelectedDateTo] = useState<string>("");
   const pageSize = 20;
 
   // Get unique sites from incidents
@@ -35,7 +40,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     return guards.sort();
   }, [incidents]);
 
-  // Filter incidents by selected site and guard
+  // Filter incidents by selected site, guard, and date range
   const filteredIncidents = useMemo(() => {
     let filtered = incidents;
     
@@ -54,8 +59,24 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
       });
     }
     
+    if (selectedDateFrom) {
+      const fromDate = new Date(selectedDateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(incident => 
+        new Date(incident.created_at) >= fromDate
+      );
+    }
+    
+    if (selectedDateTo) {
+      const toDate = new Date(selectedDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(incident => 
+        new Date(incident.created_at) <= toDate
+      );
+    }
+    
     return filtered;
-  }, [incidents, selectedSite, selectedGuard]);
+  }, [incidents, selectedSite, selectedGuard, selectedDateFrom, selectedDateTo]);
 
   const sortedIncidents = useMemo(() => {
     return [...filteredIncidents].sort(
@@ -71,7 +92,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     if (currentPage > totalPages) {
       setCurrentPage(1);
     }
-  }, [totalPages, selectedSite, selectedGuard]);
+  }, [totalPages, selectedSite, selectedGuard, selectedDateFrom, selectedDateTo]);
 
   const getSeverityBadge = (severity: string) => {
     const severityConfig = {
@@ -94,11 +115,11 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     <>
       <Card className="shadow-lg border-2 border-green-200">
         <CardHeader className="bg-gradient-to-r from-green-600 to-green-700 text-white">
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-bold tracking-wide text-white">INCIDENTS MONITOR</CardTitle>
               <div className="flex items-center gap-4">
                 <Select value={selectedSite} onValueChange={setSelectedSite}>
-                  <SelectTrigger className="w-[200px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
+                  <SelectTrigger className="w-[180px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
                     <SelectValue placeholder="Select site" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
@@ -111,7 +132,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                   </SelectContent>
                 </Select>
                 <Select value={selectedGuard} onValueChange={setSelectedGuard}>
-                  <SelectTrigger className="w-[200px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
+                  <SelectTrigger className="w-[180px] bg-white border-white/30 text-gray-900 placeholder:text-gray-600">
                     <SelectValue placeholder="Select guard" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
@@ -123,6 +144,32 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-white/90">From Date</Label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={selectedDateFrom}
+                        onChange={(e) => setSelectedDateFrom(e.target.value)}
+                        className="w-[140px] bg-white border-white/30 text-gray-900 text-sm pr-8"
+                      />
+                      <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-white/90">To Date</Label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={selectedDateTo}
+                        onChange={(e) => setSelectedDateTo(e.target.value)}
+                        className="w-[140px] bg-white border-white/30 text-gray-900 text-sm pr-8"
+                      />
+                      <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2 text-sm text-white/90 bg-white/10 px-3 py-2 rounded-lg">
                   <span>Total: {sortedIncidents.length}</span>
                   <span>•</span>
@@ -151,7 +198,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                     <td colSpan={7} className="text-center py-12 text-green-600 bg-green-50/50">
                       <div className="flex flex-col items-center gap-2">
                         <div className="text-lg font-medium">
-                          {selectedSite === "all" && selectedGuard === "all" 
+                          {selectedSite === "all" && selectedGuard === "all" && !selectedDateFrom && !selectedDateTo
                             ? "No incidents reported yet" 
                             : `No incidents found for the selected filters`}
                         </div>
