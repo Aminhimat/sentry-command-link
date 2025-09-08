@@ -87,7 +87,14 @@ const CompanyGuards = () => {
     lastName: "",
     phone: "",
     newPassword: "",
-    assignedPropertyId: "none"
+    assignedPropertyId: "none",
+    // Login constraints
+    hasLoginConstraints: false,
+    startDate: "",
+    endDate: "",
+    startTime: "",
+    endTime: "",
+    durationHours: ""
   });
   const { toast } = useToast();
 
@@ -307,7 +314,13 @@ const CompanyGuards = () => {
         lastName: "",
         phone: "",
         newPassword: "",
-        assignedPropertyId: "none"
+        assignedPropertyId: "none",
+        hasLoginConstraints: false,
+        startDate: "",
+        endDate: "",
+        startTime: "",
+        endTime: "",
+        durationHours: ""
       });
       
       if (userProfile?.company_id) {
@@ -564,6 +577,76 @@ const CompanyGuards = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Login Constraints Section */}
+                <div className="md:col-span-5 border-t pt-4 mt-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <input
+                      type="checkbox"
+                      id="hasLoginConstraints"
+                      checked={editGuardData.hasLoginConstraints}
+                      onChange={(e) => setEditGuardData({...editGuardData, hasLoginConstraints: e.target.checked})}
+                      className="rounded border border-input"
+                    />
+                    <Label htmlFor="hasLoginConstraints" className="text-sm font-medium">
+                      Set Login Period Restrictions (Optional)
+                    </Label>
+                  </div>
+                  
+                  {editGuardData.hasLoginConstraints && (
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <Label htmlFor="startDate">Start Date</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={editGuardData.startDate}
+                          onChange={(e) => setEditGuardData({...editGuardData, startDate: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endDate">End Date</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={editGuardData.endDate}
+                          onChange={(e) => setEditGuardData({...editGuardData, endDate: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="durationHours">Duration (Hours)</Label>
+                        <Input
+                          id="durationHours"
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          max="24"
+                          value={editGuardData.durationHours}
+                          onChange={(e) => setEditGuardData({...editGuardData, durationHours: e.target.value})}
+                          placeholder="e.g., 8"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="startTime">Start Time</Label>
+                        <Input
+                          id="startTime"
+                          type="time"
+                          value={editGuardData.startTime}
+                          onChange={(e) => setEditGuardData({...editGuardData, startTime: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="endTime">End Time</Label>
+                        <Input
+                          id="endTime"
+                          type="time"
+                          value={editGuardData.endTime}
+                          onChange={(e) => setEditGuardData({...editGuardData, endTime: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex items-end md:col-span-5">
                   <Button type="submit" disabled={isLoading} className="w-full">
                     {isLoading ? "Updating..." : "Update Guard"}
@@ -645,14 +728,28 @@ const CompanyGuards = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => {
+                              onClick={async () => {
                                 setEditingGuard(guard);
+                                
+                                // Fetch existing login constraints
+                                const { data: constraints } = await supabase
+                                  .from('guard_login_constraints')
+                                  .select('*')
+                                  .eq('guard_id', guard.id)
+                                  .maybeSingle();
+                                
                                 setEditGuardData({
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
                                   newPassword: "",
-                                  assignedPropertyId: guard.assigned_property_id || "none"
+                                  assignedPropertyId: guard.assigned_property_id || "none",
+                                  hasLoginConstraints: !!constraints,
+                                  startDate: constraints?.start_date || "",
+                                  endDate: constraints?.end_date || "",
+                                  startTime: constraints?.start_time || "",
+                                  endTime: constraints?.end_time || "",
+                                  durationHours: constraints?.duration_hours?.toString() || ""
                                 });
                                 setShowEditGuardForm(true);
                               }}

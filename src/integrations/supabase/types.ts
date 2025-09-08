@@ -95,6 +95,48 @@ export type Database = {
         }
         Relationships: []
       }
+      guard_login_constraints: {
+        Row: {
+          company_id: string
+          created_at: string
+          duration_hours: number | null
+          end_date: string | null
+          end_time: string | null
+          guard_id: string
+          id: string
+          is_active: boolean
+          start_date: string | null
+          start_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          duration_hours?: number | null
+          end_date?: string | null
+          end_time?: string | null
+          guard_id: string
+          id?: string
+          is_active?: boolean
+          start_date?: string | null
+          start_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          duration_hours?: number | null
+          end_date?: string | null
+          end_time?: string | null
+          guard_id?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string | null
+          start_time?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guard_reports: {
         Row: {
           company_id: string
