@@ -72,8 +72,8 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
     end_date: '',
     start_time: '',
     end_time: '',
-    guard_id: '',
-    property_id: '',
+    guard_id: 'unassigned',
+    property_id: 'no_property',
     recurring_days: [] as number[],
     notes: ''
   });
@@ -188,8 +188,8 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
         end_date: '',
         start_time: '',
         end_time: '',
-        guard_id: '',
-        property_id: '',
+        guard_id: 'unassigned',
+        property_id: 'no_property',
         recurring_days: [],
         notes: ''
       });
