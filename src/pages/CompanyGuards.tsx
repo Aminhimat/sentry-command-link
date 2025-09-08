@@ -582,19 +582,22 @@ const CompanyGuards = () => {
                 </div>
 
                 {/* Login Constraints Section */}
-                <div className="border-t pt-6">
-                  <div className="flex items-center space-x-2 mb-4">
+                <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 bg-muted/10">
+                  <div className="flex items-center space-x-3 mb-4">
                     <input
                       type="checkbox"
                       id="hasLoginConstraints"
                       checked={editGuardData.hasLoginConstraints}
                       onChange={(e) => setEditGuardData({...editGuardData, hasLoginConstraints: e.target.checked})}
-                      className="h-4 w-4 rounded border border-input"
+                      className="h-5 w-5 rounded border-2 border-primary text-primary focus:ring-primary"
                     />
-                    <Label htmlFor="hasLoginConstraints" className="text-sm font-medium">
-                      Set Login Period Restrictions (Optional)
+                    <Label htmlFor="hasLoginConstraints" className="text-lg font-semibold text-primary">
+                      🕒 Set Login Period Restrictions (Optional)
                     </Label>
                   </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Restrict when this guard can log in to the system by setting specific dates, times, and duration limits.
+                  </p>
                   
                   {editGuardData.hasLoginConstraints && (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
