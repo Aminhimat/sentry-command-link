@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import LocationMap from "@/components/LocationMap";
+import { ScheduledShiftsForm } from "@/components/ScheduledShiftsForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScheduledShiftForm } from "@/components/ScheduledShiftForm";
 
 interface Profile {
@@ -249,9 +251,9 @@ const CompanyShifts = () => {
       {/* Main Content */}
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         {/* Scheduled Shifts Section */}
-        <ScheduledShiftForm 
+        <ScheduledShiftsForm 
           companyId={userProfile?.company_id || ''} 
-          onShiftCreated={fetchShifts}
+          onSuccess={fetchShifts}
         />
 
         <Card>
