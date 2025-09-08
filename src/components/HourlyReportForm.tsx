@@ -58,6 +58,20 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
   const handleCameraCapture = async () => {
     try {
       if (Capacitor.isNativePlatform()) {
+        // Check and request camera permissions first
+        const permissions = await CapCamera.checkPermissions();
+        if (permissions.camera !== 'granted') {
+          const permissionResult = await CapCamera.requestPermissions();
+          if (permissionResult.camera !== 'granted') {
+            toast({
+              title: "Camera Permission Required",
+              description: "Please grant camera permission to take photos.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+
         // Use native camera on mobile
         const image = await CapCamera.getPhoto({
           quality: 90,
