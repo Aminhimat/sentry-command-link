@@ -577,17 +577,17 @@ const CompanyGuards = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Login Constraints Section */}
-                <div className="md:col-span-5 border-t pt-4 mt-4">
-                  <div className="flex items-center space-x-2 mb-4">
+                {/* Login Constraints Section - Move to separate row */}
+                <div className="col-span-full border-t pt-6 mt-6">
+                  <div className="flex items-center space-x-2 mb-6">
                     <input
                       type="checkbox"
                       id="hasLoginConstraints"
                       checked={editGuardData.hasLoginConstraints}
                       onChange={(e) => setEditGuardData({...editGuardData, hasLoginConstraints: e.target.checked})}
-                      className="rounded border border-input"
+                      className="h-4 w-4 rounded border border-input"
                     />
-                    <Label htmlFor="hasLoginConstraints" className="text-sm font-medium">
+                    <Label htmlFor="hasLoginConstraints" className="text-base font-medium">
                       Set Login Period Restrictions (Optional)
                     </Label>
                   </div>
