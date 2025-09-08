@@ -277,12 +277,12 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
                 </div>
                 <div>
                   <Label htmlFor="guard_id">Assign Guard (Optional)</Label>
-                  <Select value={formData.guard_id} onValueChange={(value) => setFormData(prev => ({ ...prev, guard_id: value }))}>
+                  <Select value={formData.guard_id} onValueChange={(value) => setFormData(prev => ({ ...prev, guard_id: value === "unassigned" ? "" : value }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select guard" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
                       {guards.map((guard) => (
                         <SelectItem key={guard.id} value={guard.id}>
                           {guard.first_name} {guard.last_name}
@@ -347,12 +347,12 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
 
               <div>
                 <Label htmlFor="property_id">Property (Optional)</Label>
-                <Select value={formData.property_id} onValueChange={(value) => setFormData(prev => ({ ...prev, property_id: value }))}>
+                <Select value={formData.property_id} onValueChange={(value) => setFormData(prev => ({ ...prev, property_id: value === "no_property" ? "" : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select property" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No specific property</SelectItem>
+                    <SelectItem value="no_property">No specific property</SelectItem>
                     {properties.map((property) => (
                       <SelectItem key={property.id} value={property.id}>
                         {property.name}
