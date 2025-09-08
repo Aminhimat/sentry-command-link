@@ -10,8 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Link } from "react-router-dom";
 import LocationMap from "@/components/LocationMap";
 import { ScheduledShiftsForm } from "@/components/ScheduledShiftsForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScheduledShiftForm } from "@/components/ScheduledShiftForm";
 
 interface Profile {
   id: string;
