@@ -518,68 +518,72 @@ const CompanyGuards = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleEditGuard} className="grid gap-4 md:grid-cols-5">
-                <div>
-                  <Label htmlFor="editFirstName">First Name</Label>
-                  <Input
-                    id="editFirstName"
-                    type="text"
-                    value={editGuardData.firstName}
-                    onChange={(e) => setEditGuardData({...editGuardData, firstName: e.target.value})}
-                    required
-                  />
+              <form onSubmit={handleEditGuard} className="space-y-6">
+                {/* Basic Information */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <Label htmlFor="editFirstName">First Name</Label>
+                    <Input
+                      id="editFirstName"
+                      type="text"
+                      value={editGuardData.firstName}
+                      onChange={(e) => setEditGuardData({...editGuardData, firstName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editLastName">Last Name</Label>
+                    <Input
+                      id="editLastName"
+                      type="text"
+                      value={editGuardData.lastName}
+                      onChange={(e) => setEditGuardData({...editGuardData, lastName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPhone">Phone</Label>
+                    <Input
+                      id="editPhone"
+                      type="tel"
+                      value={editGuardData.phone}
+                      onChange={(e) => setEditGuardData({...editGuardData, phone: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editPassword">New Password (optional)</Label>
+                    <Input
+                      id="editPassword"
+                      type="password"
+                      value={editGuardData.newPassword}
+                      onChange={(e) => setEditGuardData({ ...editGuardData, newPassword: e.target.value })}
+                      placeholder="Leave blank to keep current"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editAssignedProperty">Assign to Property</Label>
+                    <Select 
+                      value={editGuardData.assignedPropertyId} 
+                      onValueChange={(value) => setEditGuardData({ ...editGuardData, assignedPropertyId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
+                        <SelectItem value="none">No Property</SelectItem>
+                        {properties.map((property) => (
+                          <SelectItem key={property.id} value={property.id}>
+                            {property.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="editLastName">Last Name</Label>
-                  <Input
-                    id="editLastName"
-                    type="text"
-                    value={editGuardData.lastName}
-                    onChange={(e) => setEditGuardData({...editGuardData, lastName: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editPhone">Phone</Label>
-                  <Input
-                    id="editPhone"
-                    type="tel"
-                    value={editGuardData.phone}
-                    onChange={(e) => setEditGuardData({...editGuardData, phone: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editPassword">New Password (optional)</Label>
-                  <Input
-                    id="editPassword"
-                    type="password"
-                    value={editGuardData.newPassword}
-                    onChange={(e) => setEditGuardData({ ...editGuardData, newPassword: e.target.value })}
-                    placeholder="Leave blank to keep current"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editAssignedProperty">Assign to Property</Label>
-                  <Select 
-                    value={editGuardData.assignedPropertyId} 
-                    onValueChange={(value) => setEditGuardData({ ...editGuardData, assignedPropertyId: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg z-50">
-                      <SelectItem value="none">No Property</SelectItem>
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {property.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Login Constraints Section - Move to separate row */}
-                <div className="col-span-full border-t pt-6 mt-6">
-                  <div className="flex items-center space-x-2 mb-6">
+
+                {/* Login Constraints Section */}
+                <div className="border-t pt-6">
+                  <div className="flex items-center space-x-2 mb-4">
                     <input
                       type="checkbox"
                       id="hasLoginConstraints"
@@ -587,13 +591,13 @@ const CompanyGuards = () => {
                       onChange={(e) => setEditGuardData({...editGuardData, hasLoginConstraints: e.target.checked})}
                       className="h-4 w-4 rounded border border-input"
                     />
-                    <Label htmlFor="hasLoginConstraints" className="text-base font-medium">
+                    <Label htmlFor="hasLoginConstraints" className="text-sm font-medium">
                       Set Login Period Restrictions (Optional)
                     </Label>
                   </div>
                   
                   {editGuardData.hasLoginConstraints && (
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
                       <div>
                         <Label htmlFor="startDate">Start Date</Label>
                         <Input
@@ -647,9 +651,9 @@ const CompanyGuards = () => {
                   )}
                 </div>
                 
-                <div className="flex items-end md:col-span-5">
-                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isLoading ? "Updating..." : "Update Guard"}
+                <div className="flex justify-end pt-4">
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Save Changes"}
                   </Button>
                 </div>
               </form>
