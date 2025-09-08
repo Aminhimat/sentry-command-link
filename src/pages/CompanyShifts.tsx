@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import LocationMap from "@/components/LocationMap";
-import { ScheduledShiftsForm } from "@/components/ScheduledShiftsForm";
+// import { ScheduledShiftsForm } from "@/components/ScheduledShiftsForm";
 
 interface Profile {
   id: string;
@@ -248,11 +248,11 @@ const CompanyShifts = () => {
 
       {/* Main Content */}
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Scheduled Shifts Section */}
-        <ScheduledShiftsForm 
+        {/* Scheduled Shifts Section - Temporarily disabled */}
+        {/* <ScheduledShiftsForm 
           companyId={userProfile?.company_id || ''} 
           onSuccess={fetchShifts}
-        />
+        /> */}
 
         <Card>
           <CardHeader>
