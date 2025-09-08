@@ -405,6 +405,60 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_shifts: {
+        Row: {
+          company_id: string
+          created_at: string
+          duration_hours: number
+          end_date: string
+          end_time: string
+          guard_id: string | null
+          id: string
+          notes: string | null
+          property_id: string | null
+          recurring_days: number[] | null
+          shift_name: string
+          start_date: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          duration_hours: number
+          end_date: string
+          end_time: string
+          guard_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          recurring_days?: number[] | null
+          shift_name: string
+          start_date: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          duration_hours?: number
+          end_date?: string
+          end_time?: string
+          guard_id?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          recurring_days?: number[] | null
+          shift_name?: string
+          start_date?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
