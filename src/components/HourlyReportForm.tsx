@@ -198,8 +198,8 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
       }
 
       toast({
-        title: "Report submitted",
-        description: "Your hourly report has been submitted successfully.",
+        description: "Report submitted",
+        duration: 1500,
       });
 
       // Reset form
