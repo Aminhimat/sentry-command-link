@@ -70,8 +70,13 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     if (selectedDateTo) {
       const toDate = new Date(selectedDateTo);
       toDate.setHours(23, 59, 59, 999);
+      
+      // Don't allow filtering beyond current time
+      const now = new Date();
+      const effectiveToDate = toDate > now ? now : toDate;
+      
       filtered = filtered.filter(incident => 
-        new Date(incident.created_at) <= toDate
+        new Date(incident.created_at) <= effectiveToDate
       );
     }
     
