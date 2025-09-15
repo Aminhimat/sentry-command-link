@@ -42,12 +42,26 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
 
   // Filter incidents by selected site, guard, and date range
   const filteredIncidents = useMemo(() => {
+    console.log('🔍 Filtering incidents:', {
+      totalIncidents: incidents.length,
+      selectedSite,
+      selectedGuard,
+      selectedDateFrom,
+      selectedDateTo,
+      sampleIncidentDates: incidents.slice(0, 3).map(i => ({
+        id: i.id.substring(0, 8),
+        created_at: i.created_at,
+        parsed: new Date(i.created_at).toLocaleDateString()
+      }))
+    });
+    
     let filtered = incidents;
     
     if (selectedSite !== "all") {
       filtered = filtered.filter(incident => 
         (incident.location_address || 'Unknown Site') === selectedSite
       );
+      console.log('📍 After site filter:', filtered.length);
     }
     
     if (selectedGuard !== "all") {
@@ -57,29 +71,60 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
           'Unknown Guard';
         return guardName === selectedGuard;
       });
+      console.log('👮 After guard filter:', filtered.length);
     }
     
     if (selectedDateFrom) {
       const fromDate = new Date(selectedDateFrom);
       fromDate.setHours(0, 0, 0, 0);
-      filtered = filtered.filter(incident => 
-        new Date(incident.created_at) >= fromDate
-      );
+      console.log('📅 From date filter:', {
+        selectedDateFrom,
+        fromDate: fromDate.toISOString(),
+        beforeFilter: filtered.length
+      });
+      filtered = filtered.filter(incident => {
+        const incidentDate = new Date(incident.created_at);
+        const passes = incidentDate >= fromDate;
+        if (!passes) {
+          console.log('❌ Incident filtered out:', {
+            id: incident.id.substring(0, 8),
+            created_at: incident.created_at,
+            incidentDate: incidentDate.toISOString(),
+            fromDate: fromDate.toISOString()
+          });
+        }
+        return passes;
+      });
+      console.log('📅 After from date filter:', filtered.length);
     }
     
     if (selectedDateTo) {
       const toDate = new Date(selectedDateTo);
       toDate.setHours(23, 59, 59, 999);
       
-      // Don't allow filtering beyond current time
-      const now = new Date();
-      const effectiveToDate = toDate > now ? now : toDate;
+      console.log('📅 To date filter:', {
+        selectedDateTo,
+        toDate: toDate.toISOString(),
+        beforeFilter: filtered.length
+      });
       
-      filtered = filtered.filter(incident => 
-        new Date(incident.created_at) <= effectiveToDate
-      );
+      filtered = filtered.filter(incident => {
+        const incidentDate = new Date(incident.created_at);
+        const passes = incidentDate <= toDate;
+        if (!passes) {
+          console.log('❌ Incident filtered out by to date:', {
+            id: incident.id.substring(0, 8),
+            created_at: incident.created_at,
+            incidentDate: incidentDate.toISOString(),
+            toDate: toDate.toISOString()
+          });
+        }
+        return passes;
+      });
+      console.log('📅 After to date filter:', filtered.length);
     }
     
+    console.log('✅ Final filtered incidents:', filtered.length);
     return filtered;
   }, [incidents, selectedSite, selectedGuard, selectedDateFrom, selectedDateTo]);
 
