@@ -345,7 +345,7 @@ const GuardDashboard = () => {
         // Web fallback
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = 'image/jpeg,image/jpg';
+        input.accept = 'image/*';
         input.capture = 'environment';
         
         input.onchange = async (event) => {
@@ -520,10 +520,13 @@ const GuardDashboard = () => {
         // Show success message
         setShowSuccessMessage(true);
         
-        // Hide success message after 3 seconds
+        // Also show quick toast per requirement
+        toast({ description: "Report submitted", duration: 1500 });
+        
+        // Hide success message after 1.5 seconds
         setTimeout(() => {
           setShowSuccessMessage(false);
-        }, 3000);
+        }, 1500);
 
       } else {
         console.log('📝 Submitting without image...');
@@ -564,14 +567,14 @@ const GuardDashboard = () => {
         // Show success message
         setShowSuccessMessage(true);
         
-        // Hide success message after 3 seconds
+        // Hide success message after 1.5 seconds
         setTimeout(() => {
           setShowSuccessMessage(false);
-        }, 3000);
+        }, 1500);
         
         toast({
-          title: "Report Submitted",
-          description: "Your task report has been sent to admin successfully!",
+          description: "Report submitted",
+          duration: 1500,
         });
       }
 
@@ -1360,8 +1363,7 @@ const GuardDashboard = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-green-600 mb-2">REPORT SUBMITTED!</h3>
-            <p className="text-lg font-medium text-foreground">Your security report has been sent to admin successfully.</p>
+            <h3 className="text-xl font-bold text-green-600">Report submitted</h3>
           </div>
         </div>
       )}
