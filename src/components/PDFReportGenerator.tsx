@@ -155,10 +155,10 @@ export class PDFReportGenerator {
     this.doc.setDrawColor(220, 220, 220);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
     
-    // Add subtle header background for better visual separation - smaller height, extended to end of image
-    this.doc.setFillColor(248, 249, 250); // Light gray background
+    // Add professional header background - darker professional color
+    this.doc.setFillColor(31, 41, 55); // Professional dark blue-gray background
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'F'); // Extended to end of image
-    this.doc.setDrawColor(240, 240, 240);
+    this.doc.setDrawColor(55, 65, 81);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'S'); // Extended to end of image
     
     // Main content area - more compact
@@ -170,16 +170,16 @@ export class PDFReportGenerator {
     // Header row with improved styling: Date/Time on left, Report ID on right - smaller header
     const headerY = this.currentY + 6;
     
-    // Left: Date and Time with better formatting
+    // Left: Date and Time with better formatting - white text for professional dark header
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(60, 60, 60); // Dark gray for better readability
+    this.doc.setTextColor(255, 255, 255); // White text for professional dark background
     this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, headerY);
     
-    // Right: Report ID with consistent styling
+    // Right: Report ID with consistent styling - white text
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(100, 100, 100); // Medium gray
+    this.doc.setTextColor(220, 220, 220); // Light gray for secondary text
     const reportIdText = `ID: ${report.id.substring(0, 8)}`;
     const reportIdWidth = this.doc.getTextWidth(reportIdText);
     this.doc.text(reportIdText, this.pageWidth - this.margin - 5 - reportIdWidth, headerY);
