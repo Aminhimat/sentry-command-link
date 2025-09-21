@@ -143,7 +143,7 @@ export class PDFReportGenerator {
   }
 
   private async addReportEntry(report: Report, index: number, company: Company | null, preloadedImages?: Map<string, HTMLImageElement>) {
-    const entryHeight = 50; // Reduced from 80 to fit 5 reports per page
+    const entryHeight = 65; // Increased size for bigger table entries
     // No automatic page addition here since we handle it manually in generateReport
 
     const reportDate = new Date(report.created_at);
@@ -226,10 +226,10 @@ export class PDFReportGenerator {
       }
       
       // Calculate box dimensions to match image size and attach them - positioned on right side, slightly left
-      const boxWidth = 50; // Same width as image
-      const boxHeight = 35; // Same height as image
-      const boxX = this.pageWidth - this.margin - 105; // Moved slightly more to the left
-      const boxY = this.currentY + 8; // Attached with header
+      const boxWidth = 60; // Increased width to match new image size
+      const boxHeight = 40; // Increased height proportionally
+      const boxX = this.pageWidth - this.margin - 115; // Adjusted position for larger box
+      const boxY = this.currentY + 12; // Moved down for better spacing
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
@@ -296,8 +296,8 @@ export class PDFReportGenerator {
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
       // Image positioned with small space after description box - on right side
-      const imageX = this.pageWidth - this.margin - 47; // Small 3px space after description box
-      await this.addImageToEntry(report.image_url, imageX, this.currentY + 8, 50, 35, wmText, preloadedImages?.get(report.image_url));
+      const imageX = this.pageWidth - this.margin - 52; // Adjusted for larger image
+      await this.addImageToEntry(report.image_url, imageX, this.currentY + 12, 60, 40, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
