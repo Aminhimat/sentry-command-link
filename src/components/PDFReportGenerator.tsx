@@ -295,8 +295,8 @@ export class PDFReportGenerator {
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Image positioned to align with content area
-      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 6, 50, 35, wmText, preloadedImages?.get(report.image_url));
+      // Image positioned to align with description box
+      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 10, 50, 35, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
