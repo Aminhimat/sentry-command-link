@@ -225,10 +225,10 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate box dimensions to match image size and attach them - positioned on right side, slightly left
-      const boxWidth = 60; // Increased width to match new image size
-      const boxHeight = 40; // Increased height proportionally
-      const boxX = this.pageWidth - this.margin - 115; // Adjusted position for larger box
+      // Calculate box dimensions - positioned properly within table boundaries
+      const boxWidth = 60; // Width for description box
+      const boxHeight = 40; // Height for description box
+      const boxX = this.pageWidth - this.margin - 125; // Positioned within table boundaries
       const boxY = this.currentY + 12; // Moved down for better spacing
       
       // Draw rectangle border only (no fill)
