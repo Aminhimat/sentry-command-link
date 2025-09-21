@@ -155,11 +155,11 @@ export class PDFReportGenerator {
     this.doc.setDrawColor(220, 220, 220);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
     
-    // Add subtle header background for better visual separation
+    // Add subtle header background for better visual separation - smaller height
     this.doc.setFillColor(248, 249, 250); // Light gray background
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 12, 'F');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 8, 'F');
     this.doc.setDrawColor(240, 240, 240);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 12, 'S');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 8, 'S');
     
     // Main content area - more compact
     const contentY = this.currentY + 4;
@@ -167,8 +167,8 @@ export class PDFReportGenerator {
     const middleColumnX = this.margin + 50;
     const rightColumnX = this.pageWidth - this.margin - 30;
     
-    // Header row with improved styling: Date/Time on left, Report ID on right
-    const headerY = this.currentY + 8;
+    // Header row with improved styling: Date/Time on left, Report ID on right - smaller header
+    const headerY = this.currentY + 6;
     
     // Left: Date and Time with better formatting
     this.doc.setFontSize(9);
@@ -225,11 +225,11 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate box dimensions to fit with other elements
-      const boxWidth = 70;
-      const boxHeight = 28;
+      // Calculate box dimensions to match image size and attach them
+      const boxWidth = 50; // Same width as image
+      const boxHeight = 35; // Same height as image
       const boxX = middleColumnX - 5;
-      const boxY = contentY + 10; // Moved down a bit more to better align with other elements
+      const boxY = contentY + 10; // Aligned with image
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
@@ -289,14 +289,15 @@ export class PDFReportGenerator {
       });
     }
     
-    // Right side - Image with better positioning (no separate ID since it's in header)
+    // Right side - Image attached to description box
     if (report.image_url) {
       // Watermark text: Company name + Guard name + timestamp (will be truncated to fit)
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Image positioned to align with description box
-      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 10, 50, 35, wmText, preloadedImages?.get(report.image_url));
+      // Image positioned right next to description box (attached)
+      const imageX = middleColumnX - 5 + 50; // Right after description box
+      await this.addImageToEntry(report.image_url, imageX, contentY + 10, 50, 35, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
