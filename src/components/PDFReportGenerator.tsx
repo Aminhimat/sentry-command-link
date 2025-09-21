@@ -227,7 +227,7 @@ export class PDFReportGenerator {
       
       // Calculate box dimensions - positioned properly within table boundaries
       const boxWidth = 60; // Width for description box
-      const boxHeight = 40; // Height for description box
+      const boxHeight = 35; // Reduced height to fit within table
       const boxX = this.pageWidth - this.margin - 125; // Positioned within table boundaries
       const boxY = this.currentY + 12; // Moved down for better spacing
       
