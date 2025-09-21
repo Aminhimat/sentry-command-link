@@ -229,7 +229,7 @@ export class PDFReportGenerator {
       const boxWidth = 60; // Width for description box
       const boxHeight = 35; // Reduced height to fit within table
       const boxX = this.pageWidth - this.margin - 125; // Positioned within table boundaries
-      const boxY = this.currentY + 12; // Moved down for better spacing
+      const boxY = this.currentY + 9; // Moved up for better positioning
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
@@ -297,7 +297,7 @@ export class PDFReportGenerator {
 
       // Image positioned with small space after description box - on right side
       const imageX = this.pageWidth - this.margin - 52; // Adjusted for larger image
-      await this.addImageToEntry(report.image_url, imageX, this.currentY + 12, 60, 40, wmText, preloadedImages?.get(report.image_url));
+      await this.addImageToEntry(report.image_url, imageX, this.currentY + 9, 60, 40, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
