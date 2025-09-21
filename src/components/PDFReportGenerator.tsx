@@ -149,11 +149,11 @@ export class PDFReportGenerator {
     const reportDate = new Date(report.created_at);
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
     
-    // Clean white background with subtle border and improved header styling
+    // Clean white background with subtle border and improved header styling - extended to cover all elements
     this.doc.setFillColor(255, 255, 255);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'F');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 8, entryHeight - 2, 'F'); // Extended to cover image
     this.doc.setDrawColor(220, 220, 220);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 8, entryHeight - 2, 'S'); // Extended to cover image
     
     // Add professional header background - darker professional color
     this.doc.setFillColor(31, 41, 55); // Professional dark blue-gray background
