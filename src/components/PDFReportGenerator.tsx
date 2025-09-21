@@ -149,16 +149,43 @@ export class PDFReportGenerator {
     const reportDate = new Date(report.created_at);
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
     
+    // Extract severity level from report text to determine header color
+    let severityLevel = 'none';
+    if (report.report_text) {
+      const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
+      const severityLine = lines.find(line => line.startsWith('Severity:'));
+      if (severityLine) {
+        severityLevel = severityLine.replace('Severity:', '').trim().toLowerCase();
+      }
+    }
+    
     // Clean white background with subtle border and improved header styling - extended to cover all elements
     this.doc.setFillColor(255, 255, 255);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 8, entryHeight - 2, 'F'); // Extended to cover image
     this.doc.setDrawColor(220, 220, 220);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 8, entryHeight - 2, 'S'); // Extended to cover image
     
-    // Add professional header background - darker professional color
-    this.doc.setFillColor(31, 41, 55); // Professional dark blue-gray background
+    // Add dynamic header background based on severity level
+    let headerColor = [31, 41, 55]; // Default professional dark blue-gray
+    let borderColor = [55, 65, 81]; // Default border color
+    
+    if (severityLevel === 'none' || severityLevel === 'low') {
+      headerColor = [34, 197, 94]; // Green
+      borderColor = [22, 163, 74]; // Darker green border
+    } else if (severityLevel === 'medium') {
+      headerColor = [234, 179, 8]; // Yellow
+      borderColor = [202, 138, 4]; // Darker yellow border
+    } else if (severityLevel === 'high') {
+      headerColor = [249, 115, 22]; // Orange
+      borderColor = [234, 88, 12]; // Darker orange border
+    } else if (severityLevel === 'critical') {
+      headerColor = [239, 68, 68]; // Red
+      borderColor = [220, 38, 38]; // Darker red border
+    }
+    
+    this.doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'F'); // Extended to end of image
-    this.doc.setDrawColor(55, 65, 81);
+    this.doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'S'); // Extended to end of image
     
     // Main content area - more compact
