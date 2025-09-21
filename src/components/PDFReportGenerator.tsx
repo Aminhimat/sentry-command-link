@@ -205,9 +205,9 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate bigger box dimensions to fit more text
-      const boxWidth = 80;
-      const boxHeight = 35;
+      // Calculate box dimensions to fit with other elements
+      const boxWidth = 70;
+      const boxHeight = 28;
       const boxX = middleColumnX - 5;
       const boxY = contentY;
       
@@ -224,8 +224,8 @@ export class PDFReportGenerator {
       const maxWidth = boxWidth - 6; // More padding inside box
       const wrappedText = this.doc.splitTextToSize(displayText, maxWidth);
       
-      // Fit up to 4 lines in the larger box
-      const maxLines = 4;
+      // Fit up to 3 lines in the box
+      const maxLines = 3;
       const lineSpacing = 4;
       const totalTextHeight = Math.min(wrappedText.length, maxLines) * lineSpacing;
       const startY = boxY + (boxHeight - totalTextHeight) / 2 + 3;
