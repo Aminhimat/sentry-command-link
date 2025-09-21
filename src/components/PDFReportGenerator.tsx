@@ -285,11 +285,11 @@ export class PDFReportGenerator {
       this.doc.setFontSize(7);
       
       // Display Task and Severity at the bottom with better spacing (exclude Description and Site)
-      let bottomY = contentY + 20; // Increased spacing from 16 to 20 to give more space after Location
-      lines.forEach((line) => {
+      let bottomY = contentY + 25; // Increased spacing from 20 to 25 to give more space after Location
+        lines.forEach((line) => {
         if (line.startsWith('Task:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 5; // Increased spacing from 3 to 5
+          bottomY += 6; // Increased spacing from 5 to 6 for better separation
         } else if (line.startsWith('Severity:')) {
           // Extract severity value and set color
           const severityValue = line.replace('Severity:', '').trim().toLowerCase();
