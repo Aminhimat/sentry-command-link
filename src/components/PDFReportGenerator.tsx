@@ -188,20 +188,26 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Description in middle column with rectangle box - show "Security Patrol" if empty
+      // Display Description in middle column with rectangle box
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
       
-      let displayText = 'Security Patrol'; // Default value
+      let displayText = '';
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
-        if (descriptionValue) {
-          displayText = descriptionValue;
-        }
+        displayText = descriptionValue;
+      } else if (report.report_text) {
+        // If no formatted description, use the entire report text as description
+        displayText = report.report_text.trim();
       }
       
-      // Calculate bigger box dimensions (similar to picture size)
-      const boxWidth = 70;
-      const boxHeight = 30;
+      // Use default if still empty
+      if (!displayText) {
+        displayText = 'Security Patrol';
+      }
+      
+      // Calculate bigger box dimensions to fit more text
+      const boxWidth = 80;
+      const boxHeight = 35;
       const boxX = middleColumnX - 5;
       const boxY = contentY;
       
@@ -209,23 +215,24 @@ export class PDFReportGenerator {
       this.doc.setDrawColor(200, 200, 200); // Gray border
       this.doc.rect(boxX, boxY, boxWidth, boxHeight, 'S'); // S = stroke only
       
-      // Add centered text inside the box
-      this.doc.setFont('helvetica', 'bold');
-      this.doc.setFontSize(8);
+      // Add text inside the box with better sizing
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setFontSize(7);
       this.doc.setTextColor(0, 0, 0);
       
-      // Wrap text if it's too long
-      const maxWidth = boxWidth - 4; // Leave padding inside box
+      // Wrap text if it's too long with more padding
+      const maxWidth = boxWidth - 6; // More padding inside box
       const wrappedText = this.doc.splitTextToSize(displayText, maxWidth);
       
-      // Center the text vertically and horizontally
-      const totalTextHeight = Math.min(wrappedText.length, 2) * 5;
-      const startY = boxY + (boxHeight - totalTextHeight) / 2 + 4;
+      // Fit up to 4 lines in the larger box
+      const maxLines = 4;
+      const lineSpacing = 4;
+      const totalTextHeight = Math.min(wrappedText.length, maxLines) * lineSpacing;
+      const startY = boxY + (boxHeight - totalTextHeight) / 2 + 3;
       
-      for (let j = 0; j < Math.min(wrappedText.length, 2); j++) { // Limit to 2 lines to fit in box
-        const textWidth = this.doc.getTextWidth(wrappedText[j]);
-        const centeredX = boxX + (boxWidth - textWidth) / 2;
-        this.doc.text(wrappedText[j], centeredX, startY + (j * 5));
+      for (let j = 0; j < Math.min(wrappedText.length, maxLines); j++) {
+        const textX = boxX + 3; // Left align with padding
+        this.doc.text(wrappedText[j], textX, startY + (j * lineSpacing));
       }
       this.doc.setFont('helvetica', 'normal'); // Reset to normal
       this.doc.setFontSize(7);
