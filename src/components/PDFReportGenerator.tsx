@@ -46,7 +46,7 @@ export class PDFReportGenerator {
   private pageWidth: number;
   private pageHeight: number;
   private currentY: number;
-  private margin: number = 15;
+  private margin: number = 10;
   private lineHeight: number = 6;
 
   constructor() {
