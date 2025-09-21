@@ -295,8 +295,8 @@ export class PDFReportGenerator {
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Image positioned right next to description box (attached) - on right side
-      const imageX = this.pageWidth - this.margin - 50; // Right after description box on right side
+      // Image positioned with small space after description box - on right side
+      const imageX = this.pageWidth - this.margin - 47; // Small 3px space after description box
       await this.addImageToEntry(report.image_url, imageX, this.currentY + 8, 50, 35, wmText, preloadedImages?.get(report.image_url));
     }
     
