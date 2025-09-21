@@ -143,7 +143,7 @@ export class PDFReportGenerator {
   }
 
   private async addReportEntry(report: Report, index: number, company: Company | null, preloadedImages?: Map<string, HTMLImageElement>) {
-    const entryHeight = 65; // Increased size for bigger table entries
+    const entryHeight = 50; // Reduced to minimize bottom spacing and fit 5 reports per page
     // No automatic page addition here since we handle it manually in generateReport
 
     const reportDate = new Date(report.created_at);
