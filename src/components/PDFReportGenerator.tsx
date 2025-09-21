@@ -225,11 +225,11 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate box dimensions to match image size and attach them
+      // Calculate box dimensions to match image size and attach them - positioned on right side
       const boxWidth = 50; // Same width as image
       const boxHeight = 35; // Same height as image
-      const boxX = middleColumnX - 5;
-      const boxY = contentY + 10; // Aligned with image
+      const boxX = this.pageWidth - this.margin - 100; // Right side positioning
+      const boxY = this.currentY + 8; // Attached with header
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
@@ -295,9 +295,9 @@ export class PDFReportGenerator {
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Image positioned right next to description box (attached)
-      const imageX = middleColumnX - 5 + 50; // Right after description box
-      await this.addImageToEntry(report.image_url, imageX, contentY + 10, 50, 35, wmText, preloadedImages?.get(report.image_url));
+      // Image positioned right next to description box (attached) - on right side
+      const imageX = this.pageWidth - this.margin - 50; // Right after description box on right side
+      await this.addImageToEntry(report.image_url, imageX, this.currentY + 8, 50, 35, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
