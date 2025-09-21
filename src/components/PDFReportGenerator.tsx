@@ -149,11 +149,17 @@ export class PDFReportGenerator {
     const reportDate = new Date(report.created_at);
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
     
-    // Clean white background with subtle border
+    // Clean white background with subtle border and improved header styling
     this.doc.setFillColor(255, 255, 255);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'F');
     this.doc.setDrawColor(220, 220, 220);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
+    
+    // Add subtle header background for better visual separation
+    this.doc.setFillColor(248, 249, 250); // Light gray background
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 12, 'F');
+    this.doc.setDrawColor(240, 240, 240);
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 12, 'S');
     
     // Main content area - more compact
     const contentY = this.currentY + 4;
@@ -161,22 +167,36 @@ export class PDFReportGenerator {
     const middleColumnX = this.margin + 50;
     const rightColumnX = this.pageWidth - this.margin - 30;
     
-    // Header: Date and Time (smaller font)
-    this.doc.setFontSize(10);
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(0, 0, 0);
-    this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, contentY);
+    // Header row with improved styling: Date/Time on left, Report ID on right
+    const headerY = this.currentY + 8;
     
-    // Guard Information (more compact with better spacing)
+    // Left: Date and Time with better formatting
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setTextColor(60, 60, 60); // Dark gray for better readability
+    this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, headerY);
+    
+    // Right: Report ID with consistent styling
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(100, 100, 100); // Medium gray
+    const reportIdText = `ID: ${report.id.substring(0, 8)}`;
+    const reportIdWidth = this.doc.getTextWidth(reportIdText);
+    this.doc.text(reportIdText, this.pageWidth - this.margin - 5 - reportIdWidth, headerY);
+    
+    // Reset text color for body content
+    this.doc.setTextColor(0, 0, 0);
+    
+    // Guard Information (improved positioning after header)
     this.doc.setTextColor(0, 0, 0);
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 8); // Increased spacing from 6 to 8
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 12);
     
     // Location Information (compact with better spacing)
     if (report.location_address) {
       this.doc.setTextColor(0, 0, 0);
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 13); // Increased spacing from 10 to 13
+      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 17);
     }
     
     // Report Content - Display Task in middle column and other fields at bottom
@@ -269,28 +289,14 @@ export class PDFReportGenerator {
       });
     }
     
-    // Right side - Issue ID directly attached to smaller image
+    // Right side - Image with better positioning (no separate ID since it's in header)
     if (report.image_url) {
-      // Issue ID positioned directly above image (smaller)
-      this.doc.setTextColor(0, 0, 0);
-      this.doc.setFontSize(7);
-      this.doc.setFont('helvetica', 'bold');
-      const issueIdText = `${report.id.substring(0, 8)}`;
-      const issueIdWidth = this.doc.getTextWidth(issueIdText);
-      this.doc.text(issueIdText, rightColumnX + (25 - issueIdWidth) / 2, contentY - 1);
-
       // Watermark text: Company name + Guard name + timestamp (will be truncated to fit)
       const companyName = company?.name || 'Security Co';
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
-      // Larger landscape image positioned right below the ID with watermark overlay at bottom
-      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 2, 50, 35, wmText, preloadedImages?.get(report.image_url));
-    } else {
-      // Show issue ID even without image
-      this.doc.setTextColor(0, 0, 0);
-      this.doc.setFontSize(8);
-      this.doc.setFont('helvetica', 'normal');
-      this.doc.text(`Report ID: ${report.id.substring(0, 10)}`, rightColumnX, contentY + 10);
+      // Image positioned to align with content area
+      await this.addImageToEntry(report.image_url, rightColumnX - 15, contentY + 6, 50, 35, wmText, preloadedImages?.get(report.image_url));
     }
     
     this.currentY += entryHeight;
