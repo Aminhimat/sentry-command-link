@@ -229,7 +229,7 @@ export class PDFReportGenerator {
       const boxWidth = 70;
       const boxHeight = 28;
       const boxX = middleColumnX - 5;
-      const boxY = contentY;
+      const boxY = contentY + 6; // Moved down to align with image and other elements
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
