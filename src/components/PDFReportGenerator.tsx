@@ -155,11 +155,11 @@ export class PDFReportGenerator {
     this.doc.setDrawColor(220, 220, 220);
     this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), entryHeight - 2, 'S');
     
-    // Add subtle header background for better visual separation - smaller height
+    // Add subtle header background for better visual separation - smaller height, extended to end of image
     this.doc.setFillColor(248, 249, 250); // Light gray background
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 8, 'F');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'F'); // Extended to end of image
     this.doc.setDrawColor(240, 240, 240);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - (this.margin * 2), 8, 'S');
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'S'); // Extended to end of image
     
     // Main content area - more compact
     const contentY = this.currentY + 4;
@@ -225,10 +225,10 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate box dimensions to match image size and attach them - positioned on right side
+      // Calculate box dimensions to match image size and attach them - positioned on right side, slightly left
       const boxWidth = 50; // Same width as image
       const boxHeight = 35; // Same height as image
-      const boxX = this.pageWidth - this.margin - 100; // Right side positioning
+      const boxX = this.pageWidth - this.margin - 105; // Moved slightly more to the left
       const boxY = this.currentY + 8; // Attached with header
       
       // Draw rectangle border only (no fill)
