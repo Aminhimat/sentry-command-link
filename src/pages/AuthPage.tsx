@@ -147,6 +147,8 @@ const AuthPage = () => {
       const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; // Local time HH:MM:SS
 
       const isAllowed = constraints.some((c: any) => {
+        const hasBoundary = !!(c.start_date || c.end_date || c.start_time || c.end_time);
+        if (!hasBoundary) return false;
         // Date checks
         if (c.start_date && currentDate < c.start_date) return false;
         if (c.end_date && currentDate > c.end_date) return false;

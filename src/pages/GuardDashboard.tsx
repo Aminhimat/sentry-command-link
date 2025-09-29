@@ -328,6 +328,8 @@ const GuardDashboard = () => {
           const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
           const allowed = constraints.some((c: any) => {
+            const hasBoundary = !!(c.start_date || c.end_date || c.start_time || c.end_time);
+            if (!hasBoundary) return false;
             if (c.start_date && currentDate < c.start_date) return false;
             if (c.end_date && currentDate > c.end_date) return false;
             const st = c.start_time ? String(c.start_time).slice(0, 8) : null;

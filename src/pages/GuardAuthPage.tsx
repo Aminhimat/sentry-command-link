@@ -25,8 +25,7 @@ const GuardAuthPage = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Navigate to guard dashboard immediately
-          navigate('/guard');
+          // Session established. Navigation will be handled after validation in handleSignIn.
         }
       }
     );
@@ -68,46 +67,47 @@ const GuardAuthPage = () => {
           .single();
 
         if (profile?.role === 'guard') {
-          // Get login constraints for this guard
-          const { data: constraints } = await supabase
+          // Get ALL active login constraints for this guard
+          const { data: constraints, error: cErr } = await supabase
             .from('guard_login_constraints')
             .select('*')
             .eq('guard_id', profile.id)
-            .eq('is_active', true)
-            .maybeSingle();
+            .eq('is_active', true);
 
-          if (constraints) {
+          if (cErr) {
+            console.error('Failed to load constraints', cErr);
+          }
+
+          if (constraints && constraints.length > 0) {
             const now = new Date();
-            const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-            const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const currentDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`; // YYYY-MM-DD
+            const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; // HH:MM:SS
 
-            // Check date constraints
-            if (constraints.start_date && constraints.end_date) {
-              if (currentDate < constraints.start_date || currentDate > constraints.end_date) {
-                await supabase.auth.signOut();
-                toast({
-                  variant: "destructive",
-                  title: "Access Restricted",
-                  description: `You can only login between ${constraints.start_date} and ${constraints.end_date}.`,
-                });
-                return;
-              }
-            }
+            const allowed = constraints.some((c: any) => {
+              if (c.start_date && currentDate < c.start_date) return false;
+              if (c.end_date && currentDate > c.end_date) return false;
+              const st = c.start_time ? String(c.start_time).slice(0, 8) : null;
+              const et = c.end_time ? String(c.end_time).slice(0, 8) : null;
+              if (st && currentTime < st) return false;
+              if (et && currentTime > et) return false;
+              return true;
+            });
 
-            // Check time constraints
-            if (constraints.start_time && constraints.end_time) {
-              if (currentTime < constraints.start_time || currentTime > constraints.end_time) {
-                await supabase.auth.signOut();
-                toast({
-                  variant: "destructive",
-                  title: "Access Restricted",
-                  description: `You can only login between ${constraints.start_time} and ${constraints.end_time}.`,
-                });
-                return;
-              }
+            if (!allowed) {
+              await supabase.auth.signOut();
+              toast({
+                variant: "destructive",
+                title: "Access Restricted",
+                description: "Login allowed only during scheduled window. Please try again later.",
+              });
+              return;
             }
           }
         }
+
+        // Passed validation
+        navigate('/guard');
       }
       // Remove success toast for faster login - navigation will happen immediately
     } catch (error) {
