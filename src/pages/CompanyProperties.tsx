@@ -89,7 +89,7 @@ const CompanyProperties = () => {
         return;
       }
 
-      if (profile.role !== 'company_admin') {
+      if (profile.role !== 'company_admin' && profile.role !== 'platform_admin') {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access this page",
