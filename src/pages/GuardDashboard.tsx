@@ -311,61 +311,149 @@ const GuardDashboard = () => {
 
 
   const handleCameraCapture = async () => {
-    toast({
-      title: "📸 Camera",
-      description: "Opening camera...",
-    });
-
+    let loadingToast: any;
+    
     try {
-      if (Capacitor.isNativePlatform()) {
-        const image = await CapCamera.getPhoto({
-          quality: 80,
-          allowEditing: false,
-          resultType: CameraResultType.DataUrl,
-          source: CameraSource.Camera,
-          correctOrientation: true,
-        });
+      loadingToast = toast({
+        title: "📸 Camera",
+        description: "Opening camera...",
+      });
 
-        if (image.dataUrl) {
-          const response = await fetch(image.dataUrl);
-          const blob = await response.blob();
-          const file = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          
-          setTaskData(prev => ({ ...prev, image: file }));
-          
-          toast({
-            title: "✅ Photo Captured",
-            description: "Photo captured successfully",
-          });
+      if (Capacitor.isNativePlatform()) {
+        // Retry logic for mobile camera
+        const maxRetries = 3;
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`📸 Camera attempt ${attempt}/${maxRetries}`);
+            
+            // Add timeout wrapper
+            const cameraPromise = CapCamera.getPhoto({
+              quality: 80,
+              allowEditing: false,
+              resultType: CameraResultType.DataUrl,
+              source: CameraSource.Camera,
+              correctOrientation: true,
+              saveToGallery: false,
+            });
+            
+            // 30 second timeout for camera operations
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Camera timeout')), 30000);
+            });
+            
+            const image = await Promise.race([cameraPromise, timeoutPromise]) as any;
+
+            if (image.dataUrl) {
+              console.log(`✅ Camera success on attempt ${attempt}`);
+              
+              const response = await fetch(image.dataUrl);
+              const blob = await response.blob();
+              const file = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              });
+              
+              setTaskData(prev => ({ ...prev, image: file }));
+              
+              toast({
+                title: "✅ Photo Captured",
+                description: "Photo captured successfully",
+              });
+              
+              return; // Success, exit retry loop
+            }
+          } catch (error: any) {
+            lastError = error;
+            console.error(`❌ Camera attempt ${attempt} failed:`, error);
+            
+            // If this is not the last attempt, wait before retry
+            if (attempt < maxRetries) {
+              console.log(`⏳ Retrying in ${attempt} second(s)...`);
+              await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+              
+              // Update toast to show retry
+              toast({
+                title: "🔄 Retrying Camera",
+                description: `Attempt ${attempt + 1} of ${maxRetries}...`,
+              });
+            }
+          }
         }
+        
+        // If we get here, all attempts failed
+        throw lastError || new Error('Camera failed after all retries');
+        
       } else {
-        // Web fallback
+        // Web fallback with better error handling
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         input.capture = 'environment';
         
-        input.onchange = async (event) => {
-          const file = (event.target as HTMLInputElement).files?.[0];
-          if (file) {
-            setTaskData(prev => ({ ...prev, image: file }));
-            toast({
-              title: "✅ Photo Selected",
-              description: "Photo selected successfully",
-            });
-          }
-        };
+        // Wrap in promise to handle user cancellation
+        const filePromise = new Promise<File | null>((resolve, reject) => {
+          let resolved = false;
+          
+          input.onchange = async (event) => {
+            if (resolved) return;
+            resolved = true;
+            
+            const file = (event.target as HTMLInputElement).files?.[0];
+            if (file) {
+              resolve(file);
+            } else {
+              resolve(null);
+            }
+          };
+          
+          // Handle user cancellation
+          const handleFocus = () => {
+            setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                resolve(null);
+              }
+            }, 1000);
+          };
+          
+          window.addEventListener('focus', handleFocus, { once: true });
+        });
         
         input.click();
+        
+        const file = await filePromise;
+        if (file) {
+          setTaskData(prev => ({ ...prev, image: file }));
+          toast({
+            title: "✅ Photo Selected",
+            description: "Photo selected successfully",
+          });
+        } else {
+          toast({
+            title: "📸 Camera Cancelled",
+            description: "Photo selection was cancelled",
+          });
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing camera:', error);
+      
+      let errorMessage = "Could not access camera. Please try again.";
+      
+      // Provide specific error messages
+      if (error.message?.includes('timeout')) {
+        errorMessage = "Camera took too long to respond. Please try again.";
+      } else if (error.message?.includes('permission') || error.message?.includes('denied')) {
+        errorMessage = "Camera permission denied. Please check app permissions.";
+      } else if (error.message?.includes('unavailable') || error.message?.includes('not available')) {
+        errorMessage = "Camera is not available on this device.";
+      }
+      
       toast({
         title: "❌ Camera Error",
-        description: "Could not access camera. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
