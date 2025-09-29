@@ -149,6 +149,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
       'low': { className: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Low' },
       'medium': { className: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Medium' },
       'high': { className: 'bg-red-500 text-white border-red-600 font-bold shadow-md animate-pulse', label: 'HIGH PRIORITY' },
+      'critical': { className: 'bg-red-600 text-white border-red-700 font-bold shadow-lg animate-pulse ring-2 ring-red-300', label: 'CRITICAL' },
       'none': { className: 'bg-gray-100 text-gray-800 border-gray-200', label: 'None' }
     };
     
@@ -262,7 +263,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                   visibleIncidents.map((incident, index) => {
                     const severity = incident.report_text?.includes('Severity: ') ? 
                       incident.report_text.split('Severity: ')[1]?.split('\n')[0] || 'none' : 'none';
-                    const isHighSeverity = severity.toLowerCase() === 'high';
+                    const isHighSeverity = severity.toLowerCase() === 'high' || severity.toLowerCase() === 'critical';
                     
                     return (
                       <tr 
