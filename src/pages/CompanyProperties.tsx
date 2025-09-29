@@ -57,6 +57,8 @@ const CompanyProperties = () => {
     email: "",
     phone: ""
   });
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -203,6 +205,73 @@ const CompanyProperties = () => {
     }
   };
 
+  const handleEditProperty = (property: Property) => {
+    setEditingProperty(property);
+    setNewProperty({
+      name: property.name,
+      location_address: property.location_address || "",
+      email: property.email || "",
+      phone: property.phone || ""
+    });
+    setShowEditForm(true);
+  };
+
+  const handleUpdateProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProperty) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('properties')
+        .update({
+          name: newProperty.name,
+          location_address: newProperty.location_address,
+          email: newProperty.email,
+          phone: newProperty.phone,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingProperty.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Property update error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Property "${data.name}" updated successfully!`,
+      });
+
+      setNewProperty({
+        name: "",
+        location_address: "",
+        email: "",
+        phone: ""
+      });
+      setShowEditForm(false);
+      setEditingProperty(null);
+      
+      // Re-fetch properties for the correct company
+      const companyId = userProfile?.role === 'platform_admin' ? editingProperty.company_id : userProfile?.company_id;
+      if (companyId) {
+        await fetchProperties(companyId);
+      }
+    } catch (error) {
+      console.error('Error updating property:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update property",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -323,6 +392,102 @@ const CompanyProperties = () => {
           </Card>
         )}
 
+        {/* Edit Property Form */}
+        {showEditForm && editingProperty && (
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Edit Property/Site</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setShowEditForm(false);
+                  setEditingProperty(null);
+                  setNewProperty({
+                    name: "",
+                    location_address: "",
+                    email: "",
+                    phone: ""
+                  });
+                }}>
+                  ×
+                </Button>
+              </div>
+              <CardDescription>
+                Update property or site location details
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdateProperty} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-property-name">Property Name *</Label>
+                    <Input
+                      id="edit-property-name"
+                      value={newProperty.name}
+                      onChange={(e) => setNewProperty({ ...newProperty, name: e.target.value })}
+                      placeholder="e.g., Downtown Office Complex"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-property-email">Contact Email</Label>
+                    <Input
+                      id="edit-property-email"
+                      type="email"
+                      value={newProperty.email}
+                      onChange={(e) => setNewProperty({ ...newProperty, email: e.target.value })}
+                      placeholder="contact@property.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-property-address">Full Address *</Label>
+                  <Input
+                    id="edit-property-address"
+                    value={newProperty.location_address}
+                    onChange={(e) => setNewProperty({ ...newProperty, location_address: e.target.value })}
+                    placeholder="Full address of the property"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-property-phone">Contact Phone</Label>
+                  <Input
+                    id="edit-property-phone"
+                    value={newProperty.phone}
+                    onChange={(e) => setNewProperty({ ...newProperty, phone: e.target.value })}
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+
+                <div className="flex gap-4 items-end">
+                  <Button type="submit" className="bg-success hover:bg-success/90 text-success-foreground" disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Update Property"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditForm(false);
+                      setEditingProperty(null);
+                      setNewProperty({
+                        name: "",
+                        location_address: "",
+                        email: "",
+                        phone: ""
+                      });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -377,7 +542,11 @@ const CompanyProperties = () => {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditProperty(property)}
+                            >
                               <Edit className="h-4 w-4 mr-1" />
                               Edit
                             </Button>
