@@ -61,7 +61,14 @@ const AuthPage = () => {
             } else if (role === 'company_admin') {
               navigate('/company');
             } else if (role === 'guard') {
-              navigate('/guard');
+              // Validate guard login constraints before navigating
+              setTimeout(() => {
+                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                  if (allowed) {
+                    navigate('/guard');
+                  }
+                });
+              }, 0);
             } else {
               navigate('/');
             }
@@ -97,7 +104,14 @@ const AuthPage = () => {
           } else if (role === 'company_admin') {
             navigate('/company');
           } else if (role === 'guard') {
-            navigate('/guard');
+            // Validate guard login constraints before navigating
+            setTimeout(() => {
+              validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                if (allowed) {
+                  navigate('/guard');
+                }
+              });
+            }, 0);
           } else {
             navigate('/');
           }
@@ -107,6 +121,65 @@ const AuthPage = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Validate guard login constraints before allowing access
+  const validateGuardLoginAllowed = async (userId: string): Promise<boolean> => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!profile?.id) return true; // No profile found, do not block
+
+      const { data: constraints } = await supabase
+        .from('guard_login_constraints')
+        .select('*')
+        .eq('guard_id', profile.id)
+        .eq('is_active', true);
+
+      if (!constraints || constraints.length === 0) return true; // No constraints means no restriction
+
+      const now = new Date();
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const currentDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`; // Local date
+      const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`; // Local time HH:MM:SS
+
+      const isAllowed = constraints.some((c: any) => {
+        // Date checks
+        if (c.start_date && currentDate < c.start_date) return false;
+        if (c.end_date && currentDate > c.end_date) return false;
+        // Time checks (if provided)
+        const st = c.start_time ? String(c.start_time).slice(0, 8) : null;
+        const et = c.end_time ? String(c.end_time).slice(0, 8) : null;
+        if (st && currentTime < st) return false;
+        if (et && currentTime > et) return false;
+        return true;
+      });
+
+      if (!isAllowed) {
+        await supabase.auth.signOut();
+        toast({
+          variant: "destructive",
+          title: "Access Restricted",
+          description: "Login allowed only during scheduled window. Please try again later.",
+        });
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Constraint validation error', err);
+      await supabase.auth.signOut();
+      toast({
+        variant: "destructive",
+        title: "Access Restricted",
+        description: "Unable to verify login restrictions. Please contact your admin.",
+      });
+      return false;
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

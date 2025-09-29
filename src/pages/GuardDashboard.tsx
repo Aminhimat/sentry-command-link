@@ -306,6 +306,61 @@ const GuardDashboard = () => {
       return;
     }
 
+    // Enforce login restrictions for guards
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profile?.id) {
+        const { data: constraints } = await supabase
+          .from('guard_login_constraints')
+          .select('*')
+          .eq('guard_id', profile.id)
+          .eq('is_active', true);
+
+        if (constraints && constraints.length > 0) {
+          const now = new Date();
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          const currentDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+          const allowed = constraints.some((c: any) => {
+            if (c.start_date && currentDate < c.start_date) return false;
+            if (c.end_date && currentDate > c.end_date) return false;
+            const st = c.start_time ? String(c.start_time).slice(0, 8) : null;
+            const et = c.end_time ? String(c.end_time).slice(0, 8) : null;
+            if (st && currentTime < st) return false;
+            if (et && currentTime > et) return false;
+            return true;
+          });
+
+          if (!allowed) {
+            await supabase.auth.signOut();
+            toast({
+              variant: 'destructive',
+              title: 'Access Restricted',
+              description: 'Login allowed only during scheduled window. Please try again later.',
+            });
+            navigate('/auth');
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Restriction validation failed', error);
+      await supabase.auth.signOut();
+      toast({
+        variant: 'destructive',
+        title: 'Access Restricted',
+        description: 'Unable to verify login restrictions. Please contact your admin.',
+      });
+      navigate('/auth');
+      return;
+    }
+
     setUser(user);
   };
 
