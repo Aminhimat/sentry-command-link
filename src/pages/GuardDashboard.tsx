@@ -1585,7 +1585,7 @@ const GuardDashboard = () => {
                   <SelectTrigger className={!taskData.taskType ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select a task type" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectContent className="bg-background border shadow-xl z-[9999] backdrop-blur-sm">
                     <SelectItem value="security-patrol">Security Patrol</SelectItem>
                     <SelectItem value="supervisor-visit">Supervisor Visit</SelectItem>
                     <SelectItem value="perimeter-check">Perimeter Check</SelectItem>
@@ -1666,7 +1666,7 @@ const GuardDashboard = () => {
                              <SelectTrigger className="pl-10">
                                <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
                              </SelectTrigger>
-                             <SelectContent className="bg-background border border-border shadow-lg z-50">
+                             <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
                                {loadingProperties ? (
                                  <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
                                ) : properties.length === 0 ? (
@@ -1786,7 +1786,7 @@ const GuardDashboard = () => {
                   <SelectTrigger className={!taskData.severity ? "border-red-300" : "border-green-300"}>
                     <SelectValue placeholder="Select issue severity" />
                   </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectContent className="bg-background border shadow-xl z-[9999] backdrop-blur-sm">
                     <SelectItem value="none">None</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
