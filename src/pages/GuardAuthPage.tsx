@@ -45,7 +45,7 @@ const GuardAuthPage = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -56,6 +56,58 @@ const GuardAuthPage = () => {
           title: "Sign in failed",
           description: error.message,
         });
+        return;
+      }
+
+      if (authData.user) {
+        // Check if user is a guard and validate login constraints
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, role, company_id')
+          .eq('user_id', authData.user.id)
+          .single();
+
+        if (profile?.role === 'guard') {
+          // Get login constraints for this guard
+          const { data: constraints } = await supabase
+            .from('guard_login_constraints')
+            .select('*')
+            .eq('guard_id', profile.id)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (constraints) {
+            const now = new Date();
+            const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+            const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+
+            // Check date constraints
+            if (constraints.start_date && constraints.end_date) {
+              if (currentDate < constraints.start_date || currentDate > constraints.end_date) {
+                await supabase.auth.signOut();
+                toast({
+                  variant: "destructive",
+                  title: "Access Restricted",
+                  description: `You can only login between ${constraints.start_date} and ${constraints.end_date}.`,
+                });
+                return;
+              }
+            }
+
+            // Check time constraints
+            if (constraints.start_time && constraints.end_time) {
+              if (currentTime < constraints.start_time || currentTime > constraints.end_time) {
+                await supabase.auth.signOut();
+                toast({
+                  variant: "destructive",
+                  title: "Access Restricted",
+                  description: `You can only login between ${constraints.start_time} and ${constraints.end_time}.`,
+                });
+                return;
+              }
+            }
+          }
+        }
       }
       // Remove success toast for faster login - navigation will happen immediately
     } catch (error) {
