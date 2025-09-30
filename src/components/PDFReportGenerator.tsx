@@ -73,11 +73,12 @@ export class PDFReportGenerator {
   }
 
   private addPageNumber() {
-    const pageCount = this.doc.getNumberOfPages();
+    const currentPage = this.doc.getCurrentPageInfo().pageNumber;
+    const totalPages = this.doc.getNumberOfPages();
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
     this.doc.setTextColor(128, 128, 128);
-    const pageText = `Page ${pageCount}`;
+    const pageText = `${currentPage} of ${totalPages}`;
     const textWidth = this.doc.getTextWidth(pageText);
     this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
     this.doc.setTextColor(0, 0, 0); // Reset to black
@@ -182,8 +183,8 @@ export class PDFReportGenerator {
     let borderColor = [55, 65, 81]; // Default border color
     
     if (severityLevel === 'none' || severityLevel === 'low') {
-      headerColor = [128, 128, 128]; // Dark grey
-      borderColor = [96, 96, 96]; // Darker border
+      headerColor = [169, 169, 169]; // Grey
+      borderColor = [128, 128, 128]; // Darker border
     } else if (severityLevel === 'medium') {
       headerColor = [234, 179, 8]; // Yellow
       borderColor = [202, 138, 4]; // Darker yellow border
@@ -549,6 +550,19 @@ export class PDFReportGenerator {
 
     // Add page number to the last page
     this.addPageNumber();
+
+    // Update all page numbers to show total
+    const totalPages = this.doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      this.doc.setPage(i);
+      this.doc.setFontSize(9);
+      this.doc.setFont('helvetica', 'normal');
+      this.doc.setTextColor(128, 128, 128);
+      const pageText = `${i} of ${totalPages}`;
+      const textWidth = this.doc.getTextWidth(pageText);
+      this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
+    }
+    this.doc.setTextColor(0, 0, 0);
 
     // Generate filename
     const startDate = new Date(reportFilters.startDate);
