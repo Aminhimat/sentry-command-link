@@ -92,6 +92,8 @@ const AdminDashboard = () => {
   const [selectedCompanyForDelete, setSelectedCompanyForDelete] = useState<{ id: string; name: string } | null>(null);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [resetPasswordEmail, setResetPasswordEmail] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -508,7 +510,7 @@ const AdminDashboard = () => {
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to reset the password for:\n${resetPasswordEmail}\n\nA temporary password will be sent to their email.`
+      `Are you sure you want to reset the password for:\n${resetPasswordEmail}\n\nA new temporary password will be generated and displayed for you to send to the admin.`
     );
 
     if (!confirmed) return;
@@ -527,22 +529,16 @@ const AdminDashboard = () => {
         throw new Error(error.message || 'Failed to reset password');
       }
 
-      if (data.warning) {
-        toast({
-          title: "Password Reset",
-          description: `Password reset but email failed. Temporary password: ${data.temporaryPassword}`,
-          duration: 15000,
-        });
-        alert(`Password reset successfully!\n\nTemporary Password: ${data.temporaryPassword}\n\nPlease save this and share it with the admin.`);
-      } else {
+      if (data.success && data.temporaryPassword) {
+        setTempPassword(data.temporaryPassword);
+        setShowResetPasswordDialog(false);
+        setShowPasswordDialog(true);
+        setResetPasswordEmail("");
         toast({
           title: "Success",
-          description: `Password reset successfully! A temporary password has been sent to ${resetPasswordEmail}`,
+          description: "Password reset successfully",
         });
       }
-
-      setShowResetPasswordDialog(false);
-      setResetPasswordEmail("");
     } catch (error) {
       console.error('Error resetting password:', error);
       toast({
@@ -1232,58 +1228,107 @@ const AdminDashboard = () => {
            </div>
          )}
 
-        {/* Reset Admin Password Dialog */}
-        {showResetPasswordDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Reset Company Admin Password</CardTitle>
-                <CardDescription className="text-sm">
-                  Enter the admin's email address to send them a new temporary password
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-sm">Admin Email Address</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="admin@company.com"
-                    value={resetPasswordEmail}
-                    onChange={(e) => setResetPasswordEmail(e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
+         {/* Reset Admin Password Dialog */}
+         {showResetPasswordDialog && (
+           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+             <Card className="w-full max-w-md mx-auto">
+               <CardHeader>
+                 <CardTitle className="text-lg sm:text-xl">Reset Company Admin Password</CardTitle>
+                 <CardDescription className="text-sm">
+                   Enter the admin's email address to generate a new temporary password
+                 </CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="space-y-2">
+                   <Label htmlFor="reset-email" className="text-sm">Admin Email Address</Label>
+                   <Input
+                     id="reset-email"
+                     type="email"
+                     placeholder="admin@company.com"
+                     value={resetPasswordEmail}
+                     onChange={(e) => setResetPasswordEmail(e.target.value)}
+                     className="text-sm"
+                   />
+                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowResetPasswordDialog(false);
-                      setResetPasswordEmail("");
-                    }}
-                    className="flex-1 text-sm"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleResetAdminPassword}
-                    disabled={isLoading || !resetPasswordEmail}
-                    className="flex-1 text-sm bg-primary hover:bg-primary/90"
-                  >
-                    <KeyRound className="h-4 w-4 mr-2" />
-                    {isLoading ? "Resetting..." : "Reset Password"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                 <div className="flex flex-col sm:flex-row gap-2">
+                   <Button
+                     variant="outline"
+                     onClick={() => {
+                       setShowResetPasswordDialog(false);
+                       setResetPasswordEmail("");
+                     }}
+                     className="flex-1 text-sm"
+                   >
+                     Cancel
+                   </Button>
+                   <Button
+                     onClick={handleResetAdminPassword}
+                     disabled={isLoading || !resetPasswordEmail}
+                     className="flex-1 text-sm bg-primary hover:bg-primary/90"
+                   >
+                     <KeyRound className="h-4 w-4 mr-2" />
+                     {isLoading ? "Resetting..." : "Reset Password"}
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+         )}
 
-       </div>
+         {/* Temporary Password Display Dialog */}
+         {showPasswordDialog && (
+           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+             <Card className="w-full max-w-md mx-auto">
+               <CardHeader>
+                 <CardTitle className="text-lg sm:text-xl">Temporary Password Generated</CardTitle>
+                 <CardDescription className="text-sm">
+                   Copy this password and send it to the admin. They should change it immediately after logging in.
+                 </CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="bg-muted p-4 rounded-md border-2 border-primary/20">
+                   <p className="text-2xl font-mono font-bold text-center break-all select-all">
+                     {tempPassword}
+                   </p>
+                 </div>
+                 <p className="text-xs text-muted-foreground text-center">
+                   Click the password to select it, then copy it
+                 </p>
 
-     </div>
-   );
- };
+                 <div className="flex flex-col sm:flex-row gap-2">
+                   <Button
+                     variant="outline"
+                     onClick={() => {
+                       navigator.clipboard.writeText(tempPassword);
+                       toast({
+                         title: "Copied",
+                         description: "Password copied to clipboard",
+                       });
+                     }}
+                     className="flex-1 text-sm"
+                   >
+                     Copy Password
+                   </Button>
+                   <Button
+                     onClick={() => {
+                       setShowPasswordDialog(false);
+                       setTempPassword("");
+                     }}
+                     className="flex-1 text-sm"
+                   >
+                     Close
+                   </Button>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+         )}
 
- export default AdminDashboard;
+        </div>
+
+      </div>
+    );
+  };
+
+  export default AdminDashboard;

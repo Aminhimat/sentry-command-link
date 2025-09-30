@@ -168,25 +168,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Password updated successfully for user:', user.id);
 
-    // Send email with temporary password
-    const emailSent = await sendPasswordResetEmail(adminEmail, tempPassword);
-
-    if (!emailSent) {
-      console.error('Failed to send password reset email');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          warning: 'Password reset but email could not be sent',
-          temporaryPassword: tempPassword
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Return the temporary password to be displayed in the dashboard
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Password reset successfully and email sent'
+        message: 'Password reset successfully',
+        temporaryPassword: tempPassword
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
