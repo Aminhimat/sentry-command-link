@@ -296,55 +296,59 @@ export class PDFReportGenerator {
       this.doc.setFont('helvetica', 'normal'); // Reset to normal
       this.doc.setFontSize(7);
       
-      // Display Task and Severity at the bottom with better spacing (exclude Description and Site)
-      let bottomY = contentY + 25; // Increased spacing from 20 to 25 to give more space after Location
-        lines.forEach((line) => {
+      // Display Task in the middle area
+      let bottomY = contentY + 25;
+      lines.forEach((line) => {
         if (line.startsWith('Task:')) {
           this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 6; // Increased spacing from 5 to 6 for better separation
-        } else if (line.startsWith('Severity:')) {
-          // Extract severity value and create colored label badge
-          const severityValue = line.replace('Severity:', '').trim().toLowerCase();
-          const severityText = `Severity: ${severityValue.charAt(0).toUpperCase() + severityValue.slice(1)}`;
-          
-          // Determine label color based on severity level
-          let labelColor = [156, 163, 175]; // Default light gray
-          let labelBorderColor = [107, 114, 128]; // Default border
-          
-          if (severityValue === 'none' || severityValue === 'low') {
-            labelColor = [34, 197, 94]; // Bright green
-            labelBorderColor = [22, 163, 74]; // Darker green border
-          } else if (severityValue === 'medium') {
-            labelColor = [234, 179, 8]; // Yellow
-            labelBorderColor = [202, 138, 4]; // Darker yellow border
-          } else if (severityValue === 'high') {
-            labelColor = [249, 115, 22]; // Orange
-            labelBorderColor = [234, 88, 12]; // Darker orange border
-          } else if (severityValue === 'critical') {
-            labelColor = [239, 68, 68]; // Red
-            labelBorderColor = [220, 38, 38]; // Darker red border
-          }
-          
-          // Draw colored label background
-          const labelWidth = this.doc.getTextWidth(severityText) + 4;
-          const labelHeight = 5;
-          this.doc.setFillColor(labelColor[0], labelColor[1], labelColor[2]);
-          this.doc.rect(leftColumnX, bottomY - 3.5, labelWidth, labelHeight, 'F');
-          this.doc.setDrawColor(labelBorderColor[0], labelBorderColor[1], labelBorderColor[2]);
-          this.doc.rect(leftColumnX, bottomY - 3.5, labelWidth, labelHeight, 'S');
-          
-          // Draw white text on colored background
-          this.doc.setTextColor(255, 255, 255);
-          this.doc.setFont('helvetica', 'bold');
-          this.doc.text(severityText, leftColumnX + 2, bottomY);
-          
-          // Reset styling
-          this.doc.setTextColor(0, 0, 0);
-          this.doc.setFont('helvetica', 'normal');
-          
-          bottomY += 5;
+          bottomY += 6;
         }
       });
+      
+      // Display Severity label at the very bottom of the table entry
+      const severityLine = lines.find(line => line.startsWith('Severity:'));
+      if (severityLine) {
+        const severityValue = severityLine.replace('Severity:', '').trim().toLowerCase();
+        const severityText = `Severity: ${severityValue.charAt(0).toUpperCase() + severityValue.slice(1)}`;
+        
+        // Determine label color based on severity level
+        let labelColor = [156, 163, 175]; // Default light gray
+        let labelBorderColor = [107, 114, 128]; // Default border
+        
+        if (severityValue === 'none' || severityValue === 'low') {
+          labelColor = [34, 197, 94]; // Bright green
+          labelBorderColor = [22, 163, 74]; // Darker green border
+        } else if (severityValue === 'medium') {
+          labelColor = [234, 179, 8]; // Yellow
+          labelBorderColor = [202, 138, 4]; // Darker yellow border
+        } else if (severityValue === 'high') {
+          labelColor = [249, 115, 22]; // Orange
+          labelBorderColor = [234, 88, 12]; // Darker orange border
+        } else if (severityValue === 'critical') {
+          labelColor = [239, 68, 68]; // Red
+          labelBorderColor = [220, 38, 38]; // Darker red border
+        }
+        
+        // Position at bottom of table entry (entryHeight is 50)
+        const labelBottomY = this.currentY + entryHeight - 6;
+        const labelWidth = this.doc.getTextWidth(severityText) + 4;
+        const labelHeight = 5;
+        
+        // Draw colored label background
+        this.doc.setFillColor(labelColor[0], labelColor[1], labelColor[2]);
+        this.doc.rect(leftColumnX, labelBottomY - 3.5, labelWidth, labelHeight, 'F');
+        this.doc.setDrawColor(labelBorderColor[0], labelBorderColor[1], labelBorderColor[2]);
+        this.doc.rect(leftColumnX, labelBottomY - 3.5, labelWidth, labelHeight, 'S');
+        
+        // Draw white text on colored background
+        this.doc.setTextColor(255, 255, 255);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.text(severityText, leftColumnX + 2, labelBottomY);
+        
+        // Reset styling
+        this.doc.setTextColor(0, 0, 0);
+        this.doc.setFont('helvetica', 'normal');
+      }
     }
     
     // Right side - Image attached to description box
