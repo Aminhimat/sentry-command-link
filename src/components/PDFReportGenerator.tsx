@@ -303,27 +303,46 @@ export class PDFReportGenerator {
           this.doc.text(line.trim(), leftColumnX, bottomY);
           bottomY += 6; // Increased spacing from 5 to 6 for better separation
         } else if (line.startsWith('Severity:')) {
-          // Extract severity value and set color
+          // Extract severity value and create colored label badge
           const severityValue = line.replace('Severity:', '').trim().toLowerCase();
+          const severityText = `Severity: ${severityValue.charAt(0).toUpperCase() + severityValue.slice(1)}`;
           
-          // Set color based on severity level
+          // Determine label color based on severity level
+          let labelColor = [156, 163, 175]; // Default light gray
+          let labelBorderColor = [107, 114, 128]; // Default border
+          
           if (severityValue === 'none' || severityValue === 'low') {
-            this.doc.setTextColor(34, 197, 94); // Bright green
+            labelColor = [34, 197, 94]; // Bright green
+            labelBorderColor = [22, 163, 74]; // Darker green border
           } else if (severityValue === 'medium') {
-            this.doc.setTextColor(234, 179, 8); // Yellow
+            labelColor = [234, 179, 8]; // Yellow
+            labelBorderColor = [202, 138, 4]; // Darker yellow border
           } else if (severityValue === 'high') {
-            this.doc.setTextColor(249, 115, 22); // Orange
+            labelColor = [249, 115, 22]; // Orange
+            labelBorderColor = [234, 88, 12]; // Darker orange border
           } else if (severityValue === 'critical') {
-            this.doc.setTextColor(239, 68, 68); // Red
-          } else {
-            this.doc.setTextColor(0, 0, 0); // Default black
+            labelColor = [239, 68, 68]; // Red
+            labelBorderColor = [220, 38, 38]; // Darker red border
           }
           
-          this.doc.text(line.trim(), leftColumnX, bottomY);
-          bottomY += 5; // Increased spacing from 3 to 5
+          // Draw colored label background
+          const labelWidth = this.doc.getTextWidth(severityText) + 4;
+          const labelHeight = 5;
+          this.doc.setFillColor(labelColor[0], labelColor[1], labelColor[2]);
+          this.doc.rect(leftColumnX, bottomY - 3.5, labelWidth, labelHeight, 'F');
+          this.doc.setDrawColor(labelBorderColor[0], labelBorderColor[1], labelBorderColor[2]);
+          this.doc.rect(leftColumnX, bottomY - 3.5, labelWidth, labelHeight, 'S');
           
-          // Reset color to black for other text
+          // Draw white text on colored background
+          this.doc.setTextColor(255, 255, 255);
+          this.doc.setFont('helvetica', 'bold');
+          this.doc.text(severityText, leftColumnX + 2, bottomY);
+          
+          // Reset styling
           this.doc.setTextColor(0, 0, 0);
+          this.doc.setFont('helvetica', 'normal');
+          
+          bottomY += 5;
         }
       });
     }
