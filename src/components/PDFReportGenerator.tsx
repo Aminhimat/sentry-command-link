@@ -182,8 +182,8 @@ export class PDFReportGenerator {
     let borderColor = [55, 65, 81]; // Default border color
     
     if (severityLevel === 'none' || severityLevel === 'low') {
-      headerColor = [203, 213, 225]; // Lighter cloud gray
-      borderColor = [148, 163, 184]; // Slate gray border
+      headerColor = [226, 232, 240]; // Lighter cloud gray
+      borderColor = [156, 163, 175]; // Medium gray border
     } else if (severityLevel === 'medium') {
       headerColor = [234, 179, 8]; // Yellow
       borderColor = [202, 138, 4]; // Darker yellow border
@@ -330,9 +330,9 @@ export class PDFReportGenerator {
         }
         
         // Position at bottom of table entry (entryHeight is 50)
-        const labelBottomY = this.currentY + entryHeight - 6;
+        const labelBottomY = this.currentY + entryHeight - 7;
         const labelWidth = this.doc.getTextWidth(severityText) + 40;
-        const labelHeight = 5;
+        const labelHeight = 6;
         
         // Draw colored label background
         this.doc.setFillColor(labelColor[0], labelColor[1], labelColor[2]);
