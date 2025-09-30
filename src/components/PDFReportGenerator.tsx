@@ -420,9 +420,9 @@ export class PDFReportGenerator {
       // Draw and compress image
       ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
       
-      // Convert to JPEG with high quality (0.95 for better image quality)
-      const imageData = canvas.toDataURL('image/jpeg', 0.95);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
+      // Convert to JPEG with moderate quality (0.7 for better compression)
+      const imageData = canvas.toDataURL('image/jpeg', 0.7);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
