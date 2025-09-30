@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, CalendarIcon, FileText, Download, Database } from "lucide-react";
+import { Shield, Plus, Building, Users, Activity, BarChart3, Trash2, MapPin, Calendar, CalendarIcon, FileText, Download, Database, KeyRound } from "lucide-react";
 import CompanyAnalytics from "@/components/CompanyAnalytics";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -90,6 +90,8 @@ const AdminDashboard = () => {
   const [deleteEndDate, setDeleteEndDate] = useState<Date>();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedCompanyForDelete, setSelectedCompanyForDelete] = useState<{ id: string; name: string } | null>(null);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [resetPasswordEmail, setResetPasswordEmail] = useState("");
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -493,6 +495,64 @@ const AdminDashboard = () => {
 
   const handleChangePassword = () => {
     window.location.href = '/change-password?voluntary=true';
+  };
+
+  const handleResetAdminPassword = async () => {
+    if (!resetPasswordEmail) {
+      toast({
+        title: "Error",
+        description: "Please enter an admin email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to reset the password for:\n${resetPasswordEmail}\n\nA temporary password will be sent to their email.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('reset-company-admin-password', {
+        body: {
+          adminEmail: resetPasswordEmail
+        }
+      });
+
+      if (error) {
+        console.error('Error resetting password:', error);
+        throw new Error(error.message || 'Failed to reset password');
+      }
+
+      if (data.warning) {
+        toast({
+          title: "Password Reset",
+          description: `Password reset but email failed. Temporary password: ${data.temporaryPassword}`,
+          duration: 15000,
+        });
+        alert(`Password reset successfully!\n\nTemporary Password: ${data.temporaryPassword}\n\nPlease save this and share it with the admin.`);
+      } else {
+        toast({
+          title: "Success",
+          description: `Password reset successfully! A temporary password has been sent to ${resetPasswordEmail}`,
+        });
+      }
+
+      setShowResetPasswordDialog(false);
+      setResetPasswordEmail("");
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to reset password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBulkDeleteReports = (companyId: string, companyName: string) => {
@@ -1022,6 +1082,16 @@ const AdminDashboard = () => {
                         >
                           View Details
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowResetPasswordDialog(true)}
+                          disabled={isLoading}
+                          className="w-full sm:w-auto text-xs sm:text-sm"
+                        >
+                          <KeyRound className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          Reset Admin Password
+                        </Button>
                         <Button 
                           variant="secondary" 
                           size="sm"
@@ -1161,6 +1231,54 @@ const AdminDashboard = () => {
              </Card>
            </div>
          )}
+
+        {/* Reset Admin Password Dialog */}
+        {showResetPasswordDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md mx-auto">
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Reset Company Admin Password</CardTitle>
+                <CardDescription className="text-sm">
+                  Enter the admin's email address to send them a new temporary password
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email" className="text-sm">Admin Email Address</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="admin@company.com"
+                    value={resetPasswordEmail}
+                    onChange={(e) => setResetPasswordEmail(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowResetPasswordDialog(false);
+                      setResetPasswordEmail("");
+                    }}
+                    className="flex-1 text-sm"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleResetAdminPassword}
+                    disabled={isLoading || !resetPasswordEmail}
+                    className="flex-1 text-sm bg-primary hover:bg-primary/90"
+                  >
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    {isLoading ? "Resetting..." : "Reset Password"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
        </div>
 

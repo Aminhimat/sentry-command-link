@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.bulk-delete-reports]
 verify_jwt = false
+
+[functions.reset-company-admin-password]
+verify_jwt = false
