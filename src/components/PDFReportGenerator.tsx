@@ -196,9 +196,9 @@ export class PDFReportGenerator {
     }
     
     this.doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'F'); // Extended to end of image
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 7, 'F'); // Extended to end of image
     this.doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 8, 'S'); // Extended to end of image
+    this.doc.rect(this.margin, this.currentY, this.pageWidth - this.margin + 3, 7, 'S'); // Extended to end of image
     
     // Main content area - more compact
     const contentY = this.currentY + 4;
