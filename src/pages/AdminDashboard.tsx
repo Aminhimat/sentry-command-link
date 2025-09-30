@@ -94,6 +94,7 @@ const AdminDashboard = () => {
   const [resetPasswordEmail, setResetPasswordEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -531,6 +532,7 @@ const AdminDashboard = () => {
 
       if (data.success && data.temporaryPassword) {
         setTempPassword(data.temporaryPassword);
+        setEmailSent(typeof data.emailSent === 'boolean' ? data.emailSent : null);
         setShowResetPasswordDialog(false);
         setShowPasswordDialog(true);
         setResetPasswordEmail("");
@@ -1295,6 +1297,12 @@ const AdminDashboard = () => {
                  <p className="text-xs text-muted-foreground text-center">
                    Click the password to select it, then copy it
                  </p>
+                 {emailSent === true && (
+                   <p className="text-xs text-success text-center">Email sent to admin</p>
+                 )}
+                 {emailSent === false && (
+                   <p className="text-xs text-warning text-center">Email couldn't be sent. Please share manually.</p>
+                 )}
 
                  <div className="flex flex-col sm:flex-row gap-2">
                    <Button
@@ -1311,13 +1319,14 @@ const AdminDashboard = () => {
                      Copy Password
                    </Button>
                    <Button
-                     onClick={() => {
-                       setShowPasswordDialog(false);
-                       setTempPassword("");
-                     }}
-                     className="flex-1 text-sm"
-                   >
-                     Close
+                      onClick={() => {
+                        setShowPasswordDialog(false);
+                        setTempPassword("");
+                        setEmailSent(null);
+                      }}
+                      className="flex-1 text-sm"
+                    >
+                      Close
                    </Button>
                  </div>
                </CardContent>
