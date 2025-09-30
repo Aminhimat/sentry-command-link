@@ -27,6 +27,11 @@ const AuthPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Don't redirect if already on change-password page
+    if (window.location.pathname === '/change-password') {
+      return;
+    }
+    
     // Check URL params for guard mode
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mode') === 'guard') {
@@ -38,6 +43,11 @@ const AuthPage = () => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Don't redirect if already on change-password page
+        if (window.location.pathname === '/change-password') {
+          return;
+        }
         
         // Handle redirect after authentication
         if (session?.user) {

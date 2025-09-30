@@ -33,13 +33,22 @@ const ChangePasswordPage = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const isVoluntary = urlParams.get('voluntary') === 'true';
       
+      // Check database flag for required password change
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('requires_password_change')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
       // If not voluntary, check if user needs to change password
-      const mustChangePassword = user.user_metadata?.must_change_password;
+      const mustChangePassword = user.user_metadata?.must_change_password || profile?.requires_password_change;
       if (!mustChangePassword && !isVoluntary) {
         // Redirect to appropriate dashboard based on role
         const role = user.user_metadata?.role;
         if (role === 'platform_admin') {
           window.location.href = '/admin';
+        } else if (role === 'company_admin') {
+          window.location.href = '/company';
         } else {
           window.location.href = '/';
         }
