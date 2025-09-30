@@ -64,11 +64,23 @@ export class PDFReportGenerator {
 
   private addPageIfNeeded(requiredHeight: number = 30) {
     if (this.currentY + requiredHeight > this.pageHeight - this.margin) {
+      this.addPageNumber(); // Add page number before creating new page
       this.doc.addPage();
       this.currentY = this.margin;
       return true; // Indicate that a new page was added
     }
     return false; // No new page was added
+  }
+
+  private addPageNumber() {
+    const pageCount = this.doc.getNumberOfPages();
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.setTextColor(128, 128, 128);
+    const pageText = `Page ${pageCount}`;
+    const textWidth = this.doc.getTextWidth(pageText);
+    this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
+    this.doc.setTextColor(0, 0, 0); // Reset to black
   }
 
   private async drawHeader(company: Company | null, reportFilters: any) {
@@ -366,9 +378,9 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized canvas size for smaller PDF while maintaining quality
-      const maxWidth = 200;
-      const maxHeight = 200;
+      // Optimized canvas size for better quality
+      const maxWidth = 600;
+      const maxHeight = 600;
       
       let { width: imgWidth, height: imgHeight } = img;
       
@@ -385,9 +397,9 @@ export class PDFReportGenerator {
       // Draw and compress image
       ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
       
-      // Convert to JPEG with higher quality
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+      // Convert to JPEG with high quality (0.95 for better image quality)
+      const imageData = canvas.toDataURL('image/jpeg', 0.95);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
@@ -503,6 +515,7 @@ export class PDFReportGenerator {
     for (let i = 0; i < reports.length; i++) {
       // Add new page and header after every 5 reports (except the first page)
       if (i > 0 && i % 5 === 0) {
+        this.addPageNumber(); // Add page number to previous page
         this.doc.addPage();
         this.currentY = this.margin;
         await this.drawHeader(company, reportFilters);
@@ -510,6 +523,9 @@ export class PDFReportGenerator {
       
       await this.addReportEntry(reports[i], i, company, preloadedImages);
     }
+
+    // Add page number to the last page
+    this.addPageNumber();
 
     // Generate filename
     const startDate = new Date(reportFilters.startDate);
