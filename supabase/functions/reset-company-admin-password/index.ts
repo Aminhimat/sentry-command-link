@@ -106,32 +106,59 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { adminEmail }: ResetPasswordRequest = await req.json();
 
-    console.log('Resetting password for admin email:', adminEmail);
+    // Normalize email: trim and lowercase
+    const normalizedEmail = adminEmail.trim().toLowerCase();
 
-    if (!adminEmail) {
+    console.log('Resetting password for admin email:', normalizedEmail);
+
+    if (!normalizedEmail) {
       return new Response(
         JSON.stringify({ error: 'Admin email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Find the user by email
-    const { data: userData, error: userLookupError } = await supabaseAdmin.auth.admin.listUsers();
+    // Find the user by email (with pagination support)
+    let allUsers: any[] = [];
+    let page = 1;
+    const perPage = 1000;
     
-    if (userLookupError) {
-      console.error('Error looking up user:', userLookupError);
-      throw new Error('Failed to lookup user');
+    while (true) {
+      const { data: userData, error: userLookupError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage
+      });
+      
+      if (userLookupError) {
+        console.error('Error looking up user:', userLookupError);
+        throw new Error('Failed to lookup user');
+      }
+      
+      allUsers = allUsers.concat(userData.users);
+      
+      // If we got fewer users than perPage, we've reached the end
+      if (userData.users.length < perPage) {
+        break;
+      }
+      
+      page++;
     }
 
-    const user = userData.users.find(u => u.email === adminEmail);
+    console.log(`Total users found: ${allUsers.length}`);
+    
+    // Find user with case-insensitive email matching
+    const user = allUsers.find(u => u.email?.toLowerCase() === normalizedEmail);
 
     if (!user) {
-      console.error('User not found with email:', adminEmail);
+      console.error('User not found with email:', normalizedEmail);
+      console.log('Available emails:', allUsers.map(u => u.email).join(', '));
       return new Response(
-        JSON.stringify({ error: 'Admin user not found' }),
+        JSON.stringify({ error: 'Admin user not found. Please check the email address.' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('User found:', user.id, user.email);
 
     // Verify user is a company_admin
     const { data: profileData, error: profileError } = await supabaseAdmin
