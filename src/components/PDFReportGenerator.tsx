@@ -308,13 +308,13 @@ export class PDFReportGenerator {
           
           // Set color based on severity level
           if (severityValue === 'none' || severityValue === 'low') {
-            this.doc.setTextColor(0, 128, 0); // Green
+            this.doc.setTextColor(34, 197, 94); // Bright green
           } else if (severityValue === 'medium') {
-            this.doc.setTextColor(255, 193, 7); // Yellow
+            this.doc.setTextColor(234, 179, 8); // Yellow
           } else if (severityValue === 'high') {
-            this.doc.setTextColor(255, 140, 0); // Orange
+            this.doc.setTextColor(249, 115, 22); // Orange
           } else if (severityValue === 'critical') {
-            this.doc.setTextColor(255, 0, 0); // Red
+            this.doc.setTextColor(239, 68, 68); // Red
           } else {
             this.doc.setTextColor(0, 0, 0); // Default black
           }
