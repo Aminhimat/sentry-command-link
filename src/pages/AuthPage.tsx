@@ -48,31 +48,44 @@ const AuthPage = () => {
             metadata: session.user.user_metadata
           });
           
-          // Check if user needs to change password
-          if (session.user.user_metadata?.must_change_password === true) {
-            console.log('AuthPage: Redirecting to change-password');
-            navigate('/change-password');
-          } else {
-            // Redirect based on role
-            const role = session.user.user_metadata?.role;
-            console.log('AuthPage: Redirecting based on role:', role);
-            if (role === 'platform_admin') {
-              navigate('/admin');
-            } else if (role === 'company_admin') {
-              navigate('/company');
-            } else if (role === 'guard') {
-              // Validate guard login constraints before navigating
-              setTimeout(() => {
-                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                  if (allowed) {
-                    navigate('/guard');
+          // Check if user needs to change password (database flag)
+          setTimeout(() => {
+            supabase
+              .from('profiles')
+              .select('requires_password_change')
+              .eq('user_id', session.user!.id)
+              .single()
+              .then(({ data: profile }) => {
+                if (profile?.requires_password_change) {
+                  navigate('/change-password');
+                  return;
+                }
+                
+                // Check if user needs to change password (metadata flag)
+                if (session.user!.user_metadata?.must_change_password === true) {
+                  console.log('AuthPage: Redirecting to change-password');
+                  navigate('/change-password');
+                } else {
+                  // Redirect based on role
+                  const role = session.user!.user_metadata?.role;
+                  console.log('AuthPage: Redirecting based on role:', role);
+                  if (role === 'platform_admin') {
+                    navigate('/admin');
+                  } else if (role === 'company_admin') {
+                    navigate('/company');
+                  } else if (role === 'guard') {
+                    // Validate guard login constraints before navigating
+                    validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                      if (allowed) {
+                        navigate('/guard');
+                      }
+                    });
+                  } else {
+                    navigate('/');
                   }
-                });
-              }, 0);
-            } else {
-              navigate('/');
-            }
-          }
+                }
+              });
+          }, 0);
         }
       }
     );
@@ -91,31 +104,42 @@ const AuthPage = () => {
           metadata: session.user.user_metadata
         });
         
-        // Check if user needs to change password
-        if (session.user.user_metadata?.must_change_password === true) {
-          console.log('AuthPage: Redirecting to change-password');
-          navigate('/change-password');
-        } else {
-          // Redirect based on role
-          const role = session.user.user_metadata?.role;
-          console.log('AuthPage: Redirecting based on role:', role);
-          if (role === 'platform_admin') {
-            navigate('/admin');
-          } else if (role === 'company_admin') {
-            navigate('/company');
-          } else if (role === 'guard') {
-            // Validate guard login constraints before navigating
-            setTimeout(() => {
-              validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                if (allowed) {
-                  navigate('/guard');
-                }
-              });
-            }, 0);
-          } else {
-            navigate('/');
-          }
-        }
+        // Check if user needs to change password (database flag)
+        supabase
+          .from('profiles')
+          .select('requires_password_change')
+          .eq('user_id', session.user.id)
+          .single()
+          .then(({ data: profile }) => {
+            if (profile?.requires_password_change) {
+              navigate('/change-password');
+              return;
+            }
+            
+            // Check if user needs to change password (metadata flag)
+            if (session.user!.user_metadata?.must_change_password === true) {
+              console.log('AuthPage: Redirecting to change-password');
+              navigate('/change-password');
+            } else {
+              // Redirect based on role
+              const role = session.user!.user_metadata?.role;
+              console.log('AuthPage: Redirecting based on role:', role);
+              if (role === 'platform_admin') {
+                navigate('/admin');
+              } else if (role === 'company_admin') {
+                navigate('/company');
+              } else if (role === 'guard') {
+                // Validate guard login constraints before navigating
+                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                  if (allowed) {
+                    navigate('/guard');
+                  }
+                });
+              } else {
+                navigate('/');
+              }
+            }
+          });
       }
     });
 

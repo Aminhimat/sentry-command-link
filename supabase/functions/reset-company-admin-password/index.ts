@@ -168,6 +168,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Password updated successfully for user:', user.id);
 
+    // Set the requires_password_change flag in the profiles table
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from('profiles')
+      .update({ requires_password_change: true })
+      .eq('user_id', user.id);
+
+    if (profileUpdateError) {
+      console.error('Error setting password change flag:', profileUpdateError);
+      // Non-blocking - continue even if this fails
+    }
+
     // Attempt to send email with temporary password (non-blocking)
     let emailSent = false;
     try {

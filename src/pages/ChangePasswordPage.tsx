@@ -90,6 +90,17 @@ const ChangePasswordPage = () => {
         throw passwordError;
       }
 
+      // Clear the requires_password_change flag
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ requires_password_change: false })
+        .eq('user_id', user?.id);
+
+      if (profileError) {
+        console.error('Error clearing password change flag:', profileError);
+        // Non-blocking - continue even if this fails
+      }
+
       toast({
         title: "Success",
         description: "Password changed successfully! Redirecting...",
