@@ -183,8 +183,8 @@ export class PDFReportGenerator {
     let borderColor = [55, 65, 81]; // Default border color
     
     if (severityLevel === 'none' || severityLevel === 'low') {
-      headerColor = [169, 169, 169]; // Grey
-      borderColor = [128, 128, 128]; // Darker border
+      headerColor = [211, 211, 211]; // Light grey
+      borderColor = [169, 169, 169]; // Medium grey border
     } else if (severityLevel === 'medium') {
       headerColor = [234, 179, 8]; // Yellow
       borderColor = [202, 138, 4]; // Darker yellow border
@@ -213,13 +213,22 @@ export class PDFReportGenerator {
     // Left: Date and Time with better formatting - white text for professional dark header
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.setTextColor(255, 255, 255); // White text for professional dark background
+    // Use black text for light grey headers, white for dark headers
+    if (severityLevel === 'none' || severityLevel === 'low') {
+      this.doc.setTextColor(0, 0, 0); // Black text for light grey background
+    } else {
+      this.doc.setTextColor(255, 255, 255); // White text for dark backgrounds
+    }
     this.doc.text(`${reportDate.toLocaleDateString()} ${reportDate.toLocaleTimeString()}`, leftColumnX, headerY);
     
-    // Right: Report ID with consistent styling - white text
+    // Right: Report ID with consistent styling
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(220, 220, 220); // Light gray for secondary text
+    if (severityLevel === 'none' || severityLevel === 'low') {
+      this.doc.setTextColor(64, 64, 64); // Dark grey for secondary text on light background
+    } else {
+      this.doc.setTextColor(220, 220, 220); // Light gray for secondary text on dark background
+    }
     const reportIdText = `Issue ID: ${report.id.substring(0, 8)}`;
     const reportIdWidth = this.doc.getTextWidth(reportIdText);
     this.doc.text(reportIdText, this.pageWidth - this.margin - 5 - reportIdWidth, headerY);
