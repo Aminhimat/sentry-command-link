@@ -331,7 +331,7 @@ export class PDFReportGenerator {
         
         // Position at bottom of table entry (entryHeight is 50)
         const labelBottomY = this.currentY + entryHeight - 6;
-        const labelWidth = this.doc.getTextWidth(severityText) + 24;
+        const labelWidth = this.doc.getTextWidth(severityText) + 40;
         const labelHeight = 5;
         
         // Draw colored label background
