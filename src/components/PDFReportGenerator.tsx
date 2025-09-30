@@ -210,7 +210,7 @@ export class PDFReportGenerator {
     // Header row with improved styling: Date/Time on left, Report ID on right - smaller header
     const headerY = this.currentY + 6;
     
-    // Left: Date and Time with better formatting - white text for professional dark header
+    // Left: Date and Time with better formatting - adjust text color based on background
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'bold');
     // Use black text for light grey headers, white for dark headers
@@ -225,7 +225,7 @@ export class PDFReportGenerator {
     this.doc.setFontSize(8);
     this.doc.setFont('helvetica', 'normal');
     if (severityLevel === 'none' || severityLevel === 'low') {
-      this.doc.setTextColor(64, 64, 64); // Dark grey for secondary text on light background
+      this.doc.setTextColor(0, 0, 0); // Black text for light grey background
     } else {
       this.doc.setTextColor(220, 220, 220); // Light gray for secondary text on dark background
     }
