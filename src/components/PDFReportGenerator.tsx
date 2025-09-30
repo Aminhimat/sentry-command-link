@@ -182,8 +182,8 @@ export class PDFReportGenerator {
     let borderColor = [55, 65, 81]; // Default border color
     
     if (severityLevel === 'none' || severityLevel === 'low') {
-      headerColor = [156, 163, 175]; // Light gray
-      borderColor = [107, 114, 128]; // Darker gray border
+      headerColor = [229, 231, 235]; // Cloud gray
+      borderColor = [156, 163, 175]; // Medium gray border
     } else if (severityLevel === 'medium') {
       headerColor = [234, 179, 8]; // Yellow
       borderColor = [202, 138, 4]; // Darker yellow border
