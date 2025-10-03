@@ -75,13 +75,14 @@ export class PDFReportGenerator {
   private addPageNumber() {
     const currentPage = this.doc.getCurrentPageInfo().pageNumber;
     const totalPages = this.doc.getNumberOfPages();
-    this.doc.setFontSize(9);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.setTextColor(128, 128, 128);
-    const pageText = `${currentPage} of ${totalPages}`;
+    this.doc.setFontSize(11); // Increased from 9 for better mobile clarity
+    this.doc.setFont('helvetica', 'bold'); // Bold for better visibility
+    this.doc.setTextColor(80, 80, 80); // Slightly darker gray for better contrast
+    const pageText = `Page ${currentPage} of ${totalPages}`;
     const textWidth = this.doc.getTextWidth(pageText);
     this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
     this.doc.setTextColor(0, 0, 0); // Reset to black
+    this.doc.setFont('helvetica', 'normal'); // Reset to normal
   }
 
   private async drawHeader(company: Company | null, reportFilters: any) {
@@ -411,9 +412,9 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized canvas size for better quality
-      const maxWidth = 600;
-      const maxHeight = 600;
+      // Optimized canvas size for high quality images on mobile
+      const maxWidth = 800; // Increased from 600 for better quality
+      const maxHeight = 800;
       
       let { width: imgWidth, height: imgHeight } = img;
       
@@ -430,9 +431,9 @@ export class PDFReportGenerator {
       // Draw and compress image
       ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
       
-      // Convert to JPEG with moderate quality (0.7 for better compression)
-      const imageData = canvas.toDataURL('image/jpeg', 0.7);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+      // Convert to JPEG with higher quality (0.85 for better image quality while maintaining reasonable file size)
+      const imageData = canvas.toDataURL('image/jpeg', 0.85);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM'); // MEDIUM compression for better quality
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
@@ -560,18 +561,19 @@ export class PDFReportGenerator {
     // Add page number to the last page
     this.addPageNumber();
 
-    // Update all page numbers to show total
+    // Update all page numbers to show total with better clarity
     const totalPages = this.doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       this.doc.setPage(i);
-      this.doc.setFontSize(9);
-      this.doc.setFont('helvetica', 'normal');
-      this.doc.setTextColor(128, 128, 128);
-      const pageText = `${i} of ${totalPages}`;
+      this.doc.setFontSize(11); // Increased from 9 for better mobile clarity
+      this.doc.setFont('helvetica', 'bold'); // Bold for better visibility
+      this.doc.setTextColor(80, 80, 80); // Slightly darker gray for better contrast
+      const pageText = `Page ${i} of ${totalPages}`;
       const textWidth = this.doc.getTextWidth(pageText);
       this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
     }
     this.doc.setTextColor(0, 0, 0);
+    this.doc.setFont('helvetica', 'normal');
 
     // Generate filename
     const startDate = new Date(reportFilters.startDate);
