@@ -64,7 +64,6 @@ export class PDFReportGenerator {
 
   private addPageIfNeeded(requiredHeight: number = 30) {
     if (this.currentY + requiredHeight > this.pageHeight - this.margin) {
-      this.addPageNumber(); // Add page number before creating new page
       this.doc.addPage();
       this.currentY = this.margin;
       return true; // Indicate that a new page was added
@@ -556,7 +555,7 @@ export class PDFReportGenerator {
     for (let i = 0; i < reports.length; i++) {
       // Add new page and header after every 5 reports (except the first page)
       if (i > 0 && i % 5 === 0) {
-        this.addPageNumber(); // Add page number to previous page
+        // Page number will be added in a single final pass
         this.doc.addPage();
         this.currentY = this.margin;
         await this.drawHeader(company, reportFilters);
@@ -566,7 +565,7 @@ export class PDFReportGenerator {
     }
 
     // Add page number to the last page
-    this.addPageNumber();
+    
 
     // Update all page numbers to show total with better clarity
     const totalPages = this.doc.getNumberOfPages();
