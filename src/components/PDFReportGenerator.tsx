@@ -55,7 +55,7 @@ export class PDFReportGenerator {
       unit: 'mm',
       format: 'a4',
       compress: true,
-      precision: 2
+      precision: 12 // Increased precision for crisper text rendering on mobile
     });
     this.pageWidth = this.doc.internal.pageSize.getWidth();
     this.pageHeight = this.doc.internal.pageSize.getHeight();
@@ -412,28 +412,35 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized canvas size for high quality images on mobile
-      const maxWidth = 800; // Increased from 600 for better quality
-      const maxHeight = 800;
-      
-      let { width: imgWidth, height: imgHeight } = img;
-      
-      // Calculate scaled dimensions
-      if (imgWidth > maxWidth || imgHeight > maxHeight) {
-        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-        imgWidth = imgWidth * ratio;
-        imgHeight = imgHeight * ratio;
-      }
+      // DPI-aware downscaling to reduce size without quality loss
+      const targetDPI = 240; // High quality for mobile viewing/printing
+      const mmToIn = 1 / 25.4;
+      const placedWIn = width * mmToIn;
+      const placedHIn = height * mmToIn;
 
-      canvas.width = imgWidth;
-      canvas.height = imgHeight;
-      
+      const originalW = img.naturalWidth || img.width;
+      const originalH = img.naturalHeight || img.height;
+
+      // Ideal pixel dimensions for the placed size
+      const idealPxW = Math.round(placedWIn * targetDPI);
+      const idealPxH = Math.round(placedHIn * targetDPI);
+
+      // Scale down preserving aspect ratio; never upscale beyond original
+      const scale = Math.min(idealPxW / originalW, idealPxH / originalH, 1);
+      const canvasW = Math.max(1, Math.round(originalW * scale));
+      const canvasH = Math.max(1, Math.round(originalH * scale));
+
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+
       // Draw and compress image
-      ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
-      
-      // Convert to JPEG with higher quality (0.85 for better image quality while maintaining reasonable file size)
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, canvasW, canvasH);
+
+      // High-quality JPEG; 'SLOW' encoder yields smaller files at same quality
       const imageData = canvas.toDataURL('image/jpeg', 0.85);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM'); // MEDIUM compression for better quality
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
