@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, Upload, MapPin } from "lucide-react";
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
+import { imageOptimizer } from "@/utils/imageOptimization";
 
 interface HourlyReportFormProps {
   userProfile: any;
@@ -128,23 +129,35 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
 
 
   const uploadImage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userProfile.user_id}/${Date.now()}.${fileExt}`;
+    try {
+      // Compress image before upload to maintain quality while reducing size
+      const { compressedFile } = await imageOptimizer.compressImage(file, {
+        quality: 0.85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        format: 'jpeg'
+      });
 
-    const { error: uploadError } = await supabase.storage
-      .from('guard-reports')
-      .upload(fileName, file);
+      const fileName = `${userProfile.user_id}/${Date.now()}.jpg`;
 
-    if (uploadError) {
-      console.error('Error uploading image:', uploadError);
+      const { error: uploadError } = await supabase.storage
+        .from('guard-reports')
+        .upload(fileName, compressedFile);
+
+      if (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('guard-reports')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error compressing/uploading image:', error);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('guard-reports')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
