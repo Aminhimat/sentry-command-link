@@ -75,22 +75,30 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     }
     
     if (selectedDateFrom) {
-      const fromDate = new Date(selectedDateFrom);
-      fromDate.setHours(0, 0, 0, 0);
+      const [year, month, day] = selectedDateFrom.split('-').map(Number);
       console.log('📅 From date filter:', {
         selectedDateFrom,
-        fromDate: fromDate.toISOString(),
+        parsedDate: { year, month, day },
         beforeFilter: filtered.length
       });
       filtered = filtered.filter(incident => {
         const incidentDate = new Date(incident.created_at);
-        const passes = incidentDate >= fromDate;
+        const incidentYear = incidentDate.getFullYear();
+        const incidentMonth = incidentDate.getMonth() + 1;
+        const incidentDay = incidentDate.getDate();
+        
+        const passes = (
+          incidentYear > year ||
+          (incidentYear === year && incidentMonth > month) ||
+          (incidentYear === year && incidentMonth === month && incidentDay >= day)
+        );
+        
         if (!passes) {
           console.log('❌ Incident filtered out:', {
             id: incident.id.substring(0, 8),
             created_at: incident.created_at,
-            incidentDate: incidentDate.toISOString(),
-            fromDate: fromDate.toISOString()
+            incidentDate: `${incidentYear}-${incidentMonth}-${incidentDay}`,
+            fromDate: selectedDateFrom
           });
         }
         return passes;
@@ -99,24 +107,32 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     }
     
     if (selectedDateTo) {
-      const toDate = new Date(selectedDateTo);
-      toDate.setHours(23, 59, 59, 999);
+      const [year, month, day] = selectedDateTo.split('-').map(Number);
       
       console.log('📅 To date filter:', {
         selectedDateTo,
-        toDate: toDate.toISOString(),
+        parsedDate: { year, month, day },
         beforeFilter: filtered.length
       });
       
       filtered = filtered.filter(incident => {
         const incidentDate = new Date(incident.created_at);
-        const passes = incidentDate <= toDate;
+        const incidentYear = incidentDate.getFullYear();
+        const incidentMonth = incidentDate.getMonth() + 1;
+        const incidentDay = incidentDate.getDate();
+        
+        const passes = (
+          incidentYear < year ||
+          (incidentYear === year && incidentMonth < month) ||
+          (incidentYear === year && incidentMonth === month && incidentDay <= day)
+        );
+        
         if (!passes) {
           console.log('❌ Incident filtered out by to date:', {
             id: incident.id.substring(0, 8),
             created_at: incident.created_at,
-            incidentDate: incidentDate.toISOString(),
-            toDate: toDate.toISOString()
+            incidentDate: `${incidentYear}-${incidentMonth}-${incidentDay}`,
+            toDate: selectedDateTo
           });
         }
         return passes;
