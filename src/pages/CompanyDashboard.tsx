@@ -957,42 +957,67 @@ const CompanyDashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center space-x-4">
-            <Shield className="h-8 w-8 text-primary" />
+        <div className="flex flex-col sm:flex-row min-h-16 items-start sm:items-center px-4 sm:px-6 py-3 sm:py-0 gap-3 sm:gap-0">
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
             <div>
-              <h1 className="text-xl font-semibold tracking-wide">{company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-base sm:text-xl font-semibold tracking-wide break-words">
+                {company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Welcome, {userProfile?.first_name} {userProfile?.last_name}
               </p>
             </div>
           </div>
-          <div className="ml-auto flex gap-2">
-            <Button variant="outline" onClick={() => setShowGenerateReportForm(true)}>
-              <Download className="h-4 w-4 mr-2" />
-              Generate Report
+          <div className="ml-0 sm:ml-auto flex flex-wrap gap-2 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowGenerateReportForm(true)}
+              className="flex-1 sm:flex-initial text-xs sm:text-sm"
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Generate Report</span>
+              <span className="sm:hidden">Report</span>
             </Button>
-            <Button variant="outline" onClick={() => setShowCreateGuardForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Guard
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowCreateGuardForm(true)}
+              className="flex-1 sm:flex-initial text-xs sm:text-sm"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">New Guard</span>
+              <span className="sm:hidden">Guard</span>
             </Button>
-            <Button variant="outline" onClick={() => {
-              if (guards.length > 0) {
-                const guard = guards[0];
-                setEditingGuard(guard);
-                setEditGuardData({
-                  firstName: guard.first_name || "",
-                  lastName: guard.last_name || "",
-                  phone: guard.phone || "",
-                  newPassword: "",
-                  assignedPropertyId: (guard as any).assigned_property_id || "none"
-                });
-                setShowEditGuardForm(true);
-              }
-            }}>
-              Edit Guard
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                if (guards.length > 0) {
+                  const guard = guards[0];
+                  setEditingGuard(guard);
+                  setEditGuardData({
+                    firstName: guard.first_name || "",
+                    lastName: guard.last_name || "",
+                    phone: guard.phone || "",
+                    newPassword: "",
+                    assignedPropertyId: (guard as any).assigned_property_id || "none"
+                  });
+                  setShowEditGuardForm(true);
+                }
+              }}
+              className="flex-1 sm:flex-initial text-xs sm:text-sm"
+            >
+              <span className="hidden sm:inline">Edit Guard</span>
+              <span className="sm:hidden">Edit</span>
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSignOut}
+              className="flex-1 sm:flex-initial text-xs sm:text-sm"
+            >
               Sign Out
             </Button>
           </div>
@@ -1000,26 +1025,42 @@ const CompanyDashboard = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-card border-b">
-        <div className="px-6 py-4">
-          <div className="flex gap-1">
+      <div className="bg-card border-b overflow-x-auto">
+        <div className="px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex gap-1 min-w-max sm:min-w-0">
             <Link to="/company">
-              <Button variant="ghost" className="h-10 px-4 py-2 bg-background text-foreground shadow-sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 sm:h-10 px-3 sm:px-4 py-2 bg-background text-foreground shadow-sm text-xs sm:text-sm whitespace-nowrap"
+              >
                 Overview
               </Button>
             </Link>
             <Link to="/company/shifts">
-              <Button variant="ghost" className="h-10 px-4 py-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
+              >
                 Shifts
               </Button>
             </Link>
             <Link to="/company/guards">
-              <Button variant="ghost" className="h-10 px-4 py-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
+              >
                 Guards
               </Button>
             </Link>
             <Link to="/company/properties">
-              <Button variant="ghost" className="h-10 px-4 py-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
+              >
                 Properties/Sites
               </Button>
             </Link>
@@ -1027,23 +1068,23 @@ const CompanyDashboard = () => {
         </div>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-4 sm:p-6">
         {/* Company Logo Upload Section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
+        <Card className="mb-4 sm:mb-6">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               Company Logo
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Upload your company logo to be displayed in reports
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {company?.logo_url ? (
-                  <div className="w-20 h-20 border rounded-lg overflow-hidden bg-muted">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 border rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <img 
                       src={`${company.logo_url}?t=${Date.now()}`}
                       alt="Company Logo" 
@@ -1055,12 +1096,12 @@ const CompanyDashboard = () => {
                     />
                   </div>
                 ) : (
-                  <div className="w-20 h-20 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
+                    <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-medium">
+                  <p className="text-xs sm:text-sm font-medium">
                     {company?.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -1068,7 +1109,7 @@ const CompanyDashboard = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Input
                   type="file"
                   accept="image/*"
@@ -1077,11 +1118,13 @@ const CompanyDashboard = () => {
                   id="logo-upload"
                 />
                 <Button 
-                  variant="outline" 
+                  variant="outline"
+                  size="sm"
                   onClick={() => document.getElementById('logo-upload')?.click()}
                   disabled={isUploadingLogo}
+                  className="w-full sm:w-auto text-xs sm:text-sm"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
                 </Button>
               </div>
@@ -1090,14 +1133,14 @@ const CompanyDashboard = () => {
         </Card>
 
         {/* Dashboard Tabs */}
-        <Tabs defaultValue="dashboard" className="mb-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-sm">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
+        <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm">
+            <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="tracking" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+            <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
               Live Tracking
             </TabsTrigger>
           </TabsList>
@@ -1115,17 +1158,17 @@ const CompanyDashboard = () => {
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <CardTitle>Create New Guard</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Create New Guard</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(false)}>
                   ×
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateGuard} className="grid gap-4 md:grid-cols-5">
+            <CardContent className="p-4 sm:p-6">
+              <form onSubmit={handleCreateGuard} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div>
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
@@ -1187,8 +1230,8 @@ const CompanyDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-end md:col-span-5">
-                  <Button type="submit" disabled={isCreatingGuard} className="w-full">
+                <div className="flex items-end sm:col-span-2 lg:col-span-5">
+                  <Button type="submit" disabled={isCreatingGuard} className="w-full text-sm">
                     {isCreatingGuard ? "Creating..." : "Create Guard"}
                   </Button>
                 </div>
@@ -1199,17 +1242,17 @@ const CompanyDashboard = () => {
 
         {/* Generate Report Form */}
         {showGenerateReportForm && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
-                <CardTitle>Generate Security Report</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Generate Security Report</CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(false)}>
                   ×
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <CardContent className="p-4 sm:p-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <Label>Report Type</Label>
                   <Select 
