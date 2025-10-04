@@ -242,10 +242,25 @@ export class PDFReportGenerator {
     this.doc.setFont('helvetica', 'normal');
     this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 12);
     
-    // Location Information (compact with better spacing)
+    // Location Information (compact with better spacing and text wrapping)
     if (report.location_address) {
       this.doc.setTextColor(0, 0, 0);
-      this.doc.text(`Location: ${report.location_address}`, leftColumnX, contentY + 17);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      
+      // Define maximum width for location text to prevent overflow
+      // Keep it within left column, leaving space for description box
+      const maxLocationWidth = 80; // Constrain to left side of page
+      
+      // Wrap location text if it's too long
+      const locationText = `Location: ${report.location_address}`;
+      const wrappedLocation = this.doc.splitTextToSize(locationText, maxLocationWidth);
+      
+      // Display wrapped location text (up to 2 lines to keep compact)
+      const maxLocationLines = 2;
+      for (let i = 0; i < Math.min(wrappedLocation.length, maxLocationLines); i++) {
+        this.doc.text(wrappedLocation[i], leftColumnX, contentY + 17 + (i * 4));
+      }
     }
     
     // Report Content - Display Task in middle column and other fields at bottom
