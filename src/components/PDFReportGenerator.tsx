@@ -236,34 +236,7 @@ export class PDFReportGenerator {
     // Reset text color for body content
     this.doc.setTextColor(0, 0, 0);
     
-    // Guard Information (improved positioning after header)
-    this.doc.setTextColor(0, 0, 0);
-    this.doc.setFontSize(8);
-    this.doc.setFont('helvetica', 'normal');
-    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 12);
-    
-    // Location Information (compact with better spacing and text wrapping)
-    if (report.location_address) {
-      this.doc.setTextColor(0, 0, 0);
-      this.doc.setFontSize(8);
-      this.doc.setFont('helvetica', 'normal');
-      
-      // Define maximum width for location text to prevent overflow
-      // Keep it within left column, leaving space for description box
-      const maxLocationWidth = 80; // Constrain to left side of page
-      
-      // Wrap location text if it's too long
-      const locationText = `Location: ${report.location_address}`;
-      const wrappedLocation = this.doc.splitTextToSize(locationText, maxLocationWidth);
-      
-      // Display wrapped location text (up to 2 lines to keep compact)
-      const maxLocationLines = 2;
-      for (let i = 0; i < Math.min(wrappedLocation.length, maxLocationLines); i++) {
-        this.doc.text(wrappedLocation[i], leftColumnX, contentY + 17 + (i * 4));
-      }
-    }
-    
-    // Report Content - Display Task in middle column and other fields at bottom
+    // Report Content - Display Description/Security Patrol in top-left box first
     if (report.report_text) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
@@ -272,7 +245,7 @@ export class PDFReportGenerator {
       // Split report text into separate lines
       const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
       
-      // Display Description in middle column with rectangle box
+      // Get Description text
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
       
       let displayText = '';
@@ -289,11 +262,11 @@ export class PDFReportGenerator {
         displayText = 'Security Patrol';
       }
       
-      // Calculate box dimensions - positioned properly within table boundaries
-      const boxWidth = 60; // Width for description box
-      const boxHeight = 35; // Reduced height to fit within table
-      const boxX = this.pageWidth - this.margin - 125; // Positioned within table boundaries
-      const boxY = this.currentY + 9; // Moved up for better positioning
+      // Calculate box dimensions - positioned at TOP LEFT
+      const boxWidth = 85; // Width for description box
+      const boxHeight = 20; // Height to fit within table
+      const boxX = leftColumnX; // Top left position
+      const boxY = this.currentY + 9; // Right after header
       
       // Draw rectangle border only (no fill)
       this.doc.setDrawColor(200, 200, 200); // Gray border
@@ -312,7 +285,7 @@ export class PDFReportGenerator {
       const maxLines = 3;
       const lineSpacing = 4;
       const totalTextHeight = Math.min(wrappedText.length, maxLines) * lineSpacing;
-      const startY = boxY + (boxHeight - totalTextHeight) / 2 + 3;
+      const startY = boxY + 4; // Align to top with small padding
       
       for (let j = 0; j < Math.min(wrappedText.length, maxLines); j++) {
         const textX = boxX + 3; // Left align with padding
@@ -320,6 +293,32 @@ export class PDFReportGenerator {
       }
       this.doc.setFont('helvetica', 'normal'); // Reset to normal
       this.doc.setFontSize(7);
+    
+    // Guard Information (positioned below the description box)
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.setFontSize(8);
+    this.doc.setFont('helvetica', 'normal');
+    this.doc.text(`Guard: ${guardName}`, leftColumnX, contentY + 32);
+    
+    // Location Information (below guard info)
+    if (report.location_address) {
+      this.doc.setTextColor(0, 0, 0);
+      this.doc.setFontSize(8);
+      this.doc.setFont('helvetica', 'normal');
+      
+      // Define maximum width for location text to prevent overflow
+      const maxLocationWidth = 80;
+      
+      // Wrap location text if it's too long
+      const locationText = `Location: ${report.location_address}`;
+      const wrappedLocation = this.doc.splitTextToSize(locationText, maxLocationWidth);
+      
+      // Display wrapped location text (up to 2 lines to keep compact)
+      const maxLocationLines = 2;
+      for (let i = 0; i < Math.min(wrappedLocation.length, maxLocationLines); i++) {
+        this.doc.text(wrappedLocation[i], leftColumnX, contentY + 37 + (i * 4));
+      }
+    }
       
       // Display Task in the middle area
       let bottomY = contentY + 25;
