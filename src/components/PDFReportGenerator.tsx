@@ -312,7 +312,7 @@ export class PDFReportGenerator {
       const maxLines = 3;
       const lineSpacing = 4;
       const totalTextHeight = Math.min(wrappedText.length, maxLines) * lineSpacing;
-      const startY = boxY + (boxHeight - totalTextHeight) / 2 + 3;
+      const startY = boxY + 4; // Top-left alignment with small padding
       
       for (let j = 0; j < Math.min(wrappedText.length, maxLines); j++) {
         const textX = boxX + 3; // Left align with padding
