@@ -729,7 +729,7 @@ const GuardDashboard = () => {
         
         // Reset form completely
         setTaskData({
-          taskType: "",
+          taskType: "security-patrol",
           customTaskType: "",
           site: "",
           description: "",
