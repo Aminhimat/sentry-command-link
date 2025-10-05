@@ -221,30 +221,26 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                 </SelectContent>
               </Select>
               
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-white/90">From Date</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={selectedDateFrom}
-                    onChange={(e) => setSelectedDateFrom(e.target.value)}
-                    className="w-full bg-white border-white/30 text-gray-900 text-sm pr-8"
-                  />
-                  <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                </div>
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={selectedDateFrom}
+                  onChange={(e) => setSelectedDateFrom(e.target.value)}
+                  placeholder="From Date"
+                  className="w-full bg-white border-white/30 text-gray-900 text-sm pr-8 h-10"
+                />
+                <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
               
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-white/90">To Date</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={selectedDateTo}
-                    onChange={(e) => setSelectedDateTo(e.target.value)}
-                    className="w-full bg-white border-white/30 text-gray-900 text-sm pr-8"
-                  />
-                  <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
-                </div>
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={selectedDateTo}
+                  onChange={(e) => setSelectedDateTo(e.target.value)}
+                  placeholder="To Date"
+                  className="w-full bg-white border-white/30 text-gray-900 text-sm pr-8 h-10"
+                />
+                <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
             </div>
           </div>
