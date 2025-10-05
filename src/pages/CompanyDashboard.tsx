@@ -1040,20 +1040,18 @@ const CompanyDashboard = () => {
               </Button>
             </Link>
             
-            <div className="ml-auto flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)}>
-                <Download className="h-4 w-4 mr-2" />
-                Generate Report
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                New Guard
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)}>
+              <Download className="h-4 w-4 mr-2" />
+              Generate Report
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Guard
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </div>
