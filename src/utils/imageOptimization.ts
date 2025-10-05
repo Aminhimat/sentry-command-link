@@ -6,7 +6,7 @@ interface CompressionOptions {
   quality: number;
   maxWidth: number;
   maxHeight: number;
-  format: 'jpeg' | 'webp';
+  format: 'jpeg' | 'webp' | 'png';
   progressive?: boolean;
 }
 
@@ -16,10 +16,10 @@ class ImageOptimizer {
     options: Partial<CompressionOptions> = {}
   ): Promise<{ compressedFile: File; compressionRatio: number }> {
     const defaultOptions: CompressionOptions = {
-      quality: 0.7,
-      maxWidth: 1920,
-      maxHeight: 1080,
-      format: 'jpeg',
+      quality: 0.85,
+      maxWidth: 1280,
+      maxHeight: 720,
+      format: 'webp',
       progressive: true
     };
 
@@ -129,9 +129,9 @@ class ImageOptimizer {
 
   async optimizeForConnection(file: File, connectionSpeed: 'slow' | 'medium' | 'fast'): Promise<File> {
     const speedConfigs = {
-      slow: { quality: 0.5, maxWidth: 1280, maxHeight: 720 },
-      medium: { quality: 0.7, maxWidth: 1920, maxHeight: 1080 },
-      fast: { quality: 0.85, maxWidth: 2560, maxHeight: 1440 }
+      slow: { quality: 0.75, maxWidth: 960, maxHeight: 540, format: 'webp' as const },
+      medium: { quality: 0.85, maxWidth: 1280, maxHeight: 720, format: 'webp' as const },
+      fast: { quality: 0.9, maxWidth: 1920, maxHeight: 1080, format: 'webp' as const }
     };
 
     const config = speedConfigs[connectionSpeed];
