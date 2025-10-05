@@ -87,14 +87,7 @@ const CompanyGuards = () => {
     lastName: "",
     phone: "",
     newPassword: "",
-    assignedPropertyId: "none",
-    // Login constraints
-    hasLoginConstraints: false,
-    startDate: "",
-    endDate: "",
-    startTime: "",
-    endTime: "",
-    durationHours: ""
+    assignedPropertyId: "none"
   });
   const { toast } = useToast();
 
@@ -314,13 +307,7 @@ const CompanyGuards = () => {
         lastName: "",
         phone: "",
         newPassword: "",
-        assignedPropertyId: "none",
-        hasLoginConstraints: false,
-        startDate: "",
-        endDate: "",
-        startTime: "",
-        endTime: "",
-        durationHours: ""
+        assignedPropertyId: "none"
       });
       
       if (userProfile?.company_id) {
@@ -621,89 +608,6 @@ const CompanyGuards = () => {
                     </Select>
                   </div>
                 </div>
-
-                {/* Login Constraints Section - VISIBLE BOX */}
-                <div className="bg-blue-50 border-4 border-blue-300 rounded-lg p-8 my-6">
-                  <h3 className="text-xl font-bold text-blue-800 mb-4">
-                    🕒 LOGIN TIME RESTRICTIONS
-                  </h3>
-                  <div className="flex items-center space-x-3 mb-6">
-                    <input
-                      type="checkbox"
-                      id="hasLoginConstraints"
-                      checked={editGuardData.hasLoginConstraints}
-                      onChange={(e) => setEditGuardData({...editGuardData, hasLoginConstraints: e.target.checked})}
-                      className="h-6 w-6 rounded border-2 border-blue-500 text-blue-600"
-                    />
-                    <Label htmlFor="hasLoginConstraints" className="text-lg font-semibold text-blue-800">
-                      Enable login time restrictions for this guard
-                    </Label>
-                  </div>
-                  <p className="text-blue-700 mb-6 text-base">
-                    Check the box above to set specific dates, times, and duration when this guard can log into the system.
-                  </p>
-                  
-                  {editGuardData.hasLoginConstraints && (
-                    <div className="bg-white p-6 rounded-lg border-2 border-blue-200">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                          <Label htmlFor="startDate" className="text-blue-800 font-medium">Start Date</Label>
-                          <Input
-                            id="startDate"
-                            type="date"
-                            value={editGuardData.startDate}
-                            onChange={(e) => setEditGuardData({...editGuardData, startDate: e.target.value})}
-                            className="border-blue-300"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="endDate" className="text-blue-800 font-medium">End Date</Label>
-                          <Input
-                            id="endDate"
-                            type="date"
-                            value={editGuardData.endDate}
-                            onChange={(e) => setEditGuardData({...editGuardData, endDate: e.target.value})}
-                            className="border-blue-300"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="durationHours" className="text-blue-800 font-medium">Duration (Hours)</Label>
-                          <Input
-                            id="durationHours"
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="24"
-                            value={editGuardData.durationHours}
-                            onChange={(e) => setEditGuardData({...editGuardData, durationHours: e.target.value})}
-                            placeholder="e.g., 8"
-                            className="border-blue-300"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="startTime" className="text-blue-800 font-medium">Start Time</Label>
-                          <Input
-                            id="startTime"
-                            type="time"
-                            value={editGuardData.startTime}
-                            onChange={(e) => setEditGuardData({...editGuardData, startTime: e.target.value})}
-                            className="border-blue-300"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="endTime" className="text-blue-800 font-medium">End Time</Label>
-                          <Input
-                            id="endTime"
-                            type="time"
-                            value={editGuardData.endTime}
-                            onChange={(e) => setEditGuardData({...editGuardData, endTime: e.target.value})}
-                            className="border-blue-300"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 
                 <div className="flex justify-end pt-4">
                   <Button type="submit" disabled={isLoading}>
@@ -796,28 +700,15 @@ const CompanyGuards = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={async () => {
+                              onClick={() => {
                                 setEditingGuard(guard);
-                                
-                                // Fetch existing login constraints
-                                const { data: constraints } = await supabase
-                                  .from('guard_login_constraints')
-                                  .select('*')
-                                  .eq('guard_id', guard.id)
-                                  .maybeSingle();
                                 
                                 setEditGuardData({
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
                                   newPassword: "",
-                                  assignedPropertyId: guard.assigned_property_id || "none",
-                                  hasLoginConstraints: !!constraints,
-                                  startDate: constraints?.start_date || "",
-                                  endDate: constraints?.end_date || "",
-                                  startTime: constraints?.start_time || "",
-                                  endTime: constraints?.end_time || "",
-                                  durationHours: constraints?.duration_hours?.toString() || ""
+                                  assignedPropertyId: guard.assigned_property_id || "none"
                                 });
                                 setShowEditGuardForm(true);
                               }}
