@@ -793,38 +793,7 @@ const CompanyGuards = () => {
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={async () => {
-                                setEditingGuard(guard);
-                                
-                                // Fetch existing login constraints
-                                const { data: constraints } = await supabase
-                                  .from('guard_login_constraints')
-                                  .select('*')
-                                  .eq('guard_id', guard.id)
-                                  .maybeSingle();
-                                
-                                setEditGuardData({
-                                  firstName: guard.first_name || "",
-                                  lastName: guard.last_name || "",
-                                  phone: guard.phone || "",
-                                  newPassword: "",
-                                  assignedPropertyId: guard.assigned_property_id || "none",
-                                  hasLoginConstraints: !!constraints,
-                                  startDate: constraints?.start_date || "",
-                                  endDate: constraints?.end_date || "",
-                                  startTime: constraints?.start_time || "",
-                                  endTime: constraints?.end_time || "",
-                                  durationHours: constraints?.duration_hours?.toString() || ""
-                                });
-                                setShowEditGuardForm(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
+                            <Button
                               variant="outline" 
                               size="sm" 
                               onClick={() => handleDeleteGuard(guard)}
