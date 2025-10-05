@@ -1013,9 +1013,15 @@ const CompanyDashboard = () => {
       </div>
 
       <div className="flex-1 p-6">
-        {/* Company Logo Upload Section */}
+        {/* Company Logo Upload Section - At Top */}
         <Card className="mb-6">
-          <CardContent className="p-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Company Logo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-3 sm:gap-4">
                 {company?.logo_url ? (
