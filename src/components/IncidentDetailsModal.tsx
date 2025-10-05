@@ -35,11 +35,11 @@ const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDetailsModa
         
 <div className="space-y-4">
           {incident.image_url ? (
-            <div className="relative bg-black rounded-lg overflow-hidden">
+            <div className="relative rounded-lg overflow-hidden">
               <img 
                 src={incident.image_url} 
                 alt="Incident report" 
-                className="w-full h-auto max-h-[70vh] object-contain"
+                className="w-full h-auto max-h-[70vh] object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
