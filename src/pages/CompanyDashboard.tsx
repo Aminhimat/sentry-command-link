@@ -1015,15 +1015,6 @@ const CompanyDashboard = () => {
       <div className="flex-1 p-6">
         {/* Company Logo Upload Section */}
         <Card className="mb-4 sm:mb-6">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              Company Logo
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Upload your company logo to be displayed in reports
-            </CardDescription>
-          </CardHeader>
           <CardContent className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
               <div className="flex items-center gap-3 sm:gap-4">
