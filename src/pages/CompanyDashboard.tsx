@@ -1020,35 +1020,35 @@ const CompanyDashboard = () => {
           {/* Navigation and Actions Row */}
           <div className="flex items-center gap-2 flex-wrap">
             <Link to="/company">
-              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
                 Overview
               </Button>
             </Link>
             <Link to="/company/shifts">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-10">
                 Shifts
               </Button>
             </Link>
             <Link to="/company/guards">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-10">
                 Guards
               </Button>
             </Link>
             <Link to="/company/properties">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-10">
                 Properties/Sites
               </Button>
             </Link>
             
-            <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)} className="h-10">
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(true)} className="h-10">
               <Plus className="h-4 w-4 mr-2" />
               New Guard
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="h-10">
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
