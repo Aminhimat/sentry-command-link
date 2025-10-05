@@ -990,29 +990,7 @@ const CompanyDashboard = () => {
               <span className="hidden sm:inline">New Guard</span>
               <span className="sm:hidden">Guard</span>
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                if (guards.length > 0) {
-                  const guard = guards[0];
-                  setEditingGuard(guard);
-                  setEditGuardData({
-                    firstName: guard.first_name || "",
-                    lastName: guard.last_name || "",
-                    phone: guard.phone || "",
-                    newPassword: "",
-                    assignedPropertyId: (guard as any).assigned_property_id || "none"
-                  });
-                  setShowEditGuardForm(true);
-                }
-              }}
-              className="flex-1 sm:flex-initial text-xs sm:text-sm"
-            >
-              <span className="hidden sm:inline">Edit Guard</span>
-              <span className="sm:hidden">Edit</span>
-            </Button>
-            <Button 
+            <Button
               variant="outline" 
               size="sm"
               onClick={handleSignOut}
