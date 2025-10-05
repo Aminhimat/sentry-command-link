@@ -6,6 +6,12 @@ const config: CapacitorConfig = {
   appName: 'GuardHQ Mobile',
   webDir: 'dist',
   // Removed server config for web browser use
+  android: {
+    allowMixedContent: true,
+  },
+  ios: {
+    contentInset: 'automatic',
+  },
   plugins: {
     Camera: {
       permissions: {
