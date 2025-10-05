@@ -958,6 +958,52 @@ const CompanyDashboard = () => {
       {/* Header */}
       <div className="border-b bg-card">
         <div className="flex flex-col px-6 py-3 gap-3">
+          {/* Company Logo Upload Section */}
+          <div className="flex items-center gap-4">
+            {company?.logo_url ? (
+              <div className="w-16 h-16 border rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                <img 
+                  src={`${company.logo_url}?t=${Date.now()}`}
+                  alt="Company Logo" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    console.error('Logo failed to load:', company.logo_url);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-16 h-16 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
+                <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium">Company Logo</p>
+              <p className="text-xs text-muted-foreground">
+                {company?.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
+              </p>
+              <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+            </div>
+            <div className="ml-auto">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+                id="logo-upload"
+              />
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('logo-upload')?.click()}
+                disabled={isUploadingLogo}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
+              </Button>
+            </div>
+          </div>
+          
           {/* Company Name Row */}
           <div className="flex items-center space-x-4">
             <Shield className="h-8 w-8 text-primary" />
@@ -1013,66 +1059,6 @@ const CompanyDashboard = () => {
       </div>
 
       <div className="flex-1 p-6">
-        {/* Company Logo Upload Section - At Top */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ImageIcon className="h-5 w-5" />
-              Company Logo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              <div className="flex items-center gap-3 sm:gap-4">
-                {company?.logo_url ? (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 border rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    <img 
-                      src={`${company.logo_url}?t=${Date.now()}`}
-                      alt="Company Logo" 
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        console.error('Logo failed to load:', company.logo_url);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center bg-muted flex-shrink-0">
-                    <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs sm:text-sm font-medium">
-                    {company?.logo_url ? 'Logo uploaded' : 'No logo uploaded'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    PNG, JPG up to 5MB
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                  id="logo-upload"
-                />
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('logo-upload')?.click()}
-                  disabled={isUploadingLogo}
-                  className="w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Dashboard Tabs */}
         <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
           <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm">
