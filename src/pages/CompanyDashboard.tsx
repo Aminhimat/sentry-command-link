@@ -20,6 +20,8 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { CompanySidebar } from "@/components/CompanySidebar";
 
 interface Profile {
   id: string;
@@ -954,97 +956,32 @@ const CompanyDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex flex-col sm:flex-row min-h-16 items-start sm:items-center px-4 sm:px-6 py-3 sm:py-0 gap-3 sm:gap-0">
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
-            <div>
-              <h1 className="text-base sm:text-xl font-semibold tracking-wide break-words">
-                {company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Welcome, {userProfile?.first_name} {userProfile?.last_name}
-              </p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <CompanySidebar
+          onGenerateReport={() => setShowGenerateReportForm(true)}
+          onNewGuard={() => setShowCreateGuardForm(true)}
+          onSignOut={handleSignOut}
+        />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="border-b bg-card">
+            <div className="flex h-16 items-center px-6">
+              <SidebarTrigger className="mr-4" />
+              <div className="flex items-center space-x-4">
+                <Shield className="h-8 w-8 text-primary" />
+                <div>
+                  <h1 className="text-xl font-semibold tracking-wide">
+                    {company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Welcome, {userProfile?.first_name} {userProfile?.last_name}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="ml-0 sm:ml-auto flex flex-wrap gap-2 w-full sm:w-auto">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowGenerateReportForm(true)}
-              className="flex-1 sm:flex-initial text-xs sm:text-sm"
-            >
-              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Generate Report</span>
-              <span className="sm:hidden">Report</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowCreateGuardForm(true)}
-              className="flex-1 sm:flex-initial text-xs sm:text-sm"
-            >
-              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">New Guard</span>
-              <span className="sm:hidden">Guard</span>
-            </Button>
-            <Button
-              variant="outline" 
-              size="sm"
-              onClick={handleSignOut}
-              className="flex-1 sm:flex-initial text-xs sm:text-sm"
-            >
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-card border-b overflow-x-auto">
-        <div className="px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex gap-1 min-w-max sm:min-w-0">
-            <Link to="/company">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 sm:h-10 px-3 sm:px-4 py-2 bg-background text-foreground shadow-sm text-xs sm:text-sm whitespace-nowrap"
-              >
-                Overview
-              </Button>
-            </Link>
-            <Link to="/company/shifts">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
-              >
-                Shifts
-              </Button>
-            </Link>
-            <Link to="/company/guards">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
-              >
-                Guards
-              </Button>
-            </Link>
-            <Link to="/company/properties">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 sm:h-10 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap"
-              >
-                Properties/Sites
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
 
       <div className="flex-1 p-4 sm:p-6">
         {/* Company Logo Upload Section */}
@@ -1500,9 +1437,10 @@ const CompanyDashboard = () => {
           </DialogContent>
         </Dialog>
 
-
       </div>
-    </div>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
