@@ -62,11 +62,21 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id')
+          .select('id, role, company_id, is_active')
           .eq('user_id', authData.user.id)
           .single();
 
         if (profile?.role === 'guard') {
+          // Check if guard is active
+          if (!profile.is_active) {
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Account Inactive",
+              description: "Your account has been deactivated. Please contact your administrator.",
+            });
+            return;
+          }
           // Get ALL active login constraints for this guard
           const { data: constraints, error: cErr } = await supabase
             .from('guard_login_constraints')

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, ArrowLeft, Eye, Edit, Trash2 } from "lucide-react";
+import { Shield, Plus, Users, ArrowLeft, Eye, Edit, Trash2, Power } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -331,6 +331,47 @@ const CompanyGuards = () => {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update guard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleGuardActive = async (guard: Guard) => {
+    const newStatus = !guard.is_active;
+    const action = newStatus ? "activate" : "deactivate";
+    
+    if (!confirm(`Are you sure you want to ${action} ${guard.first_name} ${guard.last_name}? ${!newStatus ? 'They will not be able to login.' : 'They will be able to login.'}`)) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: newStatus })
+        .eq('id', guard.id);
+
+      if (error) {
+        console.error('Guard status update error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Guard ${guard.first_name} ${guard.last_name} has been ${newStatus ? 'activated' : 'deactivated'}.`,
+      });
+
+      if (userProfile?.company_id) {
+        await fetchGuards(userProfile.company_id);
+      }
+    } catch (error) {
+      console.error('Error updating guard status:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update guard status",
         variant: "destructive",
       });
     } finally {
@@ -739,6 +780,16 @@ const CompanyGuards = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleToggleGuardActive(guard)}
+                              className={guard.is_active ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
+                              disabled={isLoading}
+                              title={guard.is_active ? "Deactivate Guard" : "Activate Guard"}
+                            >
+                              <Power className="h-4 w-4" />
+                            </Button>
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
