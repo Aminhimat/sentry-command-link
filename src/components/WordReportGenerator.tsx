@@ -53,8 +53,35 @@ export class WordReportGenerator {
     }
   }
 
-  private createHeaderSection(company: Company | null, reportFilters: any): Paragraph[] {
+  private async createHeaderSection(company: Company | null, reportFilters: any): Promise<Paragraph[]> {
     const headerParagraphs: Paragraph[] = [];
+
+    // Company logo if available
+    if (company?.logo_url) {
+      try {
+        const logoBuffer = await this.getImageBuffer(company.logo_url);
+        if (logoBuffer) {
+          headerParagraphs.push(
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: new Uint8Array(logoBuffer),
+                  transformation: {
+                    width: 120,
+                    height: 80,
+                  },
+                  type: 'png',
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 200 },
+            })
+          );
+        }
+      } catch (error) {
+        console.error('Error adding logo to Word document:', error);
+      }
+    }
 
     // Company name and title
     headerParagraphs.push(
@@ -82,7 +109,7 @@ export class WordReportGenerator {
           }),
         ],
         alignment: AlignmentType.CENTER,
-        spacing: { after: 300 },
+        spacing: { after: 200 },
       })
     );
 
@@ -315,8 +342,9 @@ export class WordReportGenerator {
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
     const children: Paragraph[] = [];
 
-    // Add header
-    children.push(...this.createHeaderSection(company, reportFilters));
+    // Add header (now async)
+    const headerParagraphs = await this.createHeaderSection(company, reportFilters);
+    children.push(...headerParagraphs);
 
     // Add each report
     for (const report of reports) {
