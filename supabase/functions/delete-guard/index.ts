@@ -54,12 +54,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Delete the user from Supabase Auth (this will cascade to delete the profile)
+    // Try to delete the user from Supabase Auth
     const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(
       guardProfile.user_id
     );
 
-    if (deleteUserError) {
+    // If user not found in auth, that's okay - they may have been deleted already
+    // We'll still clean up the profile record
+    if (deleteUserError && deleteUserError.status !== 404) {
       console.error('Error deleting user:', deleteUserError);
       return new Response(
         JSON.stringify({ error: 'Failed to delete guard user account' }),
@@ -68,6 +70,26 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // If auth user was not found, manually delete the profile
+    if (deleteUserError?.status === 404) {
+      console.log('Auth user not found, deleting profile directly');
+      const { error: profileDeleteError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('id', body.guardId);
+
+      if (profileDeleteError) {
+        console.error('Error deleting profile:', profileDeleteError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to delete guard profile' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
     }
 
     console.log(`Successfully deleted guard: ${guardProfile.first_name} ${guardProfile.last_name}`);
