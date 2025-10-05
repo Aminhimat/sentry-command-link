@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
 import { generatePDFReport } from "@/components/PDFReportGenerator";
+import { generateWordReport } from "@/components/WordReportGenerator";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -115,6 +116,7 @@ const CompanyDashboard = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isGeneratingWordReport, setIsGeneratingWordReport] = useState(false);
   const [isCreatingGuard, setIsCreatingGuard] = useState(false);
   const [isUpdatingGuard, setIsUpdatingGuard] = useState(false);
   const [isCreatingProperty, setIsCreatingProperty] = useState(false);
@@ -827,6 +829,116 @@ const CompanyDashboard = () => {
     }
   };
 
+  const handleGenerateWordReport = async () => {
+    if (!userProfile?.company_id || !company) return;
+
+    try {
+      setIsGeneratingWordReport(true);
+      
+      let query = supabase
+        .from('guard_reports')
+        .select(`
+          *,
+          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+        `)
+        .eq('company_id', userProfile.company_id);
+
+      // Apply date & time filters
+      let startDateTime: Date;
+      let endDateTime: Date;
+      
+      // Ensure we have valid Date objects
+      const startDateObj = reportFilters.startDate instanceof Date ? reportFilters.startDate : new Date(reportFilters.startDate);
+      const endDateObj = reportFilters.endDate instanceof Date ? reportFilters.endDate : new Date(reportFilters.endDate);
+      
+      if (reportFilters.reportType === 'daily') {
+        // Merge selected times with the chosen date
+        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
+        startDateTime = new Date(startDateObj);
+        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
+        endDateTime = new Date(startDateObj);
+        endDateTime.setHours(eh || 23, em || 59, 59, 999);
+      } else {
+        // For range reports, also apply time filters
+        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
+        startDateTime = new Date(startDateObj);
+        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
+        endDateTime = new Date(endDateObj);
+        endDateTime.setHours(eh || 23, em || 59, 59, 999);
+      }
+      query = query
+        .gte('created_at', startDateTime.toISOString())
+        .lte('created_at', endDateTime.toISOString());
+
+      // Apply guard filter
+      if (reportFilters.guardId !== 'all') {
+        query = query.eq('guard_id', reportFilters.guardId);
+      }
+
+      // Apply property filter
+      if (reportFilters.propertyId !== 'all') {
+        const selectedProperty = properties.find(p => p.id === reportFilters.propertyId);
+        if (selectedProperty) {
+          // Filter reports by property name since guards save property names in location_address
+          query = query.eq('location_address', selectedProperty.name);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        toast({
+          title: "No Reports Found",
+          description: "No reports found for the selected criteria.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert property IDs to names in reports for Word generation
+      const reportsForWord = data.map(report => {
+        if (report.location_address && properties.length > 0) {
+          const propertyMatch = properties.find(prop => prop.id === report.location_address);
+          if (propertyMatch) {
+            return {
+              ...report,
+              location_address: propertyMatch.name
+            };
+          }
+        }
+        return report;
+      });
+
+      // Generate Word document directly on client-side
+      await generateWordReport(reportsForWord, company, {
+        ...reportFilters,
+        startDate: startDateTime,
+        endDate: endDateTime
+      });
+
+      toast({
+        title: "Success",
+        description: `Word report generated successfully with ${data.length} reports.`,
+      });
+
+    } catch (error: any) {
+      console.error('Error generating Word report:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate Word report",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingWordReport(false);
+    }
+  };
+
 
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1316,6 +1428,15 @@ const CompanyDashboard = () => {
                 >
                   <Download className="h-4 w-4" />
                   {isGeneratingReport ? "Generating..." : "Generate & Download Report"}
+                </Button>
+                <Button 
+                  onClick={handleGenerateWordReport}
+                  disabled={isGeneratingWordReport || reports.length === 0}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <Download className="h-4 w-4" />
+                  {isGeneratingWordReport ? "Generating..." : "Generate to Word"}
                 </Button>
               </div>
             </CardContent>
