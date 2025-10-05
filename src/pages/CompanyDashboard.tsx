@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar, Upload, ImageIcon } from "lucide-react";
+import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar, Upload, ImageIcon, LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -20,8 +20,6 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { CompanySidebar } from "@/components/CompanySidebar";
 
 interface Profile {
   id: string;
@@ -956,34 +954,65 @@ const CompanyDashboard = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <CompanySidebar
-          onGenerateReport={() => setShowGenerateReportForm(true)}
-          onNewGuard={() => setShowCreateGuardForm(true)}
-          onSignOut={handleSignOut}
-        />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="border-b bg-card">
-            <div className="flex h-16 items-center px-6">
-              <SidebarTrigger className="mr-4" />
-              <div className="flex items-center space-x-4">
-                <Shield className="h-8 w-8 text-primary" />
-                <div>
-                  <h1 className="text-xl font-semibold tracking-wide">
-                    {company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Welcome, {userProfile?.first_name} {userProfile?.last_name}
-                  </p>
-                </div>
-              </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card">
+        <div className="flex flex-col px-6 py-3 gap-3">
+          {/* Company Name Row */}
+          <div className="flex items-center space-x-4">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-xl font-semibold tracking-wide">
+                {company?.name?.toUpperCase() || 'COMPANY DASHBOARD'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Welcome, {userProfile?.first_name} {userProfile?.last_name}
+              </p>
             </div>
           </div>
+          
+          {/* Navigation and Actions Row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/company">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm">
+                Overview
+              </Button>
+            </Link>
+            <Link to="/company/shifts">
+              <Button variant="ghost" size="sm">
+                Shifts
+              </Button>
+            </Link>
+            <Link to="/company/guards">
+              <Button variant="ghost" size="sm">
+                Guards
+              </Button>
+            </Link>
+            <Link to="/company/properties">
+              <Button variant="ghost" size="sm">
+                Properties/Sites
+              </Button>
+            </Link>
+            
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowGenerateReportForm(true)}>
+                <Download className="h-4 w-4 mr-2" />
+                Generate Report
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateGuardForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Guard
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex-1 p-4 sm:p-6">
+      <div className="flex-1 p-6">
         {/* Company Logo Upload Section */}
         <Card className="mb-4 sm:mb-6">
           <CardHeader className="p-4 sm:p-6">
@@ -1438,9 +1467,7 @@ const CompanyDashboard = () => {
         </Dialog>
 
       </div>
-        </div>
-      </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
