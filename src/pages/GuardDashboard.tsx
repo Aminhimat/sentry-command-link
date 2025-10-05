@@ -1460,16 +1460,6 @@ const GuardDashboard = () => {
         throw error;
       }
 
-      // Update guard profile to show as inactive
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ is_active: false })
-        .eq('id', profile.id);
-
-      if (profileError) {
-        console.error('Failed to update guard status:', profileError);
-      }
-
       // Stop location tracking
       stopLocationTracking();
       
