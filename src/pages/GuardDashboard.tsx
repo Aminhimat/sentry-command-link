@@ -310,11 +310,22 @@ const GuardDashboard = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, is_active')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (profile?.id) {
+        // Check if guard account is active
+        if (profile.is_active === false) {
+          await supabase.auth.signOut();
+          toast({
+            variant: 'destructive',
+            title: 'Account Inactive',
+            description: 'Your account has been deactivated. Please contact your administrator.',
+          });
+          navigate('/auth');
+          return;
+        }
         const { data: constraints } = await supabase
           .from('guard_login_constraints')
           .select('*')
