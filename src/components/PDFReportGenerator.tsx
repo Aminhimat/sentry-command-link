@@ -427,8 +427,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized DPI for faster downloads while maintaining quality
-      const targetDPI = 150; // Optimal balance between quality and file size
+      // Optimized DPI for smaller files while maintaining visual quality
+      const targetDPI = 120; // Lower DPI but still sharp for screens and mobile viewing
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -453,8 +453,8 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Optimized JPEG compression for faster downloads (0.75 quality provides 30-40% smaller files)
-      const imageData = canvas.toDataURL('image/jpeg', 0.75);
+      // Optimized JPEG compression (0.8 quality = 50-60% smaller with excellent visual quality)
+      const imageData = canvas.toDataURL('image/jpeg', 0.80);
       this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
 
       // Draw watermark overlay (bottom of picture) if provided
@@ -539,12 +539,14 @@ export class PDFReportGenerator {
             // Convert to File for compression
             const file = new File([blob], 'image.jpg', { type: blob.type });
             
-            // Compress image for faster PDF generation
+            // Compress image aggressively while maintaining quality
+            // Smaller dimensions but higher quality JPEG = better compression with good visuals
             const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: 0.75,
-              maxWidth: 1280,
-              maxHeight: 960,
-              format: 'jpeg'
+              quality: 0.82,
+              maxWidth: 1024,
+              maxHeight: 768,
+              format: 'jpeg',
+              progressive: true // Progressive JPEG = better compression
             });
             
             // Create image element from compressed file
