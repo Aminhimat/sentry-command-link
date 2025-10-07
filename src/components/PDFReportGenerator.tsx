@@ -627,34 +627,8 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Save first, then open automatically
-    let viewerTab: Window | null = null;
-    try {
-      // Open a blank tab under the user gesture to avoid popup blockers
-      viewerTab = window.open('', '_blank');
-    } catch (e) {
-      console.warn('Unable to pre-open tab:', e);
-    }
-
-    try {
-      // Trigger download/save first
-      this.doc.save(filename);
-    } catch (e) {
-      console.warn('Failed to save PDF:', e);
-    }
-
-    try {
-      // Then open the PDF for viewing automatically
-      const out = this.doc.output('bloburl') as unknown as string | URL;
-      const blobHref = typeof out === 'string' ? out : out.toString();
-      if (viewerTab) {
-        viewerTab.location.href = blobHref;
-      } else {
-        window.open(blobHref, '_blank');
-      }
-    } catch (e) {
-      console.warn('Failed to open PDF in new tab:', e);
-    }
+    // Save the PDF with compression
+    this.doc.save(filename);
   }
 }
 
