@@ -427,8 +427,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized DPI for smaller files while maintaining visual quality
-      const targetDPI = 120; // Lower DPI but still sharp for screens and mobile viewing
+      // Aggressive DPI reduction for fast downloads (96 DPI = screen resolution)
+      const targetDPI = 96; // Screen-optimized DPI for maximum compression
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -453,8 +453,8 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Optimized JPEG compression (0.8 quality = 50-60% smaller with excellent visual quality)
-      const imageData = canvas.toDataURL('image/jpeg', 0.80);
+      // Aggressive JPEG compression for fast downloads (0.70 quality = 60-70% smaller files)
+      const imageData = canvas.toDataURL('image/jpeg', 0.70);
       this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
 
       // Draw watermark overlay (bottom of picture) if provided
@@ -539,14 +539,13 @@ export class PDFReportGenerator {
             // Convert to File for compression
             const file = new File([blob], 'image.jpg', { type: blob.type });
             
-            // Compress image aggressively while maintaining quality
-            // Smaller dimensions but higher quality JPEG = better compression with good visuals
+            // Maximum compression for fast downloads
             const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: 0.82,
-              maxWidth: 1024,
-              maxHeight: 768,
+              quality: 0.72,
+              maxWidth: 800,
+              maxHeight: 600,
               format: 'jpeg',
-              progressive: true // Progressive JPEG = better compression
+              progressive: true
             });
             
             // Create image element from compressed file
