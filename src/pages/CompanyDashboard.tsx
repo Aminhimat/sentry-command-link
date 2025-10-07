@@ -819,75 +819,16 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Use server-side PDF generation to avoid mobile memory issues
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const response = await supabase.functions.invoke('generate-pdf-report', {
-        body: {
-          reports: reportsForPDF,
-          company: company,
-          reportFilters: {
-            ...reportFilters,
-            startDate: startDateTime.toISOString(),
-            endDate: endDateTime.toISOString()
-          },
-          userId: user?.id
-        }
+      // Generate PDF directly on client-side
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-
-      // Poll for completion
-      const checkStatus = async () => {
-        const { data: statusData } = await supabase
-          .from('pdf_generation_status')
-          .select('*')
-          .eq('filename', response.data.filename)
-          .eq('user_id', user?.id)
-          .single();
-
-        if (statusData?.status === 'completed' && statusData.download_url) {
-          window.open(statusData.download_url, '_blank');
-          toast({
-            title: "Success",
-            description: `Report generated successfully with ${data.length} reports.`,
-          });
-          return true;
-        } else if (statusData?.status === 'failed') {
-          throw new Error(statusData.error_message || 'PDF generation failed');
-        }
-        return false;
-      };
-
-      // Poll every 2 seconds for up to 30 seconds
-      let attempts = 0;
-      const maxAttempts = 15;
-      
-      const pollInterval = setInterval(async () => {
-        attempts++;
-        try {
-          const completed = await checkStatus();
-          if (completed || attempts >= maxAttempts) {
-            clearInterval(pollInterval);
-            if (attempts >= maxAttempts) {
-              toast({
-                title: "Timeout",
-                description: "Report is taking longer than expected. Please check back shortly.",
-                variant: "destructive",
-              });
-            }
-          }
-        } catch (error) {
-          clearInterval(pollInterval);
-          throw error;
-        }
-      }, 2000);
-
       toast({
-        title: "Processing",
-        description: "Generating your report on the server. This will open automatically when ready.",
+        title: "Success",
+        description: `Report generated successfully with ${data.length} reports.`,
       });
 
     } catch (error: any) {
