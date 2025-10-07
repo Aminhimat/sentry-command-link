@@ -16,8 +16,6 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    # Enable compression
-    Content-Encoding = "gzip"
 
 # Cache static assets aggressively (1 year)
 [[headers]]
