@@ -8,7 +8,7 @@
   to = "/index.html"
   status = 200
 
-# Optional: basic security headers
+# Security and performance headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -16,3 +16,28 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Enable compression
+    Content-Encoding = "gzip"
+
+# Cache static assets aggressively (1 year)
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache JS and CSS files
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Don't cache HTML files (for SPA routing)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
