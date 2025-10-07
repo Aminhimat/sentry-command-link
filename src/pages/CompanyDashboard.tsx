@@ -718,7 +718,23 @@ const CompanyDashboard = () => {
   };
 
   const handleGenerateReport = async () => {
-    if (!userProfile?.company_id || !company) return;
+    if (!userProfile?.company_id) {
+      toast({
+        title: "Error",
+        description: "User profile not loaded. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!company) {
+      toast({
+        title: "Loading...",
+        description: "Company data is still loading. Please try again in a moment.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setIsGeneratingReport(true);
