@@ -1019,26 +1019,18 @@ const CompanyDashboard = () => {
           
           {/* Navigation and Actions Row */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Link to="/company">
-              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
-                Overview
-              </Button>
-            </Link>
-            <Link to="/company/shifts">
-              <Button variant="ghost" size="sm" className="h-10">
-                Shifts
-              </Button>
-            </Link>
-            <Link to="/company/guards">
-              <Button variant="ghost" size="sm" className="h-10">
-                Guards
-              </Button>
-            </Link>
-            <Link to="/company/properties">
-              <Button variant="ghost" size="sm" className="h-10">
-                Properties/Sites
-              </Button>
-            </Link>
+            <Button asChild variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
+              <Link to="/company">Overview</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="h-10">
+              <Link to="/company/shifts">Shifts</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="h-10">
+              <Link to="/company/guards">Guards</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="h-10">
+              <Link to="/company/properties">Properties/Sites</Link>
+            </Button>
             
             <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)} className="h-10">
               <Download className="h-4 w-4 mr-2" />
