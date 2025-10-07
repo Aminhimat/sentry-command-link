@@ -627,7 +627,13 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Save the PDF with compression
+    // Open in new tab and save the PDF
+    try {
+      const blobUrl = this.doc.output('bloburl');
+      window.open(blobUrl, '_blank');
+    } catch (e) {
+      console.warn('Failed to open PDF in new tab:', e);
+    }
     this.doc.save(filename);
   }
 }
