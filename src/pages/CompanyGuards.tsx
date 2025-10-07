@@ -28,6 +28,7 @@ interface Guard {
   last_name: string;
   phone: string;
   email: string;
+  username?: string;
   is_active: boolean;
   created_at: string;
   company_id?: string;
@@ -86,6 +87,7 @@ const CompanyGuards = () => {
     firstName: "",
     lastName: "",
     phone: "",
+    username: "",
     newPassword: "",
     assignedPropertyId: "none"
   });
@@ -191,14 +193,15 @@ const CompanyGuards = () => {
         return;
       }
 
-      const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
+      const guardsWithEmails = (guardProfiles || []).map(guard => ({
         ...guard,
         email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+        username: guard.user_id, // Will be populated with actual email when editing
         assigned_property: guard.properties,
-        assigned_property_id: guard.assigned_property_id // Make sure this is available for the edit form
+        assigned_property_id: guard.assigned_property_id
       }));
 
-      setGuards(guardsWithPlaceholderEmails);
+      setGuards(guardsWithEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
@@ -285,6 +288,7 @@ const CompanyGuards = () => {
           firstName: editGuardData.firstName,
           lastName: editGuardData.lastName,
           phone: editGuardData.phone,
+          username: editGuardData.username,
           newPassword: editGuardData.newPassword || null,
           assignedPropertyId: editGuardData.assignedPropertyId !== "none" ? editGuardData.assignedPropertyId : null
         }
@@ -306,6 +310,7 @@ const CompanyGuards = () => {
         firstName: "",
         lastName: "",
         phone: "",
+        username: "",
         newPassword: "",
         assignedPropertyId: "none"
       });
@@ -579,6 +584,16 @@ const CompanyGuards = () => {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="editUsername">Username</Label>
+                    <Input
+                      id="editUsername"
+                      type="text"
+                      value={editGuardData.username}
+                      onChange={(e) => setEditGuardData({...editGuardData, username: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="editPassword">New Password (optional)</Label>
                     <Input
                       id="editPassword"
@@ -707,6 +722,7 @@ const CompanyGuards = () => {
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
+                                  username: guard.email || "",
                                   newPassword: "",
                                   assignedPropertyId: guard.assigned_property_id || "none"
                                 });
