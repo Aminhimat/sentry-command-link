@@ -804,16 +804,25 @@ const CompanyDashboard = () => {
       });
 
       // Generate PDF client-side with optimized settings (faster than before)
-      await generatePDFReport(reportsForPDF, company, {
-        ...reportFilters,
-        startDate: startDateTime.toISOString(),
-        endDate: endDateTime.toISOString()
-      });
+      try {
+        await generatePDFReport(reportsForPDF, company, {
+          ...reportFilters,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString()
+        });
 
-      toast({
-        title: "Success",
-        description: `Report generated successfully with ${data.length} reports.`,
-      });
+        toast({
+          title: "Success",
+          description: `Report generated successfully with ${data.length} reports.`,
+        });
+      } catch (error) {
+        console.error('PDF generation error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to generate PDF. Please try again.",
+          variant: "destructive"
+        });
+      }
 
     } catch (error: any) {
       console.error('Error generating report:', error);
