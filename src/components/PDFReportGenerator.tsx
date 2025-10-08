@@ -428,7 +428,7 @@ export class PDFReportGenerator {
       }
 
       // Optimized DPI for faster downloads while maintaining quality
-      const targetDPI = 150; // Optimal balance between quality and file size
+      const targetDPI = 120; // Reduced for smaller file size while maintaining visual quality
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -453,9 +453,25 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Optimized JPEG compression for faster downloads (0.75 quality provides 30-40% smaller files)
-      const imageData = canvas.toDataURL('image/jpeg', 0.75);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+      // Advanced compression: Use WebP format for smaller file size with better quality
+      let imageData: string;
+      let format: 'WEBP' | 'JPEG';
+      
+      // Try WebP first (better compression), fallback to JPEG if not supported
+      try {
+        imageData = canvas.toDataURL('image/webp', 0.85);
+        if (imageData.startsWith('data:image/webp')) {
+          format = 'WEBP';
+        } else {
+          throw new Error('WebP not supported');
+        }
+      } catch (e) {
+        // Fallback to JPEG with higher quality since we're using lower DPI
+        imageData = canvas.toDataURL('image/jpeg', 0.85);
+        format = 'JPEG';
+      }
+      
+      this.doc.addImage(imageData, format, x, y, width, height, undefined, 'FAST');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
@@ -539,12 +555,12 @@ export class PDFReportGenerator {
             // Convert to File for compression
             const file = new File([blob], 'image.jpg', { type: blob.type });
             
-            // Compress image for faster PDF generation
+            // Compress image for faster PDF generation with optimal settings
             const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: 0.75,
-              maxWidth: 1280,
-              maxHeight: 960,
-              format: 'jpeg'
+              quality: 0.85,
+              maxWidth: 1024,
+              maxHeight: 768,
+              format: 'webp'
             });
             
             // Create image element from compressed file
