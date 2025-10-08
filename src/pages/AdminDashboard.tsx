@@ -95,7 +95,6 @@ const AdminDashboard = () => {
   const [tempPassword, setTempPassword] = useState("");
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
-  const [activeTab, setActiveTab] = useState("analytics");
   const [newCompany, setNewCompany] = useState({
     name: "",
     email: "",
@@ -750,7 +749,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Main Content with Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="analytics" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="analytics" className="text-sm sm:text-base">Analytics</TabsTrigger>
             <TabsTrigger value="companies" className="text-sm sm:text-base">Companies</TabsTrigger>

@@ -718,23 +718,7 @@ const CompanyDashboard = () => {
   };
 
   const handleGenerateReport = async () => {
-    if (!userProfile?.company_id) {
-      toast({
-        title: "Error",
-        description: "User profile not loaded. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!company) {
-      toast({
-        title: "Loading...",
-        description: "Company data is still loading. Please try again in a moment.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!userProfile?.company_id || !company) return;
 
     try {
       setIsGeneratingReport(true);
@@ -819,71 +803,17 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // On iOS devices, use server-side generation to avoid UI freezes
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+      // Generate PDF directly on client-side
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
+      });
 
-      if (isIOS) {
-        const userId = user?.id || userProfile?.user_id;
-        const { data: startRes, error: startErr } = await supabase.functions.invoke('generate-pdf-report', {
-          body: {
-            reports: reportsForPDF,
-            company,
-            reportFilters: {
-              ...reportFilters,
-              startDate: startDateTime.toISOString(),
-              endDate: endDateTime.toISOString()
-            },
-            userId
-          }
-        });
-        if (startErr) throw startErr;
-
-        toast({ title: 'Generating report...', description: 'We\'ll notify when it\'s ready.' });
-
-        const filename = startRes?.filename as string | undefined;
-        let attempts = 0;
-        let done = false;
-        while (!done && attempts < 40 && filename) {
-          const { data: statusRow, error: statusErr } = await supabase
-            .from('pdf_generation_status')
-            .select('status, download_url, error_message')
-            .eq('filename', filename)
-            .eq('user_id', userId)
-            .maybeSingle();
-
-          if (statusErr) console.warn('Status poll error:', statusErr);
-
-          if (statusRow?.status === 'completed' && statusRow.download_url) {
-            done = true;
-            toast({ title: 'Report ready', description: 'Opening your PDF...' });
-            window.open(statusRow.download_url, '_blank');
-            break;
-          }
-          if (statusRow?.status === 'failed') {
-            throw new Error(statusRow.error_message || 'Report generation failed');
-          }
-
-          await new Promise((r) => setTimeout(r, 1500));
-          attempts++;
-        }
-
-        if (!done) {
-          toast({ title: 'Still processing', description: 'Please try again in a moment.' });
-        }
-      } else {
-        // Generate PDF directly on client-side
-        await generatePDFReport(reportsForPDF, company, {
-          ...reportFilters,
-          startDate: startDateTime.toISOString(),
-          endDate: endDateTime.toISOString()
-        });
-
-        toast({
-          title: 'Success',
-          description: `Report generated successfully with ${data.length} reports.`,
-        });
-      }
+      toast({
+        title: "Success",
+        description: `Report generated successfully with ${data.length} reports.`,
+      });
 
     } catch (error: any) {
       console.error('Error generating report:', error);
@@ -1089,18 +1019,26 @@ const CompanyDashboard = () => {
           
           {/* Navigation and Actions Row */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Button asChild variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
-              <Link to="/company">Overview</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" className="h-10">
-              <Link to="/company/shifts">Shifts</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" className="h-10">
-              <Link to="/company/guards">Guards</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm" className="h-10">
-              <Link to="/company/properties">Properties/Sites</Link>
-            </Button>
+            <Link to="/company">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
+                Overview
+              </Button>
+            </Link>
+            <Link to="/company/shifts">
+              <Button variant="ghost" size="sm" className="h-10">
+                Shifts
+              </Button>
+            </Link>
+            <Link to="/company/guards">
+              <Button variant="ghost" size="sm" className="h-10">
+                Guards
+              </Button>
+            </Link>
+            <Link to="/company/properties">
+              <Button variant="ghost" size="sm" className="h-10">
+                Properties/Sites
+              </Button>
+            </Link>
             
             <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)} className="h-10">
               <Download className="h-4 w-4 mr-2" />

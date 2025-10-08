@@ -28,7 +28,6 @@ interface Guard {
   last_name: string;
   phone: string;
   email: string;
-  username?: string;
   is_active: boolean;
   created_at: string;
   company_id?: string;
@@ -192,15 +191,14 @@ const CompanyGuards = () => {
         return;
       }
 
-      const guardsWithEmails = (guardProfiles || []).map(guard => ({
+      const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
         ...guard,
         email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-        username: guard.user_id, // Will be populated with actual email when editing
         assigned_property: guard.properties,
-        assigned_property_id: guard.assigned_property_id
+        assigned_property_id: guard.assigned_property_id // Make sure this is available for the edit form
       }));
 
-      setGuards(guardsWithEmails);
+      setGuards(guardsWithPlaceholderEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
