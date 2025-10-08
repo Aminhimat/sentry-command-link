@@ -803,17 +803,42 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF directly on client-side
-      await generatePDFReport(reportsForPDF, company, {
-        ...reportFilters,
-        startDate: startDateTime.toISOString(),
-        endDate: endDateTime.toISOString()
+      // Generate PDF on server-side for faster performance
+      toast({
+        title: "Generating PDF...",
+        description: "Please wait while we prepare your report.",
       });
 
-      toast({
-        title: "Success",
-        description: `Report generated successfully with ${data.length} reports.`,
+      const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-report', {
+        body: {
+          reports: reportsForPDF,
+          company: company,
+          reportFilters: {
+            ...reportFilters,
+            startDate: startDateTime.toISOString(),
+            endDate: endDateTime.toISOString()
+          },
+          userId: user?.id
+        }
       });
+
+      if (pdfError) {
+        toast({
+          title: "Error",
+          description: "Failed to generate PDF report.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (pdfData?.downloadUrl) {
+        // Download the PDF
+        window.open(pdfData.downloadUrl, '_blank');
+        toast({
+          title: "Success",
+          description: `Report generated successfully with ${data.length} reports.`,
+        });
+      }
 
     } catch (error: any) {
       console.error('Error generating report:', error);
