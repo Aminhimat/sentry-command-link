@@ -427,8 +427,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // High DPI for sharp, detailed images
-      const targetDPI = 180; // Professional quality
+      // Optimized DPI - excellent quality, faster processing
+      const targetDPI = 160; // Sharp images, quick generation
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -457,17 +457,17 @@ export class PDFReportGenerator {
       let imageData: string;
       let format: 'WEBP' | 'JPEG';
       
-      // WebP with excellent quality - crisp, clear images
+      // WebP maximum quality - looks better than JPEG at smaller size
       try {
-        imageData = canvas.toDataURL('image/webp', 0.95);
+        imageData = canvas.toDataURL('image/webp', 0.94);
         if (imageData.startsWith('data:image/webp')) {
           format = 'WEBP';
         } else {
           throw new Error('WebP not supported');
         }
       } catch (e) {
-        // JPEG fallback - excellent quality
-        imageData = canvas.toDataURL('image/jpeg', 0.93);
+        // JPEG fallback - high quality but larger file
+        imageData = canvas.toDataURL('image/jpeg', 0.90);
         format = 'JPEG';
       }
       
@@ -555,11 +555,11 @@ export class PDFReportGenerator {
             // Convert to File for compression
             const file = new File([blob], 'image.jpg', { type: blob.type });
             
-            // Excellent quality compression - crystal clear images
+            // WebP at high quality - excellent visuals, smaller file, faster generation
             const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: 0.95,
-              maxWidth: 1920,
-              maxHeight: 1440,
+              quality: 0.94,
+              maxWidth: 1600,
+              maxHeight: 1200,
               format: 'webp'
             });
             
