@@ -39,15 +39,15 @@ serve(async (req) => {
     console.log('Generating PDF:', filename)
     
     // Generate PDF synchronously (fast on server)
-    const downloadUrl = await generateReportBackground(reports, company, reportFilters, filename, userId, supabase)
+    const pdfBytes = await generatePDFDocument(reports, company, reportFilters)
     
-    // Return download URL
-    return new Response(JSON.stringify({ 
-      message: 'PDF generated successfully',
-      downloadUrl: downloadUrl,
-      status: 'completed'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Return PDF directly as blob (no storage, bypasses ad blockers)
+    return new Response(pdfBytes, {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename.replace('.txt', '.pdf')}"`,
+      },
       status: 200,
     })
 
