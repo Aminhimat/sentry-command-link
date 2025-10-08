@@ -819,17 +819,71 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF directly on client-side
-      await generatePDFReport(reportsForPDF, company, {
-        ...reportFilters,
-        startDate: startDateTime.toISOString(),
-        endDate: endDateTime.toISOString()
-      });
+      // On iOS devices, use server-side generation to avoid UI freezes
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
 
-      toast({
-        title: "Success",
-        description: `Report generated successfully with ${data.length} reports.`,
-      });
+      if (isIOS) {
+        const userId = user?.id || userProfile?.user_id;
+        const { data: startRes, error: startErr } = await supabase.functions.invoke('generate-pdf-report', {
+          body: {
+            reports: reportsForPDF,
+            company,
+            reportFilters: {
+              ...reportFilters,
+              startDate: startDateTime.toISOString(),
+              endDate: endDateTime.toISOString()
+            },
+            userId
+          }
+        });
+        if (startErr) throw startErr;
+
+        toast({ title: 'Generating report...', description: 'We\'ll notify when it\'s ready.' });
+
+        const filename = startRes?.filename as string | undefined;
+        let attempts = 0;
+        let done = false;
+        while (!done && attempts < 40 && filename) {
+          const { data: statusRow, error: statusErr } = await supabase
+            .from('pdf_generation_status')
+            .select('status, download_url, error_message')
+            .eq('filename', filename)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (statusErr) console.warn('Status poll error:', statusErr);
+
+          if (statusRow?.status === 'completed' && statusRow.download_url) {
+            done = true;
+            toast({ title: 'Report ready', description: 'Opening your PDF...' });
+            window.open(statusRow.download_url, '_blank');
+            break;
+          }
+          if (statusRow?.status === 'failed') {
+            throw new Error(statusRow.error_message || 'Report generation failed');
+          }
+
+          await new Promise((r) => setTimeout(r, 1500));
+          attempts++;
+        }
+
+        if (!done) {
+          toast({ title: 'Still processing', description: 'Please try again in a moment.' });
+        }
+      } else {
+        // Generate PDF directly on client-side
+        await generatePDFReport(reportsForPDF, company, {
+          ...reportFilters,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString()
+        });
+
+        toast({
+          title: 'Success',
+          description: `Report generated successfully with ${data.length} reports.`,
+        });
+      }
 
     } catch (error: any) {
       console.error('Error generating report:', error);
