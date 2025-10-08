@@ -803,56 +803,13 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF on server-side for faster performance
-      toast({
-        title: "Generating PDF...",
-        description: "Please wait while we prepare your report.",
+      // Generate PDF client-side with optimized settings (faster than before)
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
       });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `https://dzxkvzdwapaoeewqiyyq.supabase.co/functions/v1/generate-pdf-report`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGt2emR3YXBhb2Vld3FpeXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2ODQ4NzEsImV4cCI6MjA2ODI2MDg3MX0.XKltBt2-C5YA4YXmQS9aOY9O1gc1EHyEj4Aht2KjdDQ'
-          },
-          body: JSON.stringify({
-            reports: reportsForPDF,
-            company: company,
-            reportFilters: {
-              ...reportFilters,
-              startDate: startDateTime.toISOString(),
-              endDate: endDateTime.toISOString()
-            },
-            userId: user?.id
-          })
-        }
-      );
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: "Failed to generate PDF report.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Get PDF as blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `security_report_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
       toast({
         title: "Success",
         description: `Report generated successfully with ${data.length} reports.`,
