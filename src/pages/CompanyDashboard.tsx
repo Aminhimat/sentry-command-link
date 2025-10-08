@@ -832,8 +832,14 @@ const CompanyDashboard = () => {
       }
 
       if (pdfData?.downloadUrl) {
-        // Download the PDF
-        window.open(pdfData.downloadUrl, '_blank');
+        // Force download instead of opening (bypasses browser blocks)
+        const link = document.createElement('a');
+        link.href = pdfData.downloadUrl;
+        link.download = `security_report_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
         toast({
           title: "Success",
           description: `Report generated successfully with ${data.length} reports.`,
