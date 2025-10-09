@@ -562,10 +562,13 @@ export class PDFReportGenerator {
 
           try {
             // Fetch image as blob first for better compression
+            const controller = new AbortController();
+            const abortId = setTimeout(() => controller.abort(), fetchTimeout);
             const response = await fetch(report.image_url!, { 
               mode: 'cors',
-              signal: AbortSignal.timeout(fetchTimeout) // Device-appropriate timeout
+              signal: controller.signal
             });
+            clearTimeout(abortId);
             
             if (!response.ok) {
               throw new Error(`Failed to fetch image: ${response.status}`);
@@ -673,8 +676,25 @@ export class PDFReportGenerator {
       
       const filename = `security_report_${dateStr}.pdf`;
 
-      // Save the PDF with compression
-      this.doc.save(filename);
+      // Save the PDF with iOS-friendly behavior
+      const isIOS = /iP(hone|ad|od)/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+      if (isIOS) {
+        const blob = this.doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        // Open in a new tab; iOS handles viewing/downloading from viewer
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          a.remove();
+        }, 30000);
+      } else {
+        this.doc.save(filename);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error('Failed to generate PDF report. Please try again.');
