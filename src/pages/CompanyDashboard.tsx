@@ -1059,22 +1059,22 @@ const CompanyDashboard = () => {
       <div className="flex-1 p-6">
         {/* Dashboard Tabs */}
         <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm">
-            <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm touch-manipulation">
+            <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
               Live Tracking
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dashboard">
+          <TabsContent value="dashboard" forceMount>
             <StatsCards guards={guards} incidents={reports} />
           </TabsContent>
           
-          <TabsContent value="tracking">
+          <TabsContent value="tracking" forceMount>
             {userProfile?.company_id && (
               <LiveGuardMap companyId={userProfile.company_id} />
             )}

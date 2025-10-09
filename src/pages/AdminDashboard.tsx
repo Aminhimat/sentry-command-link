@@ -750,16 +750,16 @@ const AdminDashboard = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="analytics" className="text-sm sm:text-base">Analytics</TabsTrigger>
-            <TabsTrigger value="companies" className="text-sm sm:text-base">Companies</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 touch-manipulation">
+            <TabsTrigger value="analytics" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Analytics</TabsTrigger>
+            <TabsTrigger value="companies" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Companies</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
+          <TabsContent value="analytics" forceMount className="space-y-4 sm:space-y-6">
             <CompanyAnalytics />
           </TabsContent>
           
-          <TabsContent value="companies" className="space-y-4 sm:space-y-6">
+          <TabsContent value="companies" forceMount className="space-y-4 sm:space-y-6">
             {/* Companies Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
               <h2 className="text-2xl sm:text-3xl font-bold">Security Companies</h2>
