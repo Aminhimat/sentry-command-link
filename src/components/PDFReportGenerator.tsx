@@ -632,7 +632,7 @@ export class PDFReportGenerator {
     return imageMap;
   }
 
-  public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<string> {
+  public async generateReport(reports: Report[], company: Company | null, reportFilters: any, output: 'blob' | 'data-uri' = 'blob'): Promise<string> {
     try {
       console.log('[PDF] Starting PDF generation for', reports.length, 'reports');
       
@@ -679,12 +679,18 @@ export class PDFReportGenerator {
       this.doc.setFont('helvetica', 'normal');
       console.log('[PDF] Step 4 complete');
 
-      // Return a blob URL so caller can handle iOS/desktop download behavior
-      console.log('[PDF] Step 5: Creating blob URL...');
-      const blob = this.doc.output('blob');
-      const url = URL.createObjectURL(blob);
-      console.log('[PDF] Step 5 complete. PDF ready!');
-      return url;
+      if (output === 'data-uri') {
+        console.log('[PDF] Step 5: Creating data URI...');
+        const dataUri = this.doc.output('datauristring');
+        console.log('[PDF] Step 5 complete. PDF data URI ready!');
+        return dataUri;
+      } else {
+        console.log('[PDF] Step 5: Creating blob URL...');
+        const blob = this.doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        console.log('[PDF] Step 5 complete. PDF blob ready!');
+        return url;
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error('Failed to generate PDF report. Please try again.');
@@ -692,7 +698,12 @@ export class PDFReportGenerator {
   }
 }
 
-export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any): Promise<string> => {
+export const generatePDFReport = async (
+  reports: Report[],
+  company: Company | null,
+  reportFilters: any,
+  options?: { output?: 'blob' | 'data-uri' }
+): Promise<string> => {
   const generator = new PDFReportGenerator();
   
   // Detect mobile device for appropriate timeout
@@ -708,8 +719,10 @@ export const generatePDFReport = async (reports: Report[], company: Company | nu
     setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')) as any, timeout)
   );
   
+  const output = options?.output ?? 'blob';
+  
   return await Promise.race<any>([
-    generator.generateReport(reports, company, reportFilters),
+    generator.generateReport(reports, company, reportFilters, output),
     timeoutPromise
   ]);
 };

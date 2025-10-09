@@ -817,11 +817,16 @@ const CompanyDashboard = () => {
         const preWin = isIOS ? window.open('about:blank', '_blank') : null;
 
         console.log('[Dashboard] Calling generatePDFReport...');
-        const pdfUrl = await generatePDFReport(reportsForPDF, company, {
-          ...reportFilters,
-          startDate: startDateTime.toISOString(),
-          endDate: endDateTime.toISOString()
-        });
+        const pdfUrl = await generatePDFReport(
+          reportsForPDF,
+          company,
+          {
+            ...reportFilters,
+            startDate: startDateTime.toISOString(),
+            endDate: endDateTime.toISOString()
+          },
+          { output: isIOS ? 'data-uri' : 'blob' }
+        );
         console.log('[Dashboard] PDF URL received:', pdfUrl);
 
         // Build filename here
