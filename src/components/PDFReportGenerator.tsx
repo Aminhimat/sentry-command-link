@@ -544,20 +544,27 @@ export class PDFReportGenerator {
     const imageMap = new Map<string, HTMLImageElement>();
     const imagePromises: Promise<void>[] = [];
 
+    // Detect mobile device for longer timeouts
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const fetchTimeout = isMobile ? 20000 : 10000; // 20s for mobile, 10s for desktop
+    const overallTimeout = isMobile ? 45000 : 20000; // 45s for mobile, 20s for desktop
+    
+    console.log(`Preloading images (mobile: ${isMobile}, fetch timeout: ${fetchTimeout}ms)...`);
+
     reports.forEach(report => {
       if (report.image_url) {
         const promise = new Promise<void>(async (resolve) => {
-          // Add timeout for each individual image (5 seconds max)
+          // Add timeout for each individual image - longer for mobile
           const imageTimeout = setTimeout(() => {
-            console.warn('Image load timeout:', report.image_url);
+            console.warn(`Image load timeout (${fetchTimeout}ms):`, report.image_url);
             resolve();
-          }, 5000);
+          }, fetchTimeout);
 
           try {
             // Fetch image as blob first for better compression
             const response = await fetch(report.image_url!, { 
               mode: 'cors',
-              signal: AbortSignal.timeout(5000) // 5s timeout for fetch
+              signal: AbortSignal.timeout(fetchTimeout) // Device-appropriate timeout
             });
             
             if (!response.ok) {
@@ -569,11 +576,16 @@ export class PDFReportGenerator {
             // Convert to File for compression
             const file = new File([blob], 'image.jpg', { type: blob.type });
             
-            // WebP at high quality - excellent visuals, smaller file, faster generation
+            // More aggressive compression for mobile devices
+            const compressionQuality = isMobile ? 0.85 : 0.94;
+            const maxWidth = isMobile ? 1280 : 1600;
+            const maxHeight = isMobile ? 960 : 1200;
+            
+            // WebP compression optimized for device
             const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: 0.94,
-              maxWidth: 1600,
-              maxHeight: 1200,
+              quality: compressionQuality,
+              maxWidth: maxWidth,
+              maxHeight: maxHeight,
               format: 'webp'
             });
             
@@ -604,10 +616,13 @@ export class PDFReportGenerator {
       }
     });
 
-    // Wait for all images to load (or fail) with 10s timeout
+    // Wait for all images to load (or fail) with device-appropriate timeout
     await Promise.race([
       Promise.all(imagePromises),
-      new Promise(resolve => setTimeout(resolve, 10000))
+      new Promise(resolve => setTimeout(() => {
+        console.warn(`Image preloading timed out after ${overallTimeout}ms`);
+        resolve(undefined);
+      }, overallTimeout))
     ]);
 
     console.log(`Preloaded ${imageMap.size} images out of ${imagePromises.length} total`);
@@ -670,9 +685,17 @@ export class PDFReportGenerator {
 export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any) => {
   const generator = new PDFReportGenerator();
   
-  // Add overall timeout of 60 seconds for entire PDF generation
+  // Detect mobile device for appropriate timeout
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const baseTimeout = isMobile ? 120000 : 60000; // 2 min for mobile, 1 min for desktop
+  const perReportTimeout = isMobile ? 8000 : 5000; // 8s per report on mobile, 5s on desktop
+  const timeout = Math.max(baseTimeout, reports.length * perReportTimeout);
+  
+  console.log(`Generating PDF with ${timeout}ms timeout (mobile: ${isMobile}, reports: ${reports.length})`);
+  
+  // Add overall timeout for entire PDF generation
   const timeoutPromise = new Promise<never>((_, reject) => 
-    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')), 60000)
+    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')), timeout)
   );
   
   await Promise.race([
