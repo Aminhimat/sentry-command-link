@@ -1070,11 +1070,11 @@ const CompanyDashboard = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dashboard" forceMount>
+          <TabsContent value="dashboard">
             <StatsCards guards={guards} incidents={reports} />
           </TabsContent>
           
-          <TabsContent value="tracking" forceMount>
+          <TabsContent value="tracking">
             {userProfile?.company_id && (
               <LiveGuardMap companyId={userProfile.company_id} />
             )}
