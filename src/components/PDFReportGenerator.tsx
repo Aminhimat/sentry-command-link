@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { imageOptimizer } from '../utils/imageOptimization';
 
 interface Report {
   id: string;
@@ -427,8 +426,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized DPI - excellent quality, faster processing
-      const targetDPI = 160; // Sharp images, quick generation
+      // DPI-aware downscaling to reduce size without quality loss
+      const targetDPI = 240; // High quality for mobile viewing/printing
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -448,30 +447,14 @@ export class PDFReportGenerator {
       canvas.width = canvasW;
       canvas.height = canvasH;
 
-      // Draw and compress image with optimized settings
+      // Draw and compress image
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Advanced compression: Use WebP format for smaller file size with better quality
-      let imageData: string;
-      let format: 'WEBP' | 'JPEG';
-      
-      // WebP maximum quality - looks better than JPEG at smaller size
-      try {
-        imageData = canvas.toDataURL('image/webp', 0.94);
-        if (imageData.startsWith('data:image/webp')) {
-          format = 'WEBP';
-        } else {
-          throw new Error('WebP not supported');
-        }
-      } catch (e) {
-        // JPEG fallback - high quality but larger file
-        imageData = canvas.toDataURL('image/jpeg', 0.90);
-        format = 'JPEG';
-      }
-      
-      this.doc.addImage(imageData, format, x, y, width, height, undefined, 'FAST');
+      // High-quality JPEG; 'SLOW' encoder yields smaller files at same quality
+      const imageData = canvas.toDataURL('image/jpeg', 0.85);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
@@ -544,185 +527,90 @@ export class PDFReportGenerator {
     const imageMap = new Map<string, HTMLImageElement>();
     const imagePromises: Promise<void>[] = [];
 
-    // Detect mobile device for longer timeouts
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const fetchTimeout = isMobile ? 20000 : 10000; // 20s for mobile, 10s for desktop
-    const overallTimeout = isMobile ? 45000 : 20000; // 45s for mobile, 20s for desktop
-    
-    console.log(`Preloading images (mobile: ${isMobile}, fetch timeout: ${fetchTimeout}ms)...`);
-
     reports.forEach(report => {
       if (report.image_url) {
-        const promise = new Promise<void>(async (resolve) => {
-          // Add timeout for each individual image - longer for mobile
-          const imageTimeout = setTimeout(() => {
-            console.warn(`Image load timeout (${fetchTimeout}ms):`, report.image_url);
+        const promise = new Promise<void>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          
+          img.onload = () => {
+            imageMap.set(report.image_url!, img);
             resolve();
-          }, fetchTimeout);
-
-          try {
-            // Fetch image as blob first for better compression
-            const controller = new AbortController();
-            const abortId = setTimeout(() => controller.abort(), fetchTimeout);
-            const response = await fetch(report.image_url!, { 
-              mode: 'cors',
-              signal: controller.signal
-            });
-            clearTimeout(abortId);
-            
-            if (!response.ok) {
-              throw new Error(`Failed to fetch image: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            
-            // Convert to File for compression
-            const file = new File([blob], 'image.jpg', { type: blob.type });
-            
-            // More aggressive compression for mobile devices
-            const compressionQuality = isMobile ? 0.85 : 0.94;
-            const maxWidth = isMobile ? 1280 : 1600;
-            const maxHeight = isMobile ? 960 : 1200;
-            
-            // WebP compression optimized for device
-            const { compressedFile } = await imageOptimizer.compressImage(file, {
-              quality: compressionQuality,
-              maxWidth: maxWidth,
-              maxHeight: maxHeight,
-              format: 'webp'
-            });
-            
-            // Create image element from compressed file
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            
-            img.onload = () => {
-              clearTimeout(imageTimeout);
-              imageMap.set(report.image_url!, img);
-              resolve();
-            };
-            
-            img.onerror = () => {
-              clearTimeout(imageTimeout);
-              console.warn('Failed to load compressed image:', report.image_url);
-              resolve();
-            };
-            
-            img.src = URL.createObjectURL(compressedFile);
-          } catch (error) {
-            clearTimeout(imageTimeout);
-            console.warn('Failed to preload/compress image:', report.image_url, error);
-            resolve();
-          }
+          };
+          
+          img.onerror = () => {
+            console.warn('Failed to preload image:', report.image_url);
+            resolve(); // Don't block on failed images
+          };
+          
+          // Remove cache-busting for better performance
+          img.src = report.image_url!;
         });
         imagePromises.push(promise);
       }
     });
 
-    // Wait for all images to load (or fail) with device-appropriate timeout
+    // Wait for all images to load (or fail) with 10s timeout
     await Promise.race([
       Promise.all(imagePromises),
-      new Promise(resolve => setTimeout(() => {
-        console.warn(`Image preloading timed out after ${overallTimeout}ms`);
-        resolve(undefined);
-      }, overallTimeout))
+      new Promise(resolve => setTimeout(resolve, 10000))
     ]);
 
-    console.log(`Preloaded ${imageMap.size} images out of ${imagePromises.length} total`);
     return imageMap;
   }
 
-  public async generateReport(reports: Report[], company: Company | null, reportFilters: any, output: 'blob' | 'data-uri' = 'blob'): Promise<string> {
-    try {
-      console.log('[PDF] Starting PDF generation for', reports.length, 'reports');
+  public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
+    // Preload all images in parallel first
+    const preloadedImages = await this.preloadAllImages(reports);
+
+    // Add header to first page
+    await this.drawHeader(company, reportFilters);
+
+    // Add each report with exactly 5 reports per page
+    for (let i = 0; i < reports.length; i++) {
+      // Add new page and header after every 5 reports (except the first page)
+      if (i > 0 && i % 5 === 0) {
+        // Page number will be added in a single final pass
+        this.doc.addPage();
+        this.currentY = this.margin;
+        await this.drawHeader(company, reportFilters);
+      }
       
-      // Preload all images in parallel first with timeout
-      console.log('[PDF] Step 1: Preloading images...');
-      const preloadedImages = await this.preloadAllImages(reports);
-      console.log('[PDF] Step 1 complete: Preloaded', preloadedImages.size, 'images');
-
-      // Add header to first page
-      console.log('[PDF] Step 2: Drawing header...');
-      await this.drawHeader(company, reportFilters);
-      console.log('[PDF] Step 2 complete');
-
-      // Add each report with exactly 5 reports per page
-      console.log('[PDF] Step 3: Adding report entries...');
-      for (let i = 0; i < reports.length; i++) {
-        if (i % 10 === 0) console.log(`[PDF] Processing report ${i + 1}/${reports.length}`);
-        
-        // Add new page and header after every 5 reports (except the first page)
-        if (i > 0 && i % 5 === 0) {
-          // Page number will be added in a single final pass
-          this.doc.addPage();
-          this.currentY = this.margin;
-          await this.drawHeader(company, reportFilters);
-        }
-        
-        await this.addReportEntry(reports[i], i, company, preloadedImages);
-      }
-      console.log('[PDF] Step 3 complete');
-
-      // Update all page numbers to show total with better clarity
-      console.log('[PDF] Step 4: Adding page numbers...');
-      const totalPages = this.doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        this.doc.setPage(i);
-        this.doc.setFontSize(11);
-        this.doc.setFont('helvetica', 'bold');
-        this.doc.setTextColor(80, 80, 80);
-        const pageText = `Page ${i} of ${totalPages}`;
-        const textWidth = this.doc.getTextWidth(pageText);
-        this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
-      }
-      this.doc.setTextColor(0, 0, 0);
-      this.doc.setFont('helvetica', 'normal');
-      console.log('[PDF] Step 4 complete');
-
-      if (output === 'data-uri') {
-        console.log('[PDF] Step 5: Creating data URI...');
-        const dataUri = this.doc.output('datauristring');
-        console.log('[PDF] Step 5 complete. PDF data URI ready!');
-        return dataUri;
-      } else {
-        console.log('[PDF] Step 5: Creating blob URL...');
-        const blob = this.doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        console.log('[PDF] Step 5 complete. PDF blob ready!');
-        return url;
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw new Error('Failed to generate PDF report. Please try again.');
+      await this.addReportEntry(reports[i], i, company, preloadedImages);
     }
+
+    // Add page number to the last page
+    
+
+    // Update all page numbers to show total with better clarity
+    const totalPages = this.doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      this.doc.setPage(i);
+      this.doc.setFontSize(11); // Increased from 9 for better mobile clarity
+      this.doc.setFont('helvetica', 'bold'); // Bold for better visibility
+      this.doc.setTextColor(80, 80, 80); // Slightly darker gray for better contrast
+      const pageText = `Page ${i} of ${totalPages}`;
+      const textWidth = this.doc.getTextWidth(pageText);
+      this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
+    }
+    this.doc.setTextColor(0, 0, 0);
+    this.doc.setFont('helvetica', 'normal');
+
+    // Generate filename
+    const startDate = new Date(reportFilters.startDate);
+    const endDate = new Date(reportFilters.endDate);
+    const dateStr = reportFilters.reportType === 'daily' 
+      ? startDate.toISOString().split('T')[0]
+      : `${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}`;
+    
+    const filename = `security_report_${dateStr}.pdf`;
+
+    // Save the PDF with compression
+    this.doc.save(filename);
   }
 }
 
-export const generatePDFReport = async (
-  reports: Report[],
-  company: Company | null,
-  reportFilters: any,
-  options?: { output?: 'blob' | 'data-uri' }
-): Promise<string> => {
+export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any) => {
   const generator = new PDFReportGenerator();
-  
-  // Detect mobile device for appropriate timeout
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const baseTimeout = isMobile ? 120000 : 60000; // 2 min for mobile, 1 min for desktop
-  const perReportTimeout = isMobile ? 8000 : 5000; // 8s per report on mobile, 5s on desktop
-  const timeout = Math.max(baseTimeout, reports.length * perReportTimeout);
-  
-  console.log(`Generating PDF with ${timeout}ms timeout (mobile: ${isMobile}, reports: ${reports.length})`);
-  
-  // Add overall timeout for entire PDF generation
-  const timeoutPromise = new Promise<string>((_, reject) => 
-    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')) as any, timeout)
-  );
-  
-  const output = options?.output ?? 'blob';
-  
-  return await Promise.race<any>([
-    generator.generateReport(reports, company, reportFilters, output),
-    timeoutPromise
-  ]);
+  await generator.generateReport(reports, company, reportFilters);
 };

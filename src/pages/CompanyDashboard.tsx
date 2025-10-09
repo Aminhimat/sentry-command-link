@@ -723,12 +723,6 @@ const CompanyDashboard = () => {
     try {
       setIsGeneratingReport(true);
       
-      // Show loading toast
-      toast({
-        title: "Generating PDF",
-        description: "Please wait while we generate your report...",
-      });
-      
       let query = supabase
         .from('guard_reports')
         .select(`
@@ -809,71 +803,17 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF client-side with optimized settings (faster than before)
-      console.log('[Dashboard] Starting PDF generation with', reportsForPDF.length, 'reports');
-      try {
-        // iOS popup-safe: open a blank tab immediately on user gesture
-        const isIOS = /iP(hone|ad|od)/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-        const preWin = isIOS ? window.open('about:blank', '_blank') : null;
+      // Generate PDF directly on client-side
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
+      });
 
-        console.log('[Dashboard] Calling generatePDFReport...');
-        const pdfUrl = await generatePDFReport(
-          reportsForPDF,
-          company,
-          {
-            ...reportFilters,
-            startDate: startDateTime.toISOString(),
-            endDate: endDateTime.toISOString()
-          },
-          { output: isIOS ? 'data-uri' : 'blob' }
-        );
-        console.log('[Dashboard] PDF URL received:', pdfUrl);
-
-        // Build filename here
-        const dateStr = reportFilters.reportType === 'daily'
-          ? startDateTime.toISOString().split('T')[0]
-          : `${startDateTime.toISOString().split('T')[0]}_to_${endDateTime.toISOString().split('T')[0]}`;
-        const filename = `security_report_${dateStr}.pdf`;
-
-        console.log('[Dashboard] Triggering download:', filename);
-        if (isIOS) {
-          if (preWin) {
-            try {
-              preWin.document.open();
-              preWin.document.write(`<!doctype html><html><head><title>${filename}</title><meta name="viewport" content="width=device-width, initial-scale=1" /></head><body style="margin:0"><iframe src="${pdfUrl}" style="border:0;position:fixed;inset:0;width:100%;height:100vh;"></iframe></body></html>`);
-              preWin.document.close();
-              console.log('[Dashboard] Opened PDF in new tab (iOS iframe)');
-            } catch (e) {
-              preWin.location.href = pdfUrl;
-              console.warn('[Dashboard] Fallback to direct URL navigation for iOS');
-            }
-          }
-        } else {
-          // Use FileSaver for correct filename on desktop browsers
-          const link = document.createElement('a');
-          link.href = pdfUrl;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          setTimeout(() => {
-            URL.revokeObjectURL(pdfUrl);
-            link.remove();
-          }, 30000);
-        }
-
-        console.log('[Dashboard] PDF generation complete!');
-        toast({
-          title: "Success",
-          description: `Report generated successfully with ${data.length} reports.`,
-        });
-      } catch (error) {
-        console.error('[Dashboard] PDF generation error:', error);
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to generate PDF. Please try again.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Success",
+        description: `Report generated successfully with ${data.length} reports.`,
+      });
 
     } catch (error: any) {
       console.error('Error generating report:', error);
