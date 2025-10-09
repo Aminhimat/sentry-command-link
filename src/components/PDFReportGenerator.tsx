@@ -547,9 +547,23 @@ export class PDFReportGenerator {
     reports.forEach(report => {
       if (report.image_url) {
         const promise = new Promise<void>(async (resolve) => {
+          // Add timeout for each individual image (5 seconds max)
+          const imageTimeout = setTimeout(() => {
+            console.warn('Image load timeout:', report.image_url);
+            resolve();
+          }, 5000);
+
           try {
             // Fetch image as blob first for better compression
-            const response = await fetch(report.image_url!, { mode: 'cors' });
+            const response = await fetch(report.image_url!, { 
+              mode: 'cors',
+              signal: AbortSignal.timeout(5000) // 5s timeout for fetch
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+
             const blob = await response.blob();
             
             // Convert to File for compression
@@ -568,17 +582,20 @@ export class PDFReportGenerator {
             img.crossOrigin = 'anonymous';
             
             img.onload = () => {
+              clearTimeout(imageTimeout);
               imageMap.set(report.image_url!, img);
               resolve();
             };
             
             img.onerror = () => {
+              clearTimeout(imageTimeout);
               console.warn('Failed to load compressed image:', report.image_url);
               resolve();
             };
             
             img.src = URL.createObjectURL(compressedFile);
           } catch (error) {
+            clearTimeout(imageTimeout);
             console.warn('Failed to preload/compress image:', report.image_url, error);
             resolve();
           }
@@ -587,67 +604,79 @@ export class PDFReportGenerator {
       }
     });
 
-    // Wait for all images to load (or fail) with 15s timeout
+    // Wait for all images to load (or fail) with 10s timeout
     await Promise.race([
       Promise.all(imagePromises),
-      new Promise(resolve => setTimeout(resolve, 15000))
+      new Promise(resolve => setTimeout(resolve, 10000))
     ]);
 
+    console.log(`Preloaded ${imageMap.size} images out of ${imagePromises.length} total`);
     return imageMap;
   }
 
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
-    // Preload all images in parallel first
-    const preloadedImages = await this.preloadAllImages(reports);
+    try {
+      // Preload all images in parallel first with timeout
+      const preloadedImages = await this.preloadAllImages(reports);
 
-    // Add header to first page
-    await this.drawHeader(company, reportFilters);
+      // Add header to first page
+      await this.drawHeader(company, reportFilters);
 
-    // Add each report with exactly 5 reports per page
-    for (let i = 0; i < reports.length; i++) {
-      // Add new page and header after every 5 reports (except the first page)
-      if (i > 0 && i % 5 === 0) {
-        // Page number will be added in a single final pass
-        this.doc.addPage();
-        this.currentY = this.margin;
-        await this.drawHeader(company, reportFilters);
+      // Add each report with exactly 5 reports per page
+      for (let i = 0; i < reports.length; i++) {
+        // Add new page and header after every 5 reports (except the first page)
+        if (i > 0 && i % 5 === 0) {
+          // Page number will be added in a single final pass
+          this.doc.addPage();
+          this.currentY = this.margin;
+          await this.drawHeader(company, reportFilters);
+        }
+        
+        await this.addReportEntry(reports[i], i, company, preloadedImages);
       }
+
+      // Update all page numbers to show total with better clarity
+      const totalPages = this.doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        this.doc.setPage(i);
+        this.doc.setFontSize(11);
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setTextColor(80, 80, 80);
+        const pageText = `Page ${i} of ${totalPages}`;
+        const textWidth = this.doc.getTextWidth(pageText);
+        this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
+      }
+      this.doc.setTextColor(0, 0, 0);
+      this.doc.setFont('helvetica', 'normal');
+
+      // Generate filename
+      const startDate = new Date(reportFilters.startDate);
+      const endDate = new Date(reportFilters.endDate);
+      const dateStr = reportFilters.reportType === 'daily' 
+        ? startDate.toISOString().split('T')[0]
+        : `${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}`;
       
-      await this.addReportEntry(reports[i], i, company, preloadedImages);
+      const filename = `security_report_${dateStr}.pdf`;
+
+      // Save the PDF with compression
+      this.doc.save(filename);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw new Error('Failed to generate PDF report. Please try again.');
     }
-
-    // Add page number to the last page
-    
-
-    // Update all page numbers to show total with better clarity
-    const totalPages = this.doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      this.doc.setPage(i);
-      this.doc.setFontSize(11); // Increased from 9 for better mobile clarity
-      this.doc.setFont('helvetica', 'bold'); // Bold for better visibility
-      this.doc.setTextColor(80, 80, 80); // Slightly darker gray for better contrast
-      const pageText = `Page ${i} of ${totalPages}`;
-      const textWidth = this.doc.getTextWidth(pageText);
-      this.doc.text(pageText, (this.pageWidth - textWidth) / 2, this.pageHeight - 5);
-    }
-    this.doc.setTextColor(0, 0, 0);
-    this.doc.setFont('helvetica', 'normal');
-
-    // Generate filename
-    const startDate = new Date(reportFilters.startDate);
-    const endDate = new Date(reportFilters.endDate);
-    const dateStr = reportFilters.reportType === 'daily' 
-      ? startDate.toISOString().split('T')[0]
-      : `${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}`;
-    
-    const filename = `security_report_${dateStr}.pdf`;
-
-    // Save the PDF with compression
-    this.doc.save(filename);
   }
 }
 
 export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any) => {
   const generator = new PDFReportGenerator();
-  await generator.generateReport(reports, company, reportFilters);
+  
+  // Add overall timeout of 60 seconds for entire PDF generation
+  const timeoutPromise = new Promise<never>((_, reject) => 
+    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')), 60000)
+  );
+  
+  await Promise.race([
+    generator.generateReport(reports, company, reportFilters),
+    timeoutPromise
+  ]);
 };

@@ -723,6 +723,12 @@ const CompanyDashboard = () => {
     try {
       setIsGeneratingReport(true);
       
+      // Show loading toast
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we generate your report...",
+      });
+      
       let query = supabase
         .from('guard_reports')
         .select(`
