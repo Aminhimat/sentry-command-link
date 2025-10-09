@@ -832,7 +832,17 @@ const CompanyDashboard = () => {
 
         console.log('[Dashboard] Triggering download:', filename);
         if (isIOS) {
-          if (preWin) preWin.location.href = pdfUrl;
+          if (preWin) {
+            try {
+              preWin.document.open();
+              preWin.document.write(`<!doctype html><html><head><title>${filename}</title><meta name="viewport" content="width=device-width, initial-scale=1" /></head><body style="margin:0"><iframe src="${pdfUrl}" style="border:0;position:fixed;inset:0;width:100%;height:100vh;"></iframe></body></html>`);
+              preWin.document.close();
+              console.log('[Dashboard] Opened PDF in new tab (iOS iframe)');
+            } catch (e) {
+              preWin.location.href = pdfUrl;
+              console.warn('[Dashboard] Fallback to direct URL navigation for iOS');
+            }
+          }
         } else {
           // Use FileSaver for correct filename on desktop browsers
           const link = document.createElement('a');
