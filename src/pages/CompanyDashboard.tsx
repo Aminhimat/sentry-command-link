@@ -811,11 +811,36 @@ const CompanyDashboard = () => {
 
       // Generate PDF client-side with optimized settings (faster than before)
       try {
-        await generatePDFReport(reportsForPDF, company, {
+        // iOS popup-safe: open a blank tab immediately on user gesture
+        const isIOS = /iP(hone|ad|od)/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+        const preWin = isIOS ? window.open('about:blank', '_blank') : null;
+
+        const pdfUrl = await generatePDFReport(reportsForPDF, company, {
           ...reportFilters,
           startDate: startDateTime.toISOString(),
           endDate: endDateTime.toISOString()
         });
+
+        // Build filename here
+        const dateStr = reportFilters.reportType === 'daily'
+          ? startDateTime.toISOString().split('T')[0]
+          : `${startDateTime.toISOString().split('T')[0]}_to_${endDateTime.toISOString().split('T')[0]}`;
+        const filename = `security_report_${dateStr}.pdf`;
+
+        if (isIOS) {
+          if (preWin) preWin.location.href = pdfUrl;
+        } else {
+          // Use FileSaver for correct filename on desktop browsers
+          const link = document.createElement('a');
+          link.href = pdfUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          setTimeout(() => {
+            URL.revokeObjectURL(pdfUrl);
+            link.remove();
+          }, 30000);
+        }
 
         toast({
           title: "Success",

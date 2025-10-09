@@ -632,7 +632,7 @@ export class PDFReportGenerator {
     return imageMap;
   }
 
-  public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
+  public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<string> {
     try {
       // Preload all images in parallel first with timeout
       const preloadedImages = await this.preloadAllImages(reports);
@@ -667,34 +667,10 @@ export class PDFReportGenerator {
       this.doc.setTextColor(0, 0, 0);
       this.doc.setFont('helvetica', 'normal');
 
-      // Generate filename
-      const startDate = new Date(reportFilters.startDate);
-      const endDate = new Date(reportFilters.endDate);
-      const dateStr = reportFilters.reportType === 'daily' 
-        ? startDate.toISOString().split('T')[0]
-        : `${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}`;
-      
-      const filename = `security_report_${dateStr}.pdf`;
-
-      // Save the PDF with iOS-friendly behavior
-      const isIOS = /iP(hone|ad|od)/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-      if (isIOS) {
-        const blob = this.doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        // Open in a new tab; iOS handles viewing/downloading from viewer
-        const a = document.createElement('a');
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          a.remove();
-        }, 30000);
-      } else {
-        this.doc.save(filename);
-      }
+      // Return a blob URL so caller can handle iOS/desktop download behavior
+      const blob = this.doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      return url;
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error('Failed to generate PDF report. Please try again.');
@@ -702,7 +678,7 @@ export class PDFReportGenerator {
   }
 }
 
-export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any) => {
+export const generatePDFReport = async (reports: Report[], company: Company | null, reportFilters: any): Promise<string> => {
   const generator = new PDFReportGenerator();
   
   // Detect mobile device for appropriate timeout
@@ -714,11 +690,11 @@ export const generatePDFReport = async (reports: Report[], company: Company | nu
   console.log(`Generating PDF with ${timeout}ms timeout (mobile: ${isMobile}, reports: ${reports.length})`);
   
   // Add overall timeout for entire PDF generation
-  const timeoutPromise = new Promise<never>((_, reject) => 
-    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')), timeout)
+  const timeoutPromise = new Promise<string>((_, reject) => 
+    setTimeout(() => reject(new Error('PDF generation timed out. Please try with fewer reports or contact support.')) as any, timeout)
   );
   
-  await Promise.race([
+  return await Promise.race<any>([
     generator.generateReport(reports, company, reportFilters),
     timeoutPromise
   ]);
