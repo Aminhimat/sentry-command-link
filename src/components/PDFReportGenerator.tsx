@@ -634,14 +634,23 @@ export class PDFReportGenerator {
 
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<string> {
     try {
+      console.log('[PDF] Starting PDF generation for', reports.length, 'reports');
+      
       // Preload all images in parallel first with timeout
+      console.log('[PDF] Step 1: Preloading images...');
       const preloadedImages = await this.preloadAllImages(reports);
+      console.log('[PDF] Step 1 complete: Preloaded', preloadedImages.size, 'images');
 
       // Add header to first page
+      console.log('[PDF] Step 2: Drawing header...');
       await this.drawHeader(company, reportFilters);
+      console.log('[PDF] Step 2 complete');
 
       // Add each report with exactly 5 reports per page
+      console.log('[PDF] Step 3: Adding report entries...');
       for (let i = 0; i < reports.length; i++) {
+        if (i % 10 === 0) console.log(`[PDF] Processing report ${i + 1}/${reports.length}`);
+        
         // Add new page and header after every 5 reports (except the first page)
         if (i > 0 && i % 5 === 0) {
           // Page number will be added in a single final pass
@@ -652,8 +661,10 @@ export class PDFReportGenerator {
         
         await this.addReportEntry(reports[i], i, company, preloadedImages);
       }
+      console.log('[PDF] Step 3 complete');
 
       // Update all page numbers to show total with better clarity
+      console.log('[PDF] Step 4: Adding page numbers...');
       const totalPages = this.doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         this.doc.setPage(i);
@@ -666,10 +677,13 @@ export class PDFReportGenerator {
       }
       this.doc.setTextColor(0, 0, 0);
       this.doc.setFont('helvetica', 'normal');
+      console.log('[PDF] Step 4 complete');
 
       // Return a blob URL so caller can handle iOS/desktop download behavior
+      console.log('[PDF] Step 5: Creating blob URL...');
       const blob = this.doc.output('blob');
       const url = URL.createObjectURL(blob);
+      console.log('[PDF] Step 5 complete. PDF ready!');
       return url;
     } catch (error) {
       console.error('Error generating PDF:', error);

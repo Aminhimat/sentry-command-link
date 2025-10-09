@@ -810,16 +810,19 @@ const CompanyDashboard = () => {
       });
 
       // Generate PDF client-side with optimized settings (faster than before)
+      console.log('[Dashboard] Starting PDF generation with', reportsForPDF.length, 'reports');
       try {
         // iOS popup-safe: open a blank tab immediately on user gesture
         const isIOS = /iP(hone|ad|od)/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
         const preWin = isIOS ? window.open('about:blank', '_blank') : null;
 
+        console.log('[Dashboard] Calling generatePDFReport...');
         const pdfUrl = await generatePDFReport(reportsForPDF, company, {
           ...reportFilters,
           startDate: startDateTime.toISOString(),
           endDate: endDateTime.toISOString()
         });
+        console.log('[Dashboard] PDF URL received:', pdfUrl);
 
         // Build filename here
         const dateStr = reportFilters.reportType === 'daily'
@@ -827,6 +830,7 @@ const CompanyDashboard = () => {
           : `${startDateTime.toISOString().split('T')[0]}_to_${endDateTime.toISOString().split('T')[0]}`;
         const filename = `security_report_${dateStr}.pdf`;
 
+        console.log('[Dashboard] Triggering download:', filename);
         if (isIOS) {
           if (preWin) preWin.location.href = pdfUrl;
         } else {
@@ -842,15 +846,16 @@ const CompanyDashboard = () => {
           }, 30000);
         }
 
+        console.log('[Dashboard] PDF generation complete!');
         toast({
           title: "Success",
           description: `Report generated successfully with ${data.length} reports.`,
         });
       } catch (error) {
-        console.error('PDF generation error:', error);
+        console.error('[Dashboard] PDF generation error:', error);
         toast({
           title: "Error",
-          description: "Failed to generate PDF. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to generate PDF. Please try again.",
           variant: "destructive"
         });
       }
