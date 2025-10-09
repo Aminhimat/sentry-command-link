@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -1686,12 +1686,18 @@ const GuardDashboard = () => {
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
                 <Tabs defaultValue="properties" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="properties" className="flex items-center gap-2">
+                  <TabsList className="grid w-full grid-cols-2 touch-manipulation">
+                    <TabsTrigger 
+                      value="properties" 
+                      className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
+                    >
                       <Building className="h-4 w-4" />
                       Properties
                     </TabsTrigger>
-                    <TabsTrigger value="qr" className="flex items-center gap-2">
+                    <TabsTrigger 
+                      value="qr" 
+                      className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
+                    >
                       <QrCode className="h-4 w-4" />
                       QR Scan
                     </TabsTrigger>
