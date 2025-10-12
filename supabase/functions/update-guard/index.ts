@@ -86,10 +86,13 @@ const handler = async (req: Request): Promise<Response> => {
     if (username && username.trim() !== '') {
       console.log('Updating username/email...');
       
+      // Format username as email (username@company.local)
+      const emailAddress = username.includes('@') ? username : `${username}@company.local`;
+      
       const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(
         guardProfile.user_id,
         { 
-          email: username
+          email: emailAddress
         }
       );
 
