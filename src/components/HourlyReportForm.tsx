@@ -128,35 +128,49 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
   };
 
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const getConnectionSpeed = (): 'slow' | 'medium' | 'fast' => {
+    const connection = (navigator as any).connection;
+    if (!connection) return 'medium';
+    
+    const effectiveType = connection.effectiveType;
+    if (effectiveType === 'slow-2g' || effectiveType === '2g') return 'slow';
+    if (effectiveType === '3g') return 'medium';
+    return 'fast';
+  };
+
+  const uploadImageWithEdgeFunction = async (file: File): Promise<boolean> => {
     try {
-      // Compress image before upload to maintain quality while reducing size
-      const { compressedFile } = await imageOptimizer.compressImage(file, {
-        quality: 0.85,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        format: 'jpeg'
+      // Optimize image based on connection speed
+      const connectionSpeed = getConnectionSpeed();
+      const optimizedImage = await imageOptimizer.optimizeForConnection(file, connectionSpeed);
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('image', optimizedImage);
+      formData.append('reportData', JSON.stringify({
+        guard_id: userProfile.id,
+        company_id: userProfile.company_id,
+        shift_id: activeShift?.id || null,
+        report_text: reportText || null,
+        location_lat: location?.lat || null,
+        location_lng: location?.lng || null,
+        location_address: location?.address || null
+      }));
+
+      // Use edge function for reliable upload
+      const { error } = await supabase.functions.invoke('upload-guard-image', {
+        body: formData
       });
 
-      const fileName = `${userProfile.user_id}/${Date.now()}.jpg`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('guard-reports')
-        .upload(fileName, compressedFile);
-
-      if (uploadError) {
-        console.error('Error uploading image:', uploadError);
-        return null;
+      if (error) {
+        console.error('Edge function error:', error);
+        return false;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('guard-reports')
-        .getPublicUrl(fileName);
-
-      return publicUrl;
+      return true;
     } catch (error) {
-      console.error('Error compressing/uploading image:', error);
-      return null;
+      console.error('Error uploading with edge function:', error);
+      return false;
     }
   };
 
@@ -176,42 +190,19 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
     setIsSubmitting(true);
 
     try {
-      // Prepare report data first
-      const reportData = {
-        guard_id: userProfile.id,
-        company_id: userProfile.company_id,
-        shift_id: activeShift?.id || null,
-        report_text: reportText || null,
-        location_lat: location?.lat || null,
-        location_lng: location?.lng || null,
-        location_address: location?.address || null,
-        image_url: null
-      };
+      const success = await uploadImageWithEdgeFunction(selectedImage);
 
-      // Upload image if selected (in background if possible)
-      if (selectedImage) {
-        const imageUrl = await uploadImage(selectedImage);
-        if (imageUrl) {
-          reportData.image_url = imageUrl;
-        }
-      }
-
-      const { error } = await supabase
-        .from('guard_reports')
-        .insert(reportData);
-
-      if (error) {
-        console.error('Error submitting report:', error);
+      if (!success) {
         toast({
-          title: "Submission failed",
-          description: "Failed to submit report. Please try again.",
+          title: "Upload failed",
+          description: "Failed to upload report. Please try again.",
           variant: "destructive",
         });
         return;
       }
 
       toast({
-        description: "Report submitted",
+        description: "Report submitted successfully",
         duration: 1500,
       });
 
