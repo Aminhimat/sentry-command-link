@@ -14,6 +14,7 @@ interface UpdateGuardRequest {
   firstName: string;
   lastName: string;
   phone?: string;
+  username?: string;
   newPassword?: string;
   assignedPropertyId?: string | null;
 }
@@ -32,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
     const requestBody = await req.json();
     console.log('Request body received:', { ...requestBody, newPassword: requestBody.newPassword ? '[REDACTED]' : 'none' });
     
-    const { guardId, firstName, lastName, phone, newPassword, assignedPropertyId }: UpdateGuardRequest = requestBody;
+    const { guardId, firstName, lastName, phone, username, newPassword, assignedPropertyId }: UpdateGuardRequest = requestBody;
 
     // Validate input data
     if (!guardId || !firstName || !lastName) {
@@ -80,6 +81,25 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('Profile updated successfully');
+
+    // Update username (email) if provided
+    if (username && username.trim() !== '') {
+      console.log('Updating username/email...');
+      
+      const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(
+        guardProfile.user_id,
+        { 
+          email: username
+        }
+      );
+
+      if (emailError) {
+        console.error('Error updating username:', emailError);
+        throw new Error(`Failed to update username: ${emailError.message}`);
+      }
+
+      console.log('Username updated successfully');
+    }
 
     // Update password if provided
     if (newPassword && newPassword.trim() !== '') {

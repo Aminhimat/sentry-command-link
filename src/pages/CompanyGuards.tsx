@@ -86,6 +86,7 @@ const CompanyGuards = () => {
     firstName: "",
     lastName: "",
     phone: "",
+    username: "",
     newPassword: "",
     assignedPropertyId: "none"
   });
@@ -285,6 +286,7 @@ const CompanyGuards = () => {
           firstName: editGuardData.firstName,
           lastName: editGuardData.lastName,
           phone: editGuardData.phone,
+          username: editGuardData.username,
           newPassword: editGuardData.newPassword || null,
           assignedPropertyId: editGuardData.assignedPropertyId !== "none" ? editGuardData.assignedPropertyId : null
         }
@@ -306,6 +308,7 @@ const CompanyGuards = () => {
         firstName: "",
         lastName: "",
         phone: "",
+        username: "",
         newPassword: "",
         assignedPropertyId: "none"
       });
@@ -579,6 +582,16 @@ const CompanyGuards = () => {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="editUsername">Username</Label>
+                    <Input
+                      id="editUsername"
+                      type="text"
+                      value={editGuardData.username}
+                      onChange={(e) => setEditGuardData({...editGuardData, username: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="editPassword">New Password (optional)</Label>
                     <Input
                       id="editPassword"
@@ -707,6 +720,7 @@ const CompanyGuards = () => {
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
+                                  username: guard.email || "",
                                   newPassword: "",
                                   assignedPropertyId: guard.assigned_property_id || "none"
                                 });
