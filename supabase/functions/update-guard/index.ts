@@ -90,9 +90,10 @@ const handler = async (req: Request): Promise<Response> => {
       let emailAddress: string;
       if (username.includes('@')) {
         // If already an email, sanitize it
-        const [localPart, domain] = username.split('@');
+        const [localPart, domainRaw] = username.split('@');
         const sanitizedLocal = localPart.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
-        emailAddress = `${sanitizedLocal}@${domain}`;
+        const sanitizedDomain = domainRaw.trim().toLowerCase().replace(/[^a-z0-9.-]/g, '');
+        emailAddress = `${sanitizedLocal}@${sanitizedDomain}`;
       } else {
         // Create email from username - replace spaces with dots, convert to lowercase
         const sanitizedUsername = username.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
@@ -100,24 +101,37 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       console.log('Sanitized email address:', emailAddress);
-      
-      const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(
-        guardProfile.user_id,
-        { 
-          email: emailAddress
+
+      // Fetch existing auth user to compare and ensure it exists
+      const { data: existingUserData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(guardProfile.user_id);
+      if (getUserError || !existingUserData?.user) {
+        console.warn('Auth user not found, skipping username update', getUserError);
+        // Do not fail the whole request if auth user is missing
+        // Continue with profile update success
+      } else {
+        const currentEmail = existingUserData.user.email?.toLowerCase();
+        if (currentEmail === emailAddress.toLowerCase()) {
+          console.log('Email unchanged, skipping update');
+        } else {
+          const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(
+            guardProfile.user_id,
+            { 
+              email: emailAddress
+            }
+          );
+  
+          if (emailError) {
+            console.error('Error updating username:', emailError);
+            throw new Error(`Failed to update username: ${emailError.message}`);
+          }
+  
+          console.log('Username updated successfully');
         }
-      );
-
-      if (emailError) {
-        console.error('Error updating username:', emailError);
-        throw new Error(`Failed to update username: ${emailError.message}`);
       }
-
-      console.log('Username updated successfully');
     }
 
-    // Update password if provided
-    if (newPassword && newPassword.trim() !== '') {
+    // Update password if provided and not a placeholder like 'none'
+    if (newPassword && newPassword.trim() !== '' && newPassword.trim().toLowerCase() !== 'none') {
       console.log('Updating password...');
       
       // Validate password strength
