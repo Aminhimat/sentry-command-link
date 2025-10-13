@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, MapPin, ArrowLeft, Eye, Edit } from "lucide-react";
+import { Shield, Plus, MapPin, ArrowLeft, Eye, Edit, Activity, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
@@ -284,29 +284,39 @@ const CompanyProperties = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Enhanced Header with Gradient */}
+      <div className="border-b bg-card/80 backdrop-blur-sm shadow-sm">
+        <div className="flex h-20 items-center px-6 max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link to="/company">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                Back to Dashboard
               </Button>
             </Link>
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-xl font-semibold tracking-wide">PROPERTIES & SITES</h1>
-              <p className="text-sm text-muted-foreground">
-                {company?.name} - Manage your security locations
-              </p>
+            <div className="h-10 w-px bg-border" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-md">
+                <MapPin className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                  Properties & Sites
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {company?.name} • Security Locations Management
+                </p>
+              </div>
             </div>
           </div>
           <div className="ml-auto">
-            <Button onClick={() => setShowPropertiesForm(true)}>
+            <Button 
+              onClick={() => setShowPropertiesForm(true)}
+              className="shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-primary to-primary-glow"
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add Property
+              Add New Property
             </Button>
           </div>
         </div>
@@ -316,15 +326,20 @@ const CompanyProperties = () => {
       <div className="p-6 max-w-7xl mx-auto">
         {/* Create Property Form */}
         {showPropertiesForm && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-6 shadow-lg border-primary/20 animate-fade-in">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
               <div className="flex items-center justify-between">
-                <CardTitle>Add New Property/Site</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowPropertiesForm(false)}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Plus className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Add New Property/Site</CardTitle>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowPropertiesForm(false)} className="hover:bg-destructive/10 hover:text-destructive">
                   ×
                 </Button>
               </div>
-              <CardDescription>
+              <CardDescription className="mt-2">
                 Add a new property or site location for your security operations
               </CardDescription>
             </CardHeader>
@@ -394,10 +409,15 @@ const CompanyProperties = () => {
 
         {/* Edit Property Form */}
         {showEditForm && editingProperty && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-6 shadow-lg border-accent/20 animate-fade-in">
+            <CardHeader className="bg-gradient-to-r from-accent/5 to-accent/10 border-b">
               <div className="flex items-center justify-between">
-                <CardTitle>Edit Property/Site</CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <Edit className="h-5 w-5 text-accent" />
+                  </div>
+                  <CardTitle className="text-xl">Edit Property/Site</CardTitle>
+                </div>
                 <Button variant="ghost" size="sm" onClick={() => {
                   setShowEditForm(false);
                   setEditingProperty(null);
@@ -407,11 +427,11 @@ const CompanyProperties = () => {
                     email: "",
                     phone: ""
                   });
-                }}>
+                }} className="hover:bg-destructive/10 hover:text-destructive">
                   ×
                 </Button>
               </div>
-              <CardDescription>
+              <CardDescription className="mt-2">
                 Update property or site location details
               </CardDescription>
             </CardHeader>
@@ -488,66 +508,122 @@ const CompanyProperties = () => {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Properties & Sites Management
-            </CardTitle>
-            <CardDescription>
-              Manage the locations where your security services are provided
-            </CardDescription>
+        <Card className="shadow-lg border-border/50">
+          <CardHeader className="bg-gradient-to-r from-secondary/30 to-secondary/10 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Shield className="h-6 w-6 text-primary" />
+                  </div>
+                  All Properties & Sites
+                </CardTitle>
+                <CardDescription className="mt-2 text-base">
+                  {properties.length} {properties.length === 1 ? 'location' : 'locations'} where your security services are provided
+                </CardDescription>
+              </div>
+              {properties.length > 0 && (
+                <Badge variant="outline" className="text-base px-4 py-2">
+                  {properties.length} Total
+                </Badge>
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-4">
               {properties.length === 0 ? (
-                <div className="text-center p-12">
-                  <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Properties Added</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start by adding your first property or site location to manage your security operations
+                <div className="text-center p-16 bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-xl border-2 border-dashed border-border">
+                  <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
+                    <MapPin className="h-16 w-16 text-primary" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">No Properties Added Yet</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto text-lg">
+                    Start by adding your first property or site location to manage your security operations effectively
                   </p>
-                  <Button variant="outline" onClick={() => setShowPropertiesForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button 
+                    onClick={() => setShowPropertiesForm(true)}
+                    size="lg"
+                    className="shadow-lg bg-gradient-to-r from-primary to-primary-glow"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
                     Add Your First Property
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-4">
-                  {properties.map((property) => (
-                    <Card key={property.id} className="shadow-card hover:shadow-elevated transition-smooth">
+                <div className="grid gap-5">
+                  {properties.map((property, index) => (
+                    <Card 
+                      key={property.id} 
+                      className="shadow-md hover:shadow-xl transition-all duration-300 border-l-4 hover:scale-[1.01] animate-fade-in"
+                      style={{ 
+                        borderLeftColor: property.is_active ? 'hsl(var(--success))' : 'hsl(var(--muted-foreground))',
+                        animationDelay: `${index * 50}ms`
+                      }}
+                    >
                       <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <MapPin className="h-5 w-5 text-primary" />
-                              <h3 className="text-xl font-semibold">{property.name}</h3>
-                              <Badge variant={property.is_active ? "default" : "secondary"}>
-                                {property.is_active ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                              <div>
-                                <p><strong>Address:</strong> {property.location_address || 'Not provided'}</p>
-                                <p><strong>Email:</strong> {property.email || 'Not provided'}</p>
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary-glow/20 shadow-sm">
+                                <MapPin className="h-6 w-6 text-primary" />
                               </div>
-                              <div>
-                                <p><strong>Phone:</strong> {property.phone || 'Not provided'}</p>
-                                <p><strong>Created:</strong> {new Date(property.created_at).toLocaleDateString()}</p>
+                              <div className="flex-1">
+                                <h3 className="text-2xl font-bold text-foreground">{property.name}</h3>
+                                <Badge 
+                                  variant={property.is_active ? "default" : "secondary"}
+                                  className="mt-1"
+                                >
+                                  {property.is_active ? '✓ Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-6 text-sm bg-secondary/20 rounded-lg p-4">
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold text-foreground">Address</p>
+                                    <p className="text-muted-foreground">{property.location_address || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <Activity className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold text-foreground">Email</p>
+                                    <p className="text-muted-foreground">{property.email || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold text-foreground">Phone</p>
+                                    <p className="text-muted-foreground">{property.phone || 'Not provided'}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <p className="font-semibold text-foreground">Created</p>
+                                    <p className="text-muted-foreground">{new Date(property.created_at).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
+                          <div className="flex flex-col gap-2">
+                            <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
                             </Button>
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handleEditProperty(property)}
+                              className="shadow-sm hover:shadow-md transition-all hover:bg-accent/10"
                             >
-                              <Edit className="h-4 w-4 mr-1" />
+                              <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </Button>
                           </div>
