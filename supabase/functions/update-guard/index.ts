@@ -86,8 +86,20 @@ const handler = async (req: Request): Promise<Response> => {
     if (username && username.trim() !== '') {
       console.log('Updating username/email...');
       
-      // Format username as email (username@company.local)
-      const emailAddress = username.includes('@') ? username : `${username}@company.local`;
+      // Sanitize username to create a valid email address
+      let emailAddress: string;
+      if (username.includes('@')) {
+        // If already an email, sanitize it
+        const [localPart, domain] = username.split('@');
+        const sanitizedLocal = localPart.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
+        emailAddress = `${sanitizedLocal}@${domain}`;
+      } else {
+        // Create email from username - replace spaces with dots, convert to lowercase
+        const sanitizedUsername = username.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
+        emailAddress = `${sanitizedUsername}@company.local`;
+      }
+      
+      console.log('Sanitized email address:', emailAddress);
       
       const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(
         guardProfile.user_id,
