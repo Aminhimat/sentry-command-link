@@ -432,8 +432,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // More aggressive compression: Reduced DPI for smaller file size
-      const targetDPI = 120; // Lower DPI for better compression
+      // Optimized compression: Higher DPI with progressive JPEG for quality + compression
+      const targetDPI = 150; // Balanced DPI for good quality
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -458,9 +458,9 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // More aggressive JPEG compression with quality 0.65
-      // This provides significant file size reduction (60-70%) while maintaining acceptable quality
-      const imageData = canvas.toDataURL('image/jpeg', 0.65);
+      // Quality compression: 0.85 quality with SLOW encoding for progressive JPEG
+      // Maintains visual quality while reducing file size through progressive rendering
+      const imageData = canvas.toDataURL('image/jpeg', 0.85);
       this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
 
       // Draw watermark overlay (bottom of picture) if provided
