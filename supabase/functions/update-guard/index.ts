@@ -82,8 +82,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Profile updated successfully');
 
-    // Update username (email) if provided
-    if (username && username.trim() !== '') {
+    // Update username (email) if provided and not a placeholder like 'none'
+    if (username && username.trim() !== '' && username.trim().toLowerCase() !== 'none') {
       console.log('Updating username/email...');
       
       // Sanitize username to create a valid email address

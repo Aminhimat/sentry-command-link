@@ -286,8 +286,8 @@ const CompanyGuards = () => {
           firstName: editGuardData.firstName,
           lastName: editGuardData.lastName,
           phone: editGuardData.phone,
-          username: editGuardData.username,
-          newPassword: editGuardData.newPassword || null,
+          username: editGuardData.username || "none",
+          newPassword: editGuardData.newPassword || "none",
           assignedPropertyId: editGuardData.assignedPropertyId !== "none" ? editGuardData.assignedPropertyId : null
         }
       });
@@ -582,13 +582,13 @@ const CompanyGuards = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editUsername">Username</Label>
+                    <Label htmlFor="editUsername">Username (optional)</Label>
                     <Input
                       id="editUsername"
                       type="text"
                       value={editGuardData.username}
                       onChange={(e) => setEditGuardData({...editGuardData, username: e.target.value})}
-                      required
+                      placeholder="Leave blank to keep current"
                     />
                   </div>
                   <div>
@@ -720,7 +720,7 @@ const CompanyGuards = () => {
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
-                                  username: guard.email || "",
+                                  username: "",
                                   newPassword: "",
                                   assignedPropertyId: guard.assigned_property_id || "none"
                                 });
