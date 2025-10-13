@@ -153,3 +153,17 @@ All colors MUST be HSL.
   background: transparent !important;
   border: none !important;
 }
+
+/* Improve mobile tap responsiveness */
+@layer base {
+  /* Remove gray tap highlight on iOS/Android */
+  button, [role="tab"], [data-radix-collection-item] {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Ensure touch devices don't wait for double-tap */
+  @media (pointer: coarse) {
+    [role="tab"] {
+      touch-action: manipulation;
+    }
+  }
+}
