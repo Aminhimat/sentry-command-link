@@ -803,100 +803,12 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF on backend server
-      const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-report', {
-        body: {
-          reports: reportsForPDF,
-          company: company,
-          reportFilters: {
-            ...reportFilters,
-            startDate: startDateTime.toISOString(),
-            endDate: endDateTime.toISOString()
-          },
-          userId: user?.id
-        }
+      // Generate PDF directly in browser
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
       });
-
-      if (pdfError) {
-        throw pdfError;
-      }
-
-      const filename = pdfData?.filename;
-      
-      toast({
-        title: "PDF Generation Started",
-        description: "Your PDF is being generated on the server. Please wait...",
-      });
-
-      // Poll for PDF completion
-      const pollInterval = setInterval(async () => {
-        const { data: statusData, error: statusError } = await supabase
-          .from('pdf_generation_status')
-          .select('*')
-          .eq('filename', filename)
-          .eq('user_id', user?.id)
-          .maybeSingle();
-
-        if (statusError) {
-          clearInterval(pollInterval);
-          clearTimeout(fallbackTimeout);
-          toast({
-            title: "Error",
-            description: "Failed to check PDF status",
-            variant: "destructive",
-          });
-          setIsGeneratingReport(false);
-          return;
-        }
-
-        if (statusData?.status === 'completed' && statusData?.download_url) {
-          clearInterval(pollInterval);
-          clearTimeout(fallbackTimeout);
-          
-          // Download the PDF
-          const link = document.createElement('a');
-          link.href = statusData.download_url;
-          link.download = filename.replace('.txt', '.pdf');
-          link.click();
-          
-          toast({
-            title: "Success",
-            description: "PDF report downloaded successfully!",
-          });
-          setIsGeneratingReport(false);
-        } else if (statusData?.status === 'failed') {
-          clearInterval(pollInterval);
-          clearTimeout(fallbackTimeout);
-          toast({
-            title: "Error",
-            description: statusData?.error_message || "PDF generation failed",
-            variant: "destructive",
-          });
-          setIsGeneratingReport(false);
-        }
-      }, 2000); // Check every 2 seconds
-
-      // Fallback: if server takes too long, generate locally to avoid blocking user
-      const fallbackTimeout = setTimeout(async () => {
-        clearInterval(pollInterval);
-        toast({
-          title: "Generating Locally",
-          description: "Server is taking longer than expected. Generating PDF in your browser...",
-        });
-        await generatePDFReport(reportsForPDF, company, {
-          ...reportFilters,
-          startDate: startDateTime.toISOString(),
-          endDate: endDateTime.toISOString()
-        });
-        setIsGeneratingReport(false);
-      }, 30000); // 30s fallback
-
-      // Hard timeout after 2 minutes
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        clearTimeout(fallbackTimeout);
-        setIsGeneratingReport(false);
-      }, 120000);
 
     } catch (error: any) {
       console.error('Error generating report:', error);
