@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// Edge runtime via Deno.serve is used; no need to import serve
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { jsPDF } from 'https://esm.sh/jspdf@2.5.2'
 
@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   console.log('PDF generation request received:', req.method)
   
   // Handle CORS preflight requests
@@ -39,7 +39,7 @@ serve(async (req) => {
     console.log('Starting background generation for:', filename)
     
     // Start background processing
-    generateReportBackground(reports, company, reportFilters, filename, userId, supabase)
+    EdgeRuntime.waitUntil(generateReportBackground(reports, company, reportFilters, filename, userId, supabase))
     
     // Return immediate response
     return new Response(JSON.stringify({ 

@@ -835,7 +835,7 @@ const CompanyDashboard = () => {
           .select('*')
           .eq('filename', filename)
           .eq('user_id', user?.id)
-          .single();
+          .maybeSingle();
 
         if (statusError) {
           clearInterval(pollInterval);
