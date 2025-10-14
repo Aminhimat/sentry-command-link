@@ -821,10 +821,63 @@ const CompanyDashboard = () => {
         throw pdfError;
       }
 
+      const filename = pdfData?.filename;
+      
       toast({
         title: "PDF Generation Started",
-        description: "Your PDF is being generated on the server. You'll be able to download it shortly.",
+        description: "Your PDF is being generated on the server. Please wait...",
       });
+
+      // Poll for PDF completion
+      const pollInterval = setInterval(async () => {
+        const { data: statusData, error: statusError } = await supabase
+          .from('pdf_generation_status')
+          .select('*')
+          .eq('filename', filename)
+          .eq('user_id', user?.id)
+          .single();
+
+        if (statusError) {
+          clearInterval(pollInterval);
+          toast({
+            title: "Error",
+            description: "Failed to check PDF status",
+            variant: "destructive",
+          });
+          setIsGeneratingReport(false);
+          return;
+        }
+
+        if (statusData?.status === 'completed' && statusData?.download_url) {
+          clearInterval(pollInterval);
+          
+          // Download the PDF
+          const link = document.createElement('a');
+          link.href = statusData.download_url;
+          link.download = filename.replace('.txt', '.pdf');
+          link.click();
+          
+          toast({
+            title: "Success",
+            description: "PDF report downloaded successfully!",
+          });
+          setIsGeneratingReport(false);
+        } else if (statusData?.status === 'failed') {
+          clearInterval(pollInterval);
+          toast({
+            title: "Error",
+            description: statusData?.error_message || "PDF generation failed",
+            variant: "destructive",
+          });
+          setIsGeneratingReport(false);
+        }
+      }, 2000); // Check every 2 seconds
+
+      // Timeout after 2 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsGeneratingReport(false);
+      }, 120000);
 
     } catch (error: any) {
       console.error('Error generating report:', error);
