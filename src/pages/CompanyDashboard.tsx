@@ -839,6 +839,7 @@ const CompanyDashboard = () => {
 
         if (statusError) {
           clearInterval(pollInterval);
+          clearTimeout(fallbackTimeout);
           toast({
             title: "Error",
             description: "Failed to check PDF status",
@@ -850,6 +851,7 @@ const CompanyDashboard = () => {
 
         if (statusData?.status === 'completed' && statusData?.download_url) {
           clearInterval(pollInterval);
+          clearTimeout(fallbackTimeout);
           
           // Download the PDF
           const link = document.createElement('a');
@@ -864,6 +866,7 @@ const CompanyDashboard = () => {
           setIsGeneratingReport(false);
         } else if (statusData?.status === 'failed') {
           clearInterval(pollInterval);
+          clearTimeout(fallbackTimeout);
           toast({
             title: "Error",
             description: statusData?.error_message || "PDF generation failed",
@@ -873,9 +876,25 @@ const CompanyDashboard = () => {
         }
       }, 2000); // Check every 2 seconds
 
-      // Timeout after 2 minutes
+      // Fallback: if server takes too long, generate locally to avoid blocking user
+      const fallbackTimeout = setTimeout(async () => {
+        clearInterval(pollInterval);
+        toast({
+          title: "Generating Locally",
+          description: "Server is taking longer than expected. Generating PDF in your browser...",
+        });
+        await generatePDFReport(reportsForPDF, company, {
+          ...reportFilters,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString()
+        });
+        setIsGeneratingReport(false);
+      }, 30000); // 30s fallback
+
+      // Hard timeout after 2 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
+        clearTimeout(fallbackTimeout);
         setIsGeneratingReport(false);
       }, 120000);
 
