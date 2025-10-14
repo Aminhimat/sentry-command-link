@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -82,18 +83,15 @@ async function generateReportBackground(
         status: 'processing'
       })
     
-    // Generate simple text report (much faster)
-    const reportContent = generateTextReport(reports, company, reportFilters)
+    // Generate PDF with images on backend
+    const pdfBlob = await generatePDFWithImages(reports, company, reportFilters)
     
-    console.log('Report content generated, length:', reportContent.length)
-    
-    // Convert to blob
-    const reportBlob = new TextEncoder().encode(reportContent)
+    console.log('PDF generated, size:', pdfBlob.byteLength)
     
     // Upload to storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('guard-reports')
-      .upload(`reports/${filename.replace('.txt', '.pdf')}`, reportBlob, {
+      .upload(`reports/${filename.replace('.txt', '.pdf')}`, pdfBlob, {
         contentType: 'application/pdf',
         upsert: true
       })
@@ -139,51 +137,103 @@ async function generateReportBackground(
   }
 }
 
-function generateTextReport(reports: any[], company: any, reportFilters: any): string {
-  console.log('Generating text report for', reports.length, 'reports')
+async function generatePDFWithImages(reports: any[], company: any, reportFilters: any): Promise<Uint8Array> {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  let currentY = 20
+  const margin = 10
+  const lineHeight = 6
+
+  // Header
+  doc.setFontSize(20)
+  doc.setFont('helvetica', 'bold')
+  doc.text('SECURITY REPORT', pageWidth / 2, currentY, { align: 'center' })
+  currentY += 15
+
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Company: ${company?.name || 'Security Company'}`, margin, currentY)
+  currentY += lineHeight
   
-  const reportDate = new Date(reportFilters.startDate)
+  const startDate = new Date(reportFilters.startDate)
   const endDate = new Date(reportFilters.endDate)
-  
-  let content = `SECURITY REPORT\n`
-  content += `===============\n\n`
-  content += `Company: ${company?.name || 'Security Company'}\n`
-  content += `Period: ${reportDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n`
-  content += `Generated: ${new Date().toLocaleString()}\n`
-  content += `Total Reports: ${reports.length}\n\n`
-  
-  content += `DETAILED REPORTS\n`
-  content += `================\n\n`
-  
-  reports.forEach((report, index) => {
+  doc.text(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, margin, currentY)
+  currentY += lineHeight
+  doc.text(`Total Reports: ${reports.length}`, margin, currentY)
+  currentY += 15
+
+  // Process each report
+  for (let i = 0; i < reports.length; i++) {
+    const report = reports[i]
     const reportTime = new Date(report.created_at)
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard'
-    
-    content += `Report #${index + 1}\n`
-    content += `Date: ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}\n`
-    content += `Guard: ${guardName}\n`
-    
+
+    // Check if we need a new page
+    if (currentY > pageHeight - 60) {
+      doc.addPage()
+      currentY = 20
+    }
+
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Report #${i + 1}`, margin, currentY)
+    currentY += 8
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Date: ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}`, margin, currentY)
+    currentY += lineHeight
+    doc.text(`Guard: ${guardName}`, margin, currentY)
+    currentY += lineHeight
+
     if (report.location_address) {
-      content += `Location: ${report.location_address}\n`
+      doc.text(`Location: ${report.location_address}`, margin, currentY)
+      currentY += lineHeight
     }
-    
+
     if (report.report_text) {
-      content += `Details:\n${report.report_text}\n`
+      const textLines = doc.splitTextToSize(report.report_text, pageWidth - 2 * margin)
+      doc.text(textLines, margin, currentY)
+      currentY += textLines.length * lineHeight
     }
-    
+
+    // Add image if exists
     if (report.image_url) {
-      content += `Image: ${report.image_url}\n`
+      try {
+        currentY += 5
+        const imgData = await fetchImageAsBase64(report.image_url)
+        const imgWidth = 80
+        const imgHeight = 60
+        
+        if (currentY + imgHeight > pageHeight - margin) {
+          doc.addPage()
+          currentY = 20
+        }
+        
+        doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight, undefined, 'FAST')
+        currentY += imgHeight + 5
+      } catch (err) {
+        console.error('Error adding image:', err)
+        doc.text('Image unavailable', margin, currentY)
+        currentY += lineHeight
+      }
     }
-    
-    content += `Report ID: ${report.id}\n`
-    content += `${'='.repeat(50)}\n\n`
-  })
-  
-  content += `SUMMARY\n`
-  content += `=======\n`
-  content += `Total Reports: ${reports.length}\n`
-  content += `Period: ${reportDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n`
-  content += `Generated by: ${company?.name || 'Security System'}\n`
-  
-  return content
+
+    currentY += 10
+  }
+
+  return new Uint8Array(doc.output('arraybuffer'))
+}
+
+async function fetchImageAsBase64(url: string): Promise<string> {
+  const response = await fetch(url)
+  const blob = await response.blob()
+  const arrayBuffer = await blob.arrayBuffer()
+  const bytes = new Uint8Array(arrayBuffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return `data:image/jpeg;base64,${btoa(binary)}`
 }
