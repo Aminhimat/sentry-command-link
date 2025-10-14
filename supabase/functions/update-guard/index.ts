@@ -140,23 +140,30 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Password must be at least 6 characters long');
       }
 
-      const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
-        guardProfile.user_id,
-        { 
-          password: newPassword,
-          user_metadata: {
-            first_name: firstName,
-            last_name: lastName
+      // Check if auth user exists before attempting password update
+      const { data: existingUserData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(guardProfile.user_id);
+      if (getUserError || !existingUserData?.user) {
+        console.warn('Auth user not found, skipping password update', getUserError);
+        // Do not fail the whole request if auth user is missing
+      } else {
+        const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
+          guardProfile.user_id,
+          { 
+            password: newPassword,
+            user_metadata: {
+              first_name: firstName,
+              last_name: lastName
+            }
           }
+        );
+
+        if (passwordError) {
+          console.error('Error updating password:', passwordError);
+          throw new Error(`Failed to update password: ${passwordError.message}`);
         }
-      );
 
-      if (passwordError) {
-        console.error('Error updating password:', passwordError);
-        throw new Error(`Failed to update password: ${passwordError.message}`);
+        console.log('Password updated successfully');
       }
-
-      console.log('Password updated successfully');
     }
 
     console.log('Guard update completed successfully');
