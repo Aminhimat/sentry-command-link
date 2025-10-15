@@ -294,7 +294,11 @@ const CompanyGuards = () => {
 
       if (error) {
         console.error('Guard update error:', error);
-        throw error;
+        throw new Error(error.message || 'Failed to update guard');
+      }
+
+      if (data && !data.success) {
+        throw new Error(data.error || 'Failed to update guard');
       }
 
       toast({
