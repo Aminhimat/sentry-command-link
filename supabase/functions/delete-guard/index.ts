@@ -63,12 +63,87 @@ const handler = async (req: Request): Promise<Response> => {
     if (deleteUserError && deleteUserError.status !== 404) {
       console.error('Error deleting auth user:', deleteUserError);
     } else if (deleteUserError?.status === 404) {
-      console.log('Auth user not found, will delete profile directly');
+      console.log('Auth user not found, will delete profile and related records directly');
     } else {
       console.log('Auth user deleted successfully');
     }
 
-    // Always delete the profile to ensure it's removed from the database
+    // Delete all related records first to avoid foreign key constraint errors
+    console.log('Deleting related guard records...');
+
+    // Delete guard reports
+    const { error: reportsDeleteError } = await supabaseAdmin
+      .from('guard_reports')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (reportsDeleteError) {
+      console.error('Error deleting guard reports:', reportsDeleteError);
+    } else {
+      console.log('Guard reports deleted successfully');
+    }
+
+    // Delete guard shifts
+    const { error: shiftsDeleteError } = await supabaseAdmin
+      .from('guard_shifts')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (shiftsDeleteError) {
+      console.error('Error deleting guard shifts:', shiftsDeleteError);
+    } else {
+      console.log('Guard shifts deleted successfully');
+    }
+
+    // Delete guard locations
+    const { error: locationsDeleteError } = await supabaseAdmin
+      .from('guard_locations')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (locationsDeleteError) {
+      console.error('Error deleting guard locations:', locationsDeleteError);
+    } else {
+      console.log('Guard locations deleted successfully');
+    }
+
+    // Delete guard login constraints
+    const { error: constraintsDeleteError } = await supabaseAdmin
+      .from('guard_login_constraints')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (constraintsDeleteError) {
+      console.error('Error deleting login constraints:', constraintsDeleteError);
+    } else {
+      console.log('Guard login constraints deleted successfully');
+    }
+
+    // Delete scheduled shifts
+    const { error: scheduledShiftsDeleteError } = await supabaseAdmin
+      .from('scheduled_shifts')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (scheduledShiftsDeleteError) {
+      console.error('Error deleting scheduled shifts:', scheduledShiftsDeleteError);
+    } else {
+      console.log('Scheduled shifts deleted successfully');
+    }
+
+    // Delete incidents
+    const { error: incidentsDeleteError } = await supabaseAdmin
+      .from('incidents')
+      .delete()
+      .eq('guard_id', body.guardId);
+
+    if (incidentsDeleteError) {
+      console.error('Error deleting incidents:', incidentsDeleteError);
+    } else {
+      console.log('Incidents deleted successfully');
+    }
+
+    // Finally, delete the profile
     const { error: profileDeleteError } = await supabaseAdmin
       .from('profiles')
       .delete()
