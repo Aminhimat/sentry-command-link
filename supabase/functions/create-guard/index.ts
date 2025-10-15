@@ -12,8 +12,8 @@ const corsHeaders = {
 interface CreateGuardRequest {
   firstName: string;
   lastName: string;
-  email: string;
-  username?: string;
+  email?: string;
+  username: string;
   password: string;
   companyId: string;
   assignedPropertyId?: string | null;
@@ -34,20 +34,17 @@ const handler = async (req: Request): Promise<Response> => {
     const requestBody = await req.json();
     console.log('Request body received:', { ...requestBody, password: '[REDACTED]' });
     
-    const { firstName, lastName, email, username, password, companyId, assignedPropertyId, userToken }: CreateGuardRequest = requestBody;
+    const { firstName, lastName, username, password, companyId, assignedPropertyId, userToken }: CreateGuardRequest = requestBody;
 
     // Validate input data
-    if (!firstName || !lastName || !email || !password || !companyId) {
-      console.error('Missing required fields:', { firstName: !!firstName, lastName: !!lastName, email: !!email, password: !!password, companyId: !!companyId });
+    if (!firstName || !lastName || !username || !password || !companyId) {
+      console.error('Missing required fields:', { firstName: !!firstName, lastName: !!lastName, username: !!username, password: !!password, companyId: !!companyId });
       throw new Error('Missing required fields');
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.error('Invalid email format:', email);
-      throw new Error('Invalid email format');
-    }
+    // Generate email from username if not provided
+    const email = `${username}@company.local`;
+    console.log('Generated email:', email);
 
     // Validate password strength
     if (password.length < 6) {
