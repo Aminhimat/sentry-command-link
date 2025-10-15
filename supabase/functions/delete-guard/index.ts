@@ -54,42 +54,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Try to delete the user from Supabase Auth
+    // Try to delete the user from Supabase Auth (if exists)
     const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(
       guardProfile.user_id
     );
 
-    // If user not found in auth, that's okay - they may have been deleted already
-    // We'll still clean up the profile record
+    // Log auth deletion result but don't fail if user not found
     if (deleteUserError && deleteUserError.status !== 404) {
-      console.error('Error deleting user:', deleteUserError);
+      console.error('Error deleting auth user:', deleteUserError);
+    } else if (deleteUserError?.status === 404) {
+      console.log('Auth user not found, will delete profile directly');
+    } else {
+      console.log('Auth user deleted successfully');
+    }
+
+    // Always delete the profile to ensure it's removed from the database
+    const { error: profileDeleteError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', body.guardId);
+
+    if (profileDeleteError) {
+      console.error('Error deleting profile:', profileDeleteError);
       return new Response(
-        JSON.stringify({ error: 'Failed to delete guard user account' }),
+        JSON.stringify({ error: 'Failed to delete guard profile' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
-    }
-
-    // If auth user was not found, manually delete the profile
-    if (deleteUserError?.status === 404) {
-      console.log('Auth user not found, deleting profile directly');
-      const { error: profileDeleteError } = await supabaseAdmin
-        .from('profiles')
-        .delete()
-        .eq('id', body.guardId);
-
-      if (profileDeleteError) {
-        console.error('Error deleting profile:', profileDeleteError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to delete guard profile' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
     }
 
     console.log(`Successfully deleted guard: ${guardProfile.first_name} ${guardProfile.last_name}`);
