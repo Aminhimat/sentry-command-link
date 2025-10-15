@@ -737,7 +737,7 @@ const CompanyGuards = () => {
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
-                                  username: "",
+                                  username: guard.email?.split('@')[0] || "",
                                   newPassword: "",
                                   assignedPropertyId: guard.assigned_property_id || "none"
                                 });
