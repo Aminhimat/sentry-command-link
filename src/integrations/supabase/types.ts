@@ -141,7 +141,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
-          guard_id: string
+          guard_id: string | null
           id: string
           image_url: string | null
           location_address: string | null
@@ -154,7 +154,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
-          guard_id: string
+          guard_id?: string | null
           id?: string
           image_url?: string | null
           location_address?: string | null
@@ -167,7 +167,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
-          guard_id?: string
+          guard_id?: string | null
           id?: string
           image_url?: string | null
           location_address?: string | null
@@ -263,7 +263,7 @@ export type Database = {
           company_id: string
           created_at: string
           description: string | null
-          guard_id: string
+          guard_id: string | null
           id: string
           location_address: string | null
           location_lat: number | null
@@ -277,7 +277,7 @@ export type Database = {
           company_id: string
           created_at?: string
           description?: string | null
-          guard_id: string
+          guard_id?: string | null
           id?: string
           location_address?: string | null
           location_lat?: number | null
@@ -291,7 +291,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           description?: string | null
-          guard_id?: string
+          guard_id?: string | null
           id?: string
           location_address?: string | null
           location_lat?: number | null

@@ -68,19 +68,19 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Auth user deleted successfully');
     }
 
-    // Delete all related records first to avoid foreign key constraint errors
+    // Delete related records and unlink reports/incidents
     console.log('Deleting related guard records...');
 
-    // Delete guard reports
-    const { error: reportsDeleteError } = await supabaseAdmin
+    // Unlink guard reports (keep reports but set guard_id to null)
+    const { error: reportsUnlinkError } = await supabaseAdmin
       .from('guard_reports')
-      .delete()
+      .update({ guard_id: null })
       .eq('guard_id', body.guardId);
 
-    if (reportsDeleteError) {
-      console.error('Error deleting guard reports:', reportsDeleteError);
+    if (reportsUnlinkError) {
+      console.error('Error unlinking guard reports:', reportsUnlinkError);
     } else {
-      console.log('Guard reports deleted successfully');
+      console.log('Guard reports unlinked successfully');
     }
 
     // Delete guard shifts
@@ -131,16 +131,16 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Scheduled shifts deleted successfully');
     }
 
-    // Delete incidents
-    const { error: incidentsDeleteError } = await supabaseAdmin
+    // Unlink incidents (keep incidents but set guard_id to null)
+    const { error: incidentsUnlinkError } = await supabaseAdmin
       .from('incidents')
-      .delete()
+      .update({ guard_id: null })
       .eq('guard_id', body.guardId);
 
-    if (incidentsDeleteError) {
-      console.error('Error deleting incidents:', incidentsDeleteError);
+    if (incidentsUnlinkError) {
+      console.error('Error unlinking incidents:', incidentsUnlinkError);
     } else {
-      console.log('Incidents deleted successfully');
+      console.log('Incidents unlinked successfully');
     }
 
     // Finally, delete the profile
