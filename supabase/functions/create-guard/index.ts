@@ -166,7 +166,8 @@ const handler = async (req: Request): Promise<Response> => {
     // The profile should be created automatically by the trigger
     // Let's update it with the company_id and assigned property
     const updateData: any = {
-      company_id: companyId
+      company_id: companyId,
+      username: username // Store the username in the profile
     };
     
     // Only add assigned_property_id if it's provided and not empty

@@ -67,7 +67,8 @@ const handler = async (req: Request): Promise<Response> => {
       first_name: firstName,
       last_name: lastName,
       phone: phone || null,
-      assigned_property_id: assignedPropertyId
+      assigned_property_id: assignedPropertyId,
+      username: username && username.trim() !== '' && username.trim().toLowerCase() !== 'none' ? username : undefined
     };
 
     const { error: profileUpdateError } = await supabaseAdmin

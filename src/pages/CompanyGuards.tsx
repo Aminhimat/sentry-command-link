@@ -28,6 +28,7 @@ interface Guard {
   last_name: string;
   phone: string;
   email: string;
+  username?: string;
   is_active: boolean;
   created_at: string;
   company_id?: string;
@@ -192,27 +193,14 @@ const CompanyGuards = () => {
         return;
       }
 
-      // Fetch auth users to get their emails (which contain the usernames)
-      const guardsWithEmails = await Promise.all((guardProfiles || []).map(async (guard) => {
-        let email = '';
-        try {
-          const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(guard.user_id);
-          if (!userError && user?.email) {
-            email = user.email;
-          }
-        } catch (err) {
-          console.error('Error fetching user email:', err);
-        }
-        
-        return {
-          ...guard,
-          email: email || `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-          assigned_property: guard.properties,
-          assigned_property_id: guard.assigned_property_id
-        };
+      const guardsWithData = (guardProfiles || []).map(guard => ({
+        ...guard,
+        email: guard.username ? `${guard.username}@company.local` : `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+        assigned_property: guard.properties,
+        assigned_property_id: guard.assigned_property_id
       }));
 
-      setGuards(guardsWithEmails);
+      setGuards(guardsWithData);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
@@ -750,7 +738,7 @@ const CompanyGuards = () => {
                                   firstName: guard.first_name || "",
                                   lastName: guard.last_name || "",
                                   phone: guard.phone || "",
-                                  username: guard.email?.split('@')[0] || "",
+                                  username: guard.username || "",
                                   newPassword: "",
                                   assignedPropertyId: guard.assigned_property_id || "none"
                                 });
