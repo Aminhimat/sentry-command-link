@@ -235,6 +235,7 @@ const CompanyGuards = () => {
         body: {
           firstName: newGuard.firstName,
           lastName: newGuard.lastName,
+          email: newGuard.username, // Use username as email
           username: newGuard.username,
           password: newGuard.password,
           companyId: userProfile.company_id,
