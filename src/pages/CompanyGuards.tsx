@@ -192,14 +192,27 @@ const CompanyGuards = () => {
         return;
       }
 
-      const guardsWithPlaceholderEmails = (guardProfiles || []).map(guard => ({
-        ...guard,
-        email: `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-        assigned_property: guard.properties,
-        assigned_property_id: guard.assigned_property_id // Make sure this is available for the edit form
+      // Fetch auth users to get their emails (which contain the usernames)
+      const guardsWithEmails = await Promise.all((guardProfiles || []).map(async (guard) => {
+        let email = '';
+        try {
+          const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(guard.user_id);
+          if (!userError && user?.email) {
+            email = user.email;
+          }
+        } catch (err) {
+          console.error('Error fetching user email:', err);
+        }
+        
+        return {
+          ...guard,
+          email: email || `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+          assigned_property: guard.properties,
+          assigned_property_id: guard.assigned_property_id
+        };
       }));
 
-      setGuards(guardsWithPlaceholderEmails);
+      setGuards(guardsWithEmails);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
