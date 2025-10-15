@@ -247,6 +247,14 @@ const CompanyGuards = () => {
         throw error;
       }
 
+      if (data?.error) {
+        // Check if it's a duplicate username/email error
+        if (data.error.includes('email address has already been registered')) {
+          throw new Error(`Username "${newGuard.username}" is already taken. Please choose a different username.`);
+        }
+        throw new Error(data.error);
+      }
+
       toast({
         title: "Success",
         description: `Guard ${newGuard.firstName} ${newGuard.lastName} created successfully!`,
