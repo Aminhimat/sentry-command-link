@@ -78,6 +78,7 @@ const CompanyGuards = () => {
   const [newGuard, setNewGuard] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     username: "",
     password: "",
     assignedPropertyId: "none"
@@ -235,7 +236,7 @@ const CompanyGuards = () => {
         body: {
           firstName: newGuard.firstName,
           lastName: newGuard.lastName,
-          email: newGuard.username, // Use username as email
+          email: newGuard.email,
           username: newGuard.username,
           password: newGuard.password,
           companyId: userProfile.company_id,
@@ -256,6 +257,7 @@ const CompanyGuards = () => {
       setNewGuard({
         firstName: "",
         lastName: "",
+        email: "",
         username: "",
         password: "",
         assignedPropertyId: "none"
@@ -486,6 +488,17 @@ const CompanyGuards = () => {
                     value={newGuard.lastName}
                     onChange={(e) => setNewGuard({...newGuard, lastName: e.target.value})}
                     required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newGuard.email}
+                    onChange={(e) => setNewGuard({ ...newGuard, email: e.target.value })}
+                    required
+                    placeholder="name@example.com"
                   />
                 </div>
                 <div>
