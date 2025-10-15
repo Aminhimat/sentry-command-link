@@ -594,23 +594,28 @@ const CompanyGuards = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="editUsername">Username (optional)</Label>
+                    <Label htmlFor="editUsername">Username</Label>
                     <Input
                       id="editUsername"
                       type="text"
                       value={editGuardData.username}
                       onChange={(e) => setEditGuardData({...editGuardData, username: e.target.value})}
-                      placeholder="Leave blank to keep current"
+                      required
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Current: {editingGuard?.user_id ? guards.find(g => g.id === editingGuard.id)?.user_id?.split('@')[0] || 'N/A' : 'N/A'}
+                    </p>
                   </div>
                   <div>
-                    <Label htmlFor="editPassword">New Password (optional)</Label>
+                    <Label htmlFor="editPassword">New Password</Label>
                     <Input
                       id="editPassword"
                       type="password"
                       value={editGuardData.newPassword}
                       onChange={(e) => setEditGuardData({ ...editGuardData, newPassword: e.target.value })}
-                      placeholder="Leave blank to keep current"
+                      required
+                      minLength={6}
+                      placeholder="At least 6 characters"
                     />
                   </div>
                   <div>
