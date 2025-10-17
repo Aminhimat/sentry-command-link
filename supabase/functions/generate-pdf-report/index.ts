@@ -151,16 +151,16 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
     .filter(report => report.image_url)
     .map(async (report) => {
       try {
-        const imgData = await fetchImageAsBase64(report.image_url)
-        return { url: report.image_url, data: imgData }
+        const { dataUrl, mimeType } = await fetchImageAsBase64(report.image_url)
+        return { url: report.image_url, dataUrl, mimeType }
       } catch (err) {
         console.error('Error preloading image:', err)
-        return { url: report.image_url, data: null }
+        return { url: report.image_url, dataUrl: null as any, mimeType: null as any }
       }
     })
   
   const preloadedImages = await Promise.all(imagePromises)
-  const imageCache = new Map(preloadedImages.map(img => [img.url, img.data]))
+  const imageCache = new Map(preloadedImages.map(img => [img.url, img.dataUrl ? { dataUrl: img.dataUrl, mimeType: img.mimeType } : null]))
   console.log(`Preloaded ${imageCache.size} images`)
 
   // Header
@@ -218,8 +218,8 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
 
   // Add image if exists (use cached version)
     if (report.image_url) {
-      const imgData = imageCache.get(report.image_url)
-      if (imgData) {
+      const cached = imageCache.get(report.image_url) as any
+      if (cached && cached.dataUrl) {
         try {
           currentY += 5
           // Maximum size for highest quality (fits full page width minus margins)
@@ -231,8 +231,10 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
             currentY = 20
           }
           
-          // Add image with high quality
-          doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight, undefined, 'SLOW')
+          // Preserve original format where possible (PNG stays PNG, JPEG uses slow/high quality)
+          const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
+          const compression = format === 'JPEG' ? 'SLOW' : undefined
+          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
           currentY += imgHeight + 5
         } catch (err) {
           console.error('Error adding image:', err)
@@ -251,7 +253,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return new Uint8Array(doc.output('arraybuffer'))
 }
 
-async function fetchImageAsBase64(url: string): Promise<string> {
+async function fetchImageAsBase64(url: string): Promise<{ dataUrl: string; mimeType: string }> {
   const response = await fetch(url)
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer()
@@ -260,5 +262,5 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   
   // Detect proper MIME type
   const mimeType = blob.type || 'image/jpeg'
-  return `data:${mimeType};base64,${btoa(binary)}`
+  return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
 }
