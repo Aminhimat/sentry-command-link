@@ -138,7 +138,9 @@ async function generateReportBackground(
 }
 
 async function generatePDFWithImages(reports: any[], company: any, reportFilters: any): Promise<Uint8Array> {
-  const doc = new jsPDF()
+  const doc = new jsPDF({
+    compress: true // Enable PDF compression for smaller file size
+  })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   let currentY = 20
@@ -231,10 +233,10 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
             currentY = 20
           }
           
-          // Preserve original format where possible (PNG stays PNG, JPEG uses slow/high quality)
+          // Use WebP/JPEG with optimal compression - maintains quality while reducing size
           const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
-          const compression = format === 'JPEG' ? 'SLOW' : undefined
-          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
+          // Use FAST compression which still maintains good quality but compresses better
+          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, 'FAST')
           currentY += imgHeight + 5
         } catch (err) {
           console.error('Error adding image:', err)
