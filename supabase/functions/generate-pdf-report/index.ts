@@ -216,22 +216,23 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
       currentY += textLines.length * lineHeight
     }
 
-    // Add image if exists (use cached version)
+  // Add image if exists (use cached version)
     if (report.image_url) {
       const imgData = imageCache.get(report.image_url)
       if (imgData) {
         try {
           currentY += 5
-          const imgWidth = 80
-          const imgHeight = 60
+          // Larger size for better quality (150x112 maintains 4:3 aspect ratio)
+          const imgWidth = 150
+          const imgHeight = 112
           
           if (currentY + imgHeight > pageHeight - margin) {
             doc.addPage()
             currentY = 20
           }
           
-          // Use higher quality compression (remove 'FAST', default is better quality)
-          doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight)
+          // Add image with high quality
+          doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight, undefined, 'SLOW')
           currentY += imgHeight + 5
         } catch (err) {
           console.error('Error adding image:', err)
@@ -255,9 +256,9 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer()
   const bytes = new Uint8Array(arrayBuffer)
-  let binary = ''
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i])
-  }
-  return `data:image/jpeg;base64,${btoa(binary)}`
+  const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('')
+  
+  // Detect proper MIME type
+  const mimeType = blob.type || 'image/jpeg'
+  return `data:${mimeType};base64,${btoa(binary)}`
 }
