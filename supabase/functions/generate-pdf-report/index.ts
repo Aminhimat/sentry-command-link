@@ -145,6 +145,24 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const margin = 10
   const lineHeight = 6
 
+  // Preload all images in parallel for better performance
+  console.log('Preloading all images in parallel...')
+  const imagePromises = reports
+    .filter(report => report.image_url)
+    .map(async (report) => {
+      try {
+        const imgData = await fetchImageAsBase64(report.image_url)
+        return { url: report.image_url, data: imgData }
+      } catch (err) {
+        console.error('Error preloading image:', err)
+        return { url: report.image_url, data: null }
+      }
+    })
+  
+  const preloadedImages = await Promise.all(imagePromises)
+  const imageCache = new Map(preloadedImages.map(img => [img.url, img.data]))
+  console.log(`Preloaded ${imageCache.size} images`)
+
   // Header
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
@@ -198,23 +216,29 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
       currentY += textLines.length * lineHeight
     }
 
-    // Add image if exists
+    // Add image if exists (use cached version)
     if (report.image_url) {
-      try {
-        currentY += 5
-        const imgData = await fetchImageAsBase64(report.image_url)
-        const imgWidth = 80
-        const imgHeight = 60
-        
-        if (currentY + imgHeight > pageHeight - margin) {
-          doc.addPage()
-          currentY = 20
+      const imgData = imageCache.get(report.image_url)
+      if (imgData) {
+        try {
+          currentY += 5
+          const imgWidth = 80
+          const imgHeight = 60
+          
+          if (currentY + imgHeight > pageHeight - margin) {
+            doc.addPage()
+            currentY = 20
+          }
+          
+          // Use higher quality compression (remove 'FAST', default is better quality)
+          doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight)
+          currentY += imgHeight + 5
+        } catch (err) {
+          console.error('Error adding image:', err)
+          doc.text('Image unavailable', margin, currentY)
+          currentY += lineHeight
         }
-        
-        doc.addImage(imgData, 'JPEG', margin, currentY, imgWidth, imgHeight, undefined, 'FAST')
-        currentY += imgHeight + 5
-      } catch (err) {
-        console.error('Error adding image:', err)
+      } else {
         doc.text('Image unavailable', margin, currentY)
         currentY += lineHeight
       }
