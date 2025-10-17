@@ -222,9 +222,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
       if (imgData) {
         try {
           currentY += 5
-          // Larger size for better quality (150x112 maintains 4:3 aspect ratio)
-          const imgWidth = 150
-          const imgHeight = 112
+          // Much larger size for high quality (200x150 maintains 4:3 aspect ratio)
+          const imgWidth = 200
+          const imgHeight = 150
           
           if (currentY + imgHeight > pageHeight - margin) {
             doc.addPage()
