@@ -147,11 +147,16 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const margin = 10
   const lineHeight = 6
 
-  // Preload all images in parallel for better performance
-  console.log('Preloading all images in parallel...')
-  const imagePromises = reports
-    .filter(report => report.image_url)
-    .map(async (report) => {
+  // Preload images with controlled concurrency for better performance
+  console.log('Preloading images with optimized settings...')
+  const reportsWithImages = reports.filter(report => report.image_url)
+  const imageCache = new Map()
+  
+  // Process images in batches of 8 for optimal concurrency
+  const batchSize = 8
+  for (let i = 0; i < reportsWithImages.length; i += batchSize) {
+    const batch = reportsWithImages.slice(i, i + batchSize)
+    const batchPromises = batch.map(async (report) => {
       try {
         const { dataUrl, mimeType } = await fetchImageAsBase64(report.image_url)
         return { url: report.image_url, dataUrl, mimeType }
@@ -160,9 +165,15 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
         return { url: report.image_url, dataUrl: null as any, mimeType: null as any }
       }
     })
+    
+    const batchResults = await Promise.all(batchPromises)
+    batchResults.forEach(img => {
+      imageCache.set(img.url, img.dataUrl ? { dataUrl: img.dataUrl, mimeType: img.mimeType } : null)
+    })
+    
+    console.log(`Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(reportsWithImages.length / batchSize)}`)
+  }
   
-  const preloadedImages = await Promise.all(imagePromises)
-  const imageCache = new Map(preloadedImages.map(img => [img.url, img.dataUrl ? { dataUrl: img.dataUrl, mimeType: img.mimeType } : null]))
   console.log(`Preloaded ${imageCache.size} images`)
 
   // Header
@@ -224,7 +235,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
       if (cached && cached.dataUrl) {
         try {
           currentY += 5
-          // Maximum size for highest quality (fits full page width minus margins)
+          // Larger size for better quality - uses most of page width
           const imgWidth = 190
           const imgHeight = 143
           
@@ -233,10 +244,11 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
             currentY = 20
           }
           
-          // Use WebP/JPEG with optimal compression - maintains quality while reducing size
+          // Use high-quality compression for best image quality
           const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
-          // Use FAST compression which still maintains good quality but compresses better
-          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, 'FAST')
+          // SLOW compression for maximum quality
+          const compression = format === 'JPEG' ? 'SLOW' : undefined
+          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
           currentY += imgHeight + 5
         } catch (err) {
           console.error('Error adding image:', err)
@@ -256,7 +268,16 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
 }
 
 async function fetchImageAsBase64(url: string): Promise<{ dataUrl: string; mimeType: string }> {
-  const response = await fetch(url)
+  // Use Supabase Storage render API for optimized images (faster fetch, smaller size)
+  // Transforms images to 1200px width with 85% quality - perfect balance of quality and speed
+  let fetchUrl = url
+  if (url.includes('supabase.co/storage/v1/object/public/')) {
+    fetchUrl = url.includes('?') 
+      ? `${url}&width=1200&quality=85`
+      : `${url}?width=1200&quality=85`
+  }
+  
+  const response = await fetch(fetchUrl)
   const blob = await response.blob()
   const arrayBuffer = await blob.arrayBuffer()
   const bytes = new Uint8Array(arrayBuffer)
