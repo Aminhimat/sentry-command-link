@@ -153,7 +153,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const imageCache = new Map()
   
   // Process images in batches of 8 for optimal concurrency
-  const batchSize = 8
+  const batchSize = 6
   for (let i = 0; i < reportsWithImages.length; i += batchSize) {
     const batch = reportsWithImages.slice(i, i + batchSize)
     const batchPromises = batch.map(async (report) => {
@@ -246,8 +246,8 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
           
           // Use high-quality compression for best image quality
           const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
-          // SLOW compression for maximum quality
-          const compression = format === 'JPEG' ? 'SLOW' : undefined
+          // MEDIUM compression for faster generation while keeping high visual quality
+          const compression = format === 'JPEG' ? 'MEDIUM' : undefined
           doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
           currentY += imgHeight + 5
         } catch (err) {
@@ -268,22 +268,45 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
 }
 
 async function fetchImageAsBase64(url: string): Promise<{ dataUrl: string; mimeType: string }> {
-  // Use Supabase Storage render API for optimized images (faster fetch, smaller size)
-  // Transforms images to 1200px width with 85% quality - perfect balance of quality and speed
+  // Prefer Supabase render CDN for resized, high‑quality JPEGs
   let fetchUrl = url
-  if (url.includes('supabase.co/storage/v1/object/public/')) {
-    fetchUrl = url.includes('?') 
-      ? `${url}&width=1200&quality=85`
-      : `${url}?width=1200&quality=85`
+  try {
+    if (url.includes('/storage/v1/object/public/')) {
+      const u = new URL(url)
+      const marker = '/storage/v1/object/public/'
+      const idx = u.pathname.indexOf(marker)
+      if (idx !== -1) {
+        const after = u.pathname.slice(idx + marker.length) // bucket/path
+        fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=1400&quality=90&resize=contain&format=jpeg`
+      }
+    }
+  } catch (_) {
+    // Fallback to original URL on parse errors
+    fetchUrl = url
   }
-  
-  const response = await fetch(fetchUrl)
-  const blob = await response.blob()
-  const arrayBuffer = await blob.arrayBuffer()
-  const bytes = new Uint8Array(arrayBuffer)
-  const binary = Array.from(bytes, byte => String.fromCharCode(byte)).join('')
-  
-  // Detect proper MIME type
-  const mimeType = blob.type || 'image/jpeg'
-  return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15000)
+  try {
+    const response = await fetch(fetchUrl, { signal: controller.signal, headers: { Accept: 'image/jpeg,image/png,*/*' } })
+    if (!response.ok) {
+      // Fallback to original if CDN transform not available
+      const resp = await fetch(url, { headers: { Accept: 'image/*,*/*' } })
+      const blob = await resp.blob()
+      const arrayBuffer = await blob.arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      const binary = Array.from(bytes, b => String.fromCharCode(b)).join('')
+      const mimeType = blob.type || 'image/jpeg'
+      return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
+    }
+
+    const blob = await response.blob()
+    const arrayBuffer = await blob.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
+    const binary = Array.from(bytes, b => String.fromCharCode(b)).join('')
+    const mimeType = blob.type || 'image/jpeg'
+    return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
+  } finally {
+    clearTimeout(timeout)
+  }
 }
