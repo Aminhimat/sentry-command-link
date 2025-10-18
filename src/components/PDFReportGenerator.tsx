@@ -432,8 +432,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized compression: Higher DPI with progressive JPEG for quality + compression
-      const targetDPI = 150; // Balanced DPI for good quality
+      // Optimized compression: Balanced DPI with MEDIUM JPEG for faster download
+      const targetDPI = 120; // Reduced from 150 for better compression
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -458,10 +458,10 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Quality compression: 0.85 quality with SLOW encoding for progressive JPEG
-      // Maintains visual quality while reducing file size through progressive rendering
-      const imageData = canvas.toDataURL('image/jpeg', 0.85);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
+      // Optimized compression: 0.88 quality with MEDIUM encoding for progressive JPEG
+      // MEDIUM compression provides great balance: smaller files, fast generation, excellent visual quality
+      const imageData = canvas.toDataURL('image/jpeg', 0.88);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
