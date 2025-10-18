@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
-// Removed client-side PDF generation import - using edge function now
+import { generatePDFReport } from "@/components/PDFReportGenerator";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -803,93 +803,12 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Call edge function for server-side PDF generation
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      toast({
-        title: "Generating PDF",
-        description: "Your report is being generated on the server. This may take a moment...",
+      // Generate PDF directly in browser
+      await generatePDFReport(reportsForPDF, company, {
+        ...reportFilters,
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString()
       });
-
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('generate-pdf-report', {
-        body: {
-          reports: reportsForPDF,
-          company,
-          reportFilters: {
-            ...reportFilters,
-            startDate: startDateTime.toISOString(),
-            endDate: endDateTime.toISOString()
-          },
-          userId: user.id
-        }
-      });
-
-      if (functionError) throw functionError;
-
-      const filename = functionData?.filename;
-      if (!filename) throw new Error('No filename returned from server');
-
-      // Poll for completion
-      const pollInterval = setInterval(async () => {
-        const { data: statusData, error: statusError } = await supabase
-          .from('pdf_generation_status')
-          .select('*')
-          .eq('filename', filename)
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (statusError) {
-          console.error('Error checking status:', statusError);
-          clearInterval(pollInterval);
-          setIsGeneratingReport(false);
-          toast({
-            title: "Error",
-            description: "Failed to check PDF generation status",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (statusData?.status === 'completed' && statusData.download_url) {
-          clearInterval(pollInterval);
-          setIsGeneratingReport(false);
-          
-          // Download the PDF
-          const link = document.createElement('a');
-          link.href = statusData.download_url;
-          link.download = filename.replace('.txt', '.pdf');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          toast({
-            title: "Success",
-            description: "PDF report generated and downloaded successfully!",
-          });
-        } else if (statusData?.status === 'failed') {
-          clearInterval(pollInterval);
-          setIsGeneratingReport(false);
-          toast({
-            title: "Error",
-            description: statusData.error_message || "Failed to generate PDF",
-            variant: "destructive",
-          });
-        }
-      }, 2000); // Poll every 2 seconds
-
-      // Timeout after 2 minutes
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (isGeneratingReport) {
-          setIsGeneratingReport(false);
-          toast({
-            title: "Timeout",
-            description: "PDF generation took too long. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }, 120000);
 
     } catch (error: any) {
       console.error('Error generating report:', error);
@@ -898,6 +817,7 @@ const CompanyDashboard = () => {
         description: error.message || "Failed to generate report",
         variant: "destructive",
       });
+    } finally {
       setIsGeneratingReport(false);
     }
   };
