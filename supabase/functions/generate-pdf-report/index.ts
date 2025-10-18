@@ -153,7 +153,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const imageCache = new Map()
   
   // Process images in batches of 8 for optimal concurrency
-  const batchSize = 6
+  const batchSize = 8
   for (let i = 0; i < reportsWithImages.length; i += batchSize) {
     const batch = reportsWithImages.slice(i, i + batchSize)
     const batchPromises = batch.map(async (report) => {
@@ -244,10 +244,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
             currentY = 20
           }
           
-          // Use high-quality compression for best image quality
+          // Use fast compression for quick generation with good quality
           const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
-          // MEDIUM compression for faster generation while keeping high visual quality
-          const compression = format === 'JPEG' ? 'MEDIUM' : undefined
+          const compression = format === 'JPEG' ? 'FAST' : undefined
           doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
           currentY += imgHeight + 5
         } catch (err) {
@@ -277,7 +276,7 @@ async function fetchImageAsBase64(url: string): Promise<{ dataUrl: string; mimeT
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length) // bucket/path
-        fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=1400&quality=90&resize=contain&format=jpeg`
+        fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=1000&quality=80&resize=contain&format=jpeg`
       }
     }
   } catch (_) {
