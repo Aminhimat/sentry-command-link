@@ -1,6 +1,6 @@
 // Edge runtime via Deno.serve is used; no need to import serve
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { jsPDF } from 'https://esm.sh/jspdf@2.5.2'
+import { PDFDocument, rgb } from 'npm:pdf-lib'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -138,75 +138,92 @@ async function generateReportBackground(
 }
 
 async function generatePDFWithImages(reports: any[], company: any, reportFilters: any): Promise<Uint8Array> {
-  const doc = new jsPDF({
-    compress: true // Enable PDF compression for smaller file size
-  })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const pageHeight = doc.internal.pageSize.getHeight()
-  let currentY = 20
-  const margin = 10
-  const lineHeight = 6
-
-  // Preload images with controlled concurrency for better performance
-  console.log('Preloading images with optimized settings...')
+  console.log('Starting PDF generation with pdf-lib...')
+  console.time('pdf_generation_total')
+  
+  const pdfDoc = await PDFDocument.create()
+  const margin = 50
+  const fontSize = 12
+  const titleFontSize = 20
+  const reportTitleSize = 14
+  
+  // Preload images with optimized batching
+  console.log('Preloading images...')
   console.time('image_preload_total')
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // Adaptive transform based on image count (balance quality vs. speed)
+  // Optimized settings: lower quality for faster generation
   const totalImages = reportsWithImages.length
-  const transform = totalImages <= 8
-    ? { width: 1400, quality: 90 }
-    : totalImages <= 20
-      ? { width: 1200, quality: 85 }
-      : { width: 1000, quality: 80 }
+  const transform = totalImages <= 10
+    ? { width: 1200, quality: 85 }
+    : totalImages <= 30
+      ? { width: 1000, quality: 75 }
+      : { width: 800, quality: 70 }
 
-  // Adaptive concurrency: fewer parallel fetches when there are many images
-  const batchSize = totalImages > 24 ? 6 : 8
+  // Higher concurrency for faster batch processing
+  const batchSize = totalImages > 50 ? 12 : 10
 
   for (let i = 0; i < reportsWithImages.length; i += batchSize) {
-    console.time(`image_batch_${i / batchSize + 1}`)
     const batch = reportsWithImages.slice(i, i + batchSize)
     const batchPromises = batch.map(async (report) => {
       try {
-        const { dataUrl, mimeType } = await fetchImageAsBase64(report.image_url, transform.width, transform.quality)
-        return { url: report.image_url, dataUrl, mimeType }
+        const imgBytes = await fetchImageAsBytes(report.image_url, transform.width, transform.quality)
+        return { url: report.image_url, bytes: imgBytes }
       } catch (err) {
         console.error('Error preloading image:', err)
-        return { url: report.image_url, dataUrl: null as any, mimeType: null as any }
+        return { url: report.image_url, bytes: null }
       }
     })
     
     const batchResults = await Promise.all(batchPromises)
     batchResults.forEach(img => {
-      imageCache.set(img.url, img.dataUrl ? { dataUrl: img.dataUrl, mimeType: img.mimeType } : null)
+      if (img.bytes) imageCache.set(img.url, img.bytes)
     })
 
-    console.timeEnd(`image_batch_${i / batchSize + 1}`)
-    console.log(`Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(reportsWithImages.length / batchSize)}`)
+    console.log(`Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(reportsWithImages.length / batchSize)} complete`)
   }
   
   console.timeEnd('image_preload_total')
+  console.log(`Cached ${imageCache.size} images`)
+
+  // Create header page
+  let page = pdfDoc.addPage([612, 792]) // Letter size
+  let yPosition = page.getHeight() - margin
   
-  console.log(`Preloaded ${imageCache.size} images`)
+  page.drawText('SECURITY REPORT', {
+    x: margin,
+    y: yPosition,
+    size: titleFontSize,
+    color: rgb(0, 0, 0),
+  })
+  yPosition -= 40
 
-  // Header
-  doc.setFontSize(20)
-  doc.setFont('helvetica', 'bold')
-  doc.text('SECURITY REPORT', pageWidth / 2, currentY, { align: 'center' })
-  currentY += 15
-
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Company: ${company?.name || 'Security Company'}`, margin, currentY)
-  currentY += lineHeight
+  page.drawText(`Company: ${company?.name || 'Security Company'}`, {
+    x: margin,
+    y: yPosition,
+    size: fontSize,
+    color: rgb(0, 0, 0),
+  })
+  yPosition -= 20
   
   const startDate = new Date(reportFilters.startDate)
   const endDate = new Date(reportFilters.endDate)
-  doc.text(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, margin, currentY)
-  currentY += lineHeight
-  doc.text(`Total Reports: ${reports.length}`, margin, currentY)
-  currentY += 15
+  page.drawText(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, {
+    x: margin,
+    y: yPosition,
+    size: fontSize,
+    color: rgb(0, 0, 0),
+  })
+  yPosition -= 20
+  
+  page.drawText(`Total Reports: ${reports.length}`, {
+    x: margin,
+    y: yPosition,
+    size: fontSize,
+    color: rgb(0, 0, 0),
+  })
+  yPosition -= 40
 
   // Process each report
   for (let i = 0; i < reports.length; i++) {
@@ -214,84 +231,153 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
     const reportTime = new Date(report.created_at)
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard'
 
-    // Check if we need a new page
-    if (currentY > pageHeight - 60) {
-      doc.addPage()
-      currentY = 20
+    // Check if we need a new page for text
+    if (yPosition < 200) {
+      page = pdfDoc.addPage([612, 792])
+      yPosition = page.getHeight() - margin
     }
 
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`Report #${i + 1}`, margin, currentY)
-    currentY += 8
+    page.drawText(`Report #${i + 1}`, {
+      x: margin,
+      y: yPosition,
+      size: reportTitleSize,
+      color: rgb(0, 0, 0),
+    })
+    yPosition -= 25
 
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Date: ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}`, margin, currentY)
-    currentY += lineHeight
-    doc.text(`Guard: ${guardName}`, margin, currentY)
-    currentY += lineHeight
+    page.drawText(`Date: ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}`, {
+      x: margin,
+      y: yPosition,
+      size: fontSize - 2,
+      color: rgb(0.2, 0.2, 0.2),
+    })
+    yPosition -= 15
+    
+    page.drawText(`Guard: ${guardName}`, {
+      x: margin,
+      y: yPosition,
+      size: fontSize - 2,
+      color: rgb(0.2, 0.2, 0.2),
+    })
+    yPosition -= 15
 
     if (report.location_address) {
-      doc.text(`Location: ${report.location_address}`, margin, currentY)
-      currentY += lineHeight
+      page.drawText(`Location: ${report.location_address}`, {
+        x: margin,
+        y: yPosition,
+        size: fontSize - 2,
+        color: rgb(0.2, 0.2, 0.2),
+      })
+      yPosition -= 15
     }
 
     if (report.report_text) {
-      const textLines = doc.splitTextToSize(report.report_text, pageWidth - 2 * margin)
-      doc.text(textLines, margin, currentY)
-      currentY += textLines.length * lineHeight
-    }
-
-  // Add image if exists (use cached version)
-    if (report.image_url) {
-      const cached = imageCache.get(report.image_url) as any
-      if (cached && cached.dataUrl) {
-        try {
-          currentY += 5
-          // Dynamically size image to page width while preserving aspect ratio
-          const props = doc.getImageProperties(cached.dataUrl as any)
-          const maxWidth = pageWidth - 2 * margin
-          const maxHeight = pageHeight - currentY - margin
-          const ratio = props && props.width && props.height ? (props.height / props.width) : (3 / 4)
-          let imgWidth = maxWidth
-          let imgHeight = imgWidth * ratio
+      // Split text into lines to fit page width
+      const maxWidth = page.getWidth() - 2 * margin
+      const words = report.report_text.split(' ')
+      let line = ''
+      
+      for (const word of words) {
+        const testLine = line + word + ' '
+        const testWidth = (testLine.length * (fontSize - 2) * 0.5) // Approximate width
+        
+        if (testWidth > maxWidth && line.length > 0) {
+          page.drawText(line, {
+            x: margin,
+            y: yPosition,
+            size: fontSize - 2,
+            color: rgb(0, 0, 0),
+          })
+          yPosition -= 15
+          line = word + ' '
           
-          // If the image is too tall for the remaining space, scale down to fit height
-          if (imgHeight > maxHeight) {
-            imgHeight = maxHeight
-            imgWidth = imgHeight / ratio
+          if (yPosition < 150) {
+            page = pdfDoc.addPage([612, 792])
+            yPosition = page.getHeight() - margin
           }
-          
-          if (currentY + imgHeight > pageHeight - margin) {
-            doc.addPage()
-            currentY = 20
-          }
-          
-          // Use fast compression for quick generation with good quality
-          const format = (cached.mimeType && typeof cached.mimeType === 'string' && cached.mimeType.includes('png')) ? 'PNG' : 'JPEG'
-          const compression = format === 'JPEG' ? 'FAST' : undefined
-          doc.addImage(cached.dataUrl, format as any, margin, currentY, imgWidth, imgHeight, undefined, compression as any)
-          currentY += imgHeight + 5
-        } catch (err) {
-          console.error('Error adding image:', err)
-          doc.text('Image unavailable', margin, currentY)
-          currentY += lineHeight
+        } else {
+          line = testLine
         }
-      } else {
-        doc.text('Image unavailable', margin, currentY)
-        currentY += lineHeight
+      }
+      
+      if (line.length > 0) {
+        page.drawText(line, {
+          x: margin,
+          y: yPosition,
+          size: fontSize - 2,
+          color: rgb(0, 0, 0),
+        })
+        yPosition -= 20
       }
     }
 
-    currentY += 10
+    // Add image if exists (use cached version)
+    if (report.image_url) {
+      const imgBytes = imageCache.get(report.image_url)
+      if (imgBytes) {
+        try {
+          // Embed image
+          const image = report.image_url.toLowerCase().includes('.png')
+            ? await pdfDoc.embedPng(imgBytes)
+            : await pdfDoc.embedJpg(imgBytes)
+          
+          const imgDims = image.scale(0.5) // Scale down for faster rendering
+          const maxImgWidth = page.getWidth() - 2 * margin
+          const maxImgHeight = 400
+          
+          let imgWidth = imgDims.width
+          let imgHeight = imgDims.height
+          
+          // Scale to fit page width
+          if (imgWidth > maxImgWidth) {
+            const scale = maxImgWidth / imgWidth
+            imgWidth = maxImgWidth
+            imgHeight = imgHeight * scale
+          }
+          
+          // Scale to fit max height
+          if (imgHeight > maxImgHeight) {
+            const scale = maxImgHeight / imgHeight
+            imgHeight = maxImgHeight
+            imgWidth = imgWidth * scale
+          }
+          
+          // New page for image if needed
+          if (yPosition - imgHeight < margin) {
+            page = pdfDoc.addPage([612, 792])
+            yPosition = page.getHeight() - margin
+          }
+          
+          page.drawImage(image, {
+            x: margin,
+            y: yPosition - imgHeight,
+            width: imgWidth,
+            height: imgHeight,
+          })
+          
+          yPosition -= (imgHeight + 20)
+        } catch (err) {
+          console.error('Error adding image:', err)
+          page.drawText('Image unavailable', {
+            x: margin,
+            y: yPosition,
+            size: fontSize - 2,
+            color: rgb(0.5, 0, 0),
+          })
+          yPosition -= 20
+        }
+      }
+    }
+
+    yPosition -= 30
   }
 
-  return new Uint8Array(doc.output('arraybuffer'))
+  console.timeEnd('pdf_generation_total')
+  return await pdfDoc.save()
 }
 
-async function fetchImageAsBase64(url: string, width = 1000, quality = 80): Promise<{ dataUrl: string; mimeType: string }> {
-  // Prefer Supabase render CDN for resized, high‑quality JPEGs
+async function fetchImageAsBytes(url: string, width = 1000, quality = 75): Promise<Uint8Array> {
+  // Use Supabase render CDN for optimized images
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -299,36 +385,30 @@ async function fetchImageAsBase64(url: string, width = 1000, quality = 80): Prom
       const marker = '/storage/v1/object/public/'
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
-        const after = u.pathname.slice(idx + marker.length) // bucket/path
+        const after = u.pathname.slice(idx + marker.length)
         fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=jpeg`
       }
     }
   } catch (_) {
-    // Fallback to original URL on parse errors
     fetchUrl = url
   }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 15000)
+  const timeout = setTimeout(() => controller.abort(), 12000)
+  
   try {
-    const response = await fetch(fetchUrl, { signal: controller.signal, headers: { Accept: 'image/jpeg,image/png,*/*' } })
+    const response = await fetch(fetchUrl, { 
+      signal: controller.signal, 
+      headers: { Accept: 'image/jpeg,image/png,*/*' } 
+    })
+    
     if (!response.ok) {
-      // Fallback to original if CDN transform not available
-      const resp = await fetch(url, { headers: { Accept: 'image/*,*/*' } })
-      const blob = await resp.blob()
-      const arrayBuffer = await blob.arrayBuffer()
-      const bytes = new Uint8Array(arrayBuffer)
-      const binary = Array.from(bytes, b => String.fromCharCode(b)).join('')
-      const mimeType = blob.type || 'image/jpeg'
-      return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
+      // Fallback to original
+      const resp = await fetch(url, { headers: { Accept: 'image/*' } })
+      return new Uint8Array(await resp.arrayBuffer())
     }
 
-    const blob = await response.blob()
-    const arrayBuffer = await blob.arrayBuffer()
-    const bytes = new Uint8Array(arrayBuffer)
-    const binary = Array.from(bytes, b => String.fromCharCode(b)).join('')
-    const mimeType = blob.type || 'image/jpeg'
-    return { dataUrl: `data:${mimeType};base64,${btoa(binary)}`, mimeType }
+    return new Uint8Array(await response.arrayBuffer())
   } finally {
     clearTimeout(timeout)
   }
