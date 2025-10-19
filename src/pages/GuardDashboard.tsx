@@ -442,10 +442,6 @@ const GuardDashboard = () => {
               
               setTaskData(prev => ({ ...prev, image: compressedFile }));
               
-              toast({
-                title: "✅ High-Quality Photo Ready",
-              });
-              
               return; // Success, exit retry loop
             }
           } catch (error: any) {
@@ -523,9 +519,6 @@ const GuardDashboard = () => {
           });
           
           setTaskData(prev => ({ ...prev, image: compressedFile }));
-          toast({
-            title: "✅ High-Quality Photo Ready",
-          });
         } else {
           toast({
             title: "📸 Camera Cancelled",
