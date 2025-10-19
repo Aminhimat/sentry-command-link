@@ -153,13 +153,13 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // Optimized images: balanced quality/size for fast downloads
+  // High-quality images for clear visibility
   const totalImages = reportsWithImages.length
   const transform = totalImages <= 20
-    ? { width: 1400, quality: 92 }  // Excellent quality, faster loading
+    ? { width: 1600, quality: 95 }  // Maximum quality for clear pictures
     : totalImages <= 100
-      ? { width: 1200, quality: 88 }  // Great quality for medium sets
-      : { width: 1000, quality: 85 }  // Good quality for large batches
+      ? { width: 1400, quality: 92 }  // Excellent quality for medium sets
+      : { width: 1200, quality: 90 }  // High quality for large batches
 
   // Aggressive parallel batching: 5-10× faster for large sets
   const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
@@ -385,7 +385,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 1400, quality = 92): Promise<Uint8Array> {
   // Optimization: Use Supabase render CDN with aggressive compression
   // Pre-compress to JPG with optimized settings for 5-10× faster processing
   let fetchUrl = url
