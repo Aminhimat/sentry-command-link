@@ -19,6 +19,7 @@ import { Capacitor } from '@capacitor/core';
 import { backgroundSync } from "@/utils/backgroundSync";
 import { Badge } from "@/components/ui/badge";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { imageOptimizer } from "@/utils/imageOptimization";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -396,9 +397,9 @@ const GuardDashboard = () => {
           try {
             console.log(`📸 Camera attempt ${attempt}/${maxRetries}`);
             
-            // Add timeout wrapper
+            // Add timeout wrapper - reduced quality for faster capture
             const cameraPromise = CapCamera.getPhoto({
-              quality: 80,
+              quality: 70,
               allowEditing: false,
               resultType: CameraResultType.DataUrl,
               source: CameraSource.Camera,
@@ -416,18 +417,34 @@ const GuardDashboard = () => {
             if (image.dataUrl) {
               console.log(`✅ Camera success on attempt ${attempt}`);
               
+              // Compress image immediately for faster upload
+              toast({
+                title: "📦 Compressing...",
+                description: "Optimizing image for fast upload",
+              });
+              
               const response = await fetch(image.dataUrl);
               const blob = await response.blob();
-              const file = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
+              const originalFile = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
                 type: 'image/jpeg',
                 lastModified: Date.now()
               });
               
-              setTaskData(prev => ({ ...prev, image: file }));
+              // Compress to 50% smaller with good quality
+              const { compressedFile, compressionRatio } = await imageOptimizer.compressImage(originalFile, {
+                quality: 0.75,
+                maxWidth: 1280,
+                maxHeight: 720,
+                format: 'jpeg'
+              });
+              
+              console.log(`✅ Compressed to ${Math.round(compressionRatio * 100)}% of original size`);
+              
+              setTaskData(prev => ({ ...prev, image: compressedFile }));
               
               toast({
-                title: "✅ Photo Captured",
-                description: "Photo captured successfully",
+                title: "✅ Photo Ready",
+                description: `Compressed ${Math.round((1 - compressionRatio) * 100)}% smaller`,
               });
               
               return; // Success, exit retry loop
@@ -493,10 +510,23 @@ const GuardDashboard = () => {
         
         const file = await filePromise;
         if (file) {
-          setTaskData(prev => ({ ...prev, image: file }));
+          // Compress web images too
           toast({
-            title: "✅ Photo Selected",
-            description: "Photo selected successfully",
+            title: "📦 Compressing...",
+            description: "Optimizing image for fast upload",
+          });
+          
+          const { compressedFile, compressionRatio } = await imageOptimizer.compressImage(file, {
+            quality: 0.75,
+            maxWidth: 1280,
+            maxHeight: 720,
+            format: 'jpeg'
+          });
+          
+          setTaskData(prev => ({ ...prev, image: compressedFile }));
+          toast({
+            title: "✅ Photo Ready",
+            description: `Compressed ${Math.round((1 - compressionRatio) * 100)}% smaller`,
           });
         } else {
           toast({
@@ -647,6 +677,13 @@ const GuardDashboard = () => {
 
       if (taskData.image) {
         console.log('📸 Submitting with image...');
+        
+        // Show uploading toast
+        toast({
+          title: "📤 Uploading...",
+          description: "Sending report to server",
+        });
+        
         // Use optimized edge function for faster image upload
         const formData = new FormData();
         formData.append('image', taskData.image);
@@ -659,16 +696,18 @@ const GuardDashboard = () => {
         }));
 
         console.log('📤 Invoking upload-guard-image function...');
+        const startTime = Date.now();
         const { data, error } = await supabase.functions.invoke('upload-guard-image', {
           body: formData
         });
+        const uploadTime = Date.now() - startTime;
 
         if (error) {
           console.error('❌ Edge function error:', error);
           throw new Error(error.message || 'Failed to submit report');
         }
 
-        console.log('✅ Image upload successful');
+        console.log(`✅ Image upload successful in ${uploadTime}ms`);
         
         // Play success sound
         playSuccessSound();
