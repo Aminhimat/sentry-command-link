@@ -444,7 +444,6 @@ const GuardDashboard = () => {
               
               toast({
                 title: "✅ High-Quality Photo Ready",
-                description: "Photo optimized for best quality",
               });
               
               return; // Success, exit retry loop
@@ -526,7 +525,6 @@ const GuardDashboard = () => {
           setTaskData(prev => ({ ...prev, image: compressedFile }));
           toast({
             title: "✅ High-Quality Photo Ready",
-            description: "Photo optimized for best quality",
           });
         } else {
           toast({
