@@ -669,12 +669,6 @@ const GuardDashboard = () => {
       if (taskData.image) {
         console.log('📸 Submitting with image...');
         
-        // Show uploading toast
-        toast({
-          title: "📤 Uploading...",
-          description: "Sending report to server",
-        });
-        
         // Use optimized edge function for faster image upload
         const formData = new FormData();
         formData.append('image', taskData.image);
