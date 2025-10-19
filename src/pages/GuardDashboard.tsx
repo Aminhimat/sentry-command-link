@@ -417,12 +417,6 @@ const GuardDashboard = () => {
             if (image.dataUrl) {
               console.log(`✅ Camera success on attempt ${attempt}`);
               
-              // Optimize image while maintaining excellent quality
-              toast({
-                title: "📦 Optimizing...",
-                description: "Preparing high-quality image",
-              });
-              
               const response = await fetch(image.dataUrl);
               const blob = await response.blob();
               const originalFile = new File([blob], `guard_photo_${Date.now()}.jpg`, { 
@@ -505,12 +499,6 @@ const GuardDashboard = () => {
         
         const file = await filePromise;
         if (file) {
-          // Optimize while maintaining high quality
-          toast({
-            title: "📦 Optimizing...",
-            description: "Preparing high-quality image",
-          });
-          
           const { compressedFile, compressionRatio } = await imageOptimizer.compressImage(file, {
             quality: 0.90,
             maxWidth: 1920,
