@@ -1511,7 +1511,7 @@ const GuardDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
+    <div className="min-h-screen bg-background relative border-4 border-primary">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
@@ -1610,11 +1610,7 @@ const GuardDashboard = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <ClipboardList className="h-6 w-6" />
-              Submit Security Report
             </CardTitle>
-            <CardDescription>
-              Submit your security report directly to admin - no local storage
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {/* Missing Fields Error Display */}
