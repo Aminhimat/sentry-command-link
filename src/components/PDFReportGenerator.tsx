@@ -432,8 +432,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized DPI for clear, fast generation
-      const targetDPI = 165; // Balanced DPI for clarity and speed
+      // High DPI for maximum image clarity and visibility
+      const targetDPI = 200; // High DPI for sharp, crisp pictures
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -458,9 +458,9 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Balanced compression for clear pictures and fast generation
-      const imageData = canvas.toDataURL('image/jpeg', 0.93);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM');
+      // High-quality compression for maximum clarity and visibility
+      const imageData = canvas.toDataURL('image/jpeg', 0.96);
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
