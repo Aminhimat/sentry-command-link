@@ -397,9 +397,9 @@ const GuardDashboard = () => {
           try {
             console.log(`📸 Camera attempt ${attempt}/${maxRetries}`);
             
-            // Add timeout wrapper - reduced quality for faster capture
+            // Add timeout wrapper - high quality for clear photos
             const cameraPromise = CapCamera.getPhoto({
-              quality: 70,
+              quality: 90,
               allowEditing: false,
               resultType: CameraResultType.DataUrl,
               source: CameraSource.Camera,
@@ -417,10 +417,10 @@ const GuardDashboard = () => {
             if (image.dataUrl) {
               console.log(`✅ Camera success on attempt ${attempt}`);
               
-              // Compress image immediately for faster upload
+              // Optimize image while maintaining excellent quality
               toast({
-                title: "📦 Compressing...",
-                description: "Optimizing image for fast upload",
+                title: "📦 Optimizing...",
+                description: "Preparing high-quality image",
               });
               
               const response = await fetch(image.dataUrl);
@@ -430,21 +430,21 @@ const GuardDashboard = () => {
                 lastModified: Date.now()
               });
               
-              // Compress to 50% smaller with good quality
+              // High quality compression - keeps excellent detail
               const { compressedFile, compressionRatio } = await imageOptimizer.compressImage(originalFile, {
-                quality: 0.75,
-                maxWidth: 1280,
-                maxHeight: 720,
+                quality: 0.90,
+                maxWidth: 1920,
+                maxHeight: 1080,
                 format: 'jpeg'
               });
               
-              console.log(`✅ Compressed to ${Math.round(compressionRatio * 100)}% of original size`);
+              console.log(`✅ Optimized to ${Math.round(compressionRatio * 100)}% of original size`);
               
               setTaskData(prev => ({ ...prev, image: compressedFile }));
               
               toast({
-                title: "✅ Photo Ready",
-                description: `Compressed ${Math.round((1 - compressionRatio) * 100)}% smaller`,
+                title: "✅ High-Quality Photo Ready",
+                description: "Photo optimized for best quality",
               });
               
               return; // Success, exit retry loop
@@ -510,23 +510,23 @@ const GuardDashboard = () => {
         
         const file = await filePromise;
         if (file) {
-          // Compress web images too
+          // Optimize while maintaining high quality
           toast({
-            title: "📦 Compressing...",
-            description: "Optimizing image for fast upload",
+            title: "📦 Optimizing...",
+            description: "Preparing high-quality image",
           });
           
           const { compressedFile, compressionRatio } = await imageOptimizer.compressImage(file, {
-            quality: 0.75,
-            maxWidth: 1280,
-            maxHeight: 720,
+            quality: 0.90,
+            maxWidth: 1920,
+            maxHeight: 1080,
             format: 'jpeg'
           });
           
           setTaskData(prev => ({ ...prev, image: compressedFile }));
           toast({
-            title: "✅ Photo Ready",
-            description: `Compressed ${Math.round((1 - compressionRatio) * 100)}% smaller`,
+            title: "✅ High-Quality Photo Ready",
+            description: "Photo optimized for best quality",
           });
         } else {
           toast({
