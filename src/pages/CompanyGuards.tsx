@@ -433,7 +433,7 @@ const CompanyGuards = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 font-sans">
       {/* Enhanced Header with Gradient */}
       <div className="border-b bg-card/80 backdrop-blur-sm shadow-sm">
         <div className="flex h-20 items-center px-6 max-w-7xl mx-auto">
