@@ -433,27 +433,37 @@ const CompanyGuards = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Enhanced Header with Gradient */}
+      <div className="border-b bg-card/80 backdrop-blur-sm shadow-sm">
+        <div className="flex h-20 items-center px-6 max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link to="/company">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                Back to Dashboard
               </Button>
             </Link>
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-xl font-semibold tracking-wide">GUARDS ROSTER</h1>
-              <p className="text-sm text-muted-foreground">
-                {company?.name} - Manage your security guard team
-              </p>
+            <div className="h-10 w-px bg-border" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-md">
+                <Users className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                  Guards Roster
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {company?.name} • Manage Security Guard Team
+                </p>
+              </div>
             </div>
           </div>
           <div className="ml-auto">
-            <Button onClick={() => setShowCreateGuardForm(true)}>
+            <Button 
+              onClick={() => setShowCreateGuardForm(true)}
+              className="shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-primary to-primary-glow"
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Guard
             </Button>
@@ -465,14 +475,22 @@ const CompanyGuards = () => {
       <div className="p-6 max-w-7xl mx-auto">
         {/* Create Guard Form */}
         {showCreateGuardForm && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-6 shadow-lg border-primary/20 animate-fade-in">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
               <div className="flex items-center justify-between">
-                <CardTitle>Create New Guard</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(false)}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Plus className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Create New Guard</CardTitle>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(false)} className="hover:bg-destructive/10 hover:text-destructive">
                   ×
                 </Button>
               </div>
+              <CardDescription className="mt-2">
+                Add a new security guard to your team
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateGuard} className="grid gap-4 md:grid-cols-5">
@@ -549,17 +567,25 @@ const CompanyGuards = () => {
 
         {/* Edit Guard Form */}
         {showEditGuardForm && editingGuard && (
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-6 shadow-lg border-primary/20 animate-fade-in">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
               <div className="flex items-center justify-between">
-                <CardTitle>Edit Guard: {editingGuard.first_name} {editingGuard.last_name}</CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Edit className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Edit Guard: {editingGuard.first_name} {editingGuard.last_name}</CardTitle>
+                </div>
                 <Button variant="ghost" size="sm" onClick={() => {
                   setShowEditGuardForm(false);
                   setEditingGuard(null);
-                }}>
+                }} className="hover:bg-destructive/10 hover:text-destructive">
                   ×
                 </Button>
               </div>
+              <CardDescription className="mt-2">
+                Update guard information and assignment
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleEditGuard} className="space-y-6">
@@ -650,10 +676,10 @@ const CompanyGuards = () => {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+        <Card className="shadow-lg border-primary/10">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Users className="h-5 w-5 text-primary" />
               Guards Roster
             </CardTitle>
             <CardDescription>

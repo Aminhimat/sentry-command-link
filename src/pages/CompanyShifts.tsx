@@ -224,23 +224,30 @@ const CompanyShifts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Enhanced Header with Gradient */}
+      <div className="border-b bg-card/80 backdrop-blur-sm shadow-sm">
+        <div className="flex h-20 items-center px-6 max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link to="/company">
-              <Button variant="ghost" size="sm">
+              <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                Back to Dashboard
               </Button>
             </Link>
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-xl font-semibold tracking-wide">GUARD SHIFTS</h1>
-              <p className="text-sm text-muted-foreground">
-                {company?.name} - Monitor guard check-in and check-out times
-              </p>
+            <div className="h-10 w-px bg-border" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-md">
+                <Activity className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                  Guard Shifts
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {company?.name} • Monitor Check-in & Check-out Times
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -254,10 +261,10 @@ const CompanyShifts = () => {
           onSuccess={fetchShifts}
         /> */}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
+        <Card className="shadow-lg border-primary/10">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Activity className="h-5 w-5 text-primary" />
               Guard Shifts
             </CardTitle>
             <CardDescription>
