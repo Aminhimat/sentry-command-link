@@ -153,13 +153,13 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // High-resolution images for maximum visibility and clarity
+  // Optimized resolution for excellent quality with efficient compression
   const totalImages = reportsWithImages.length
   const transform = totalImages <= 20
-    ? { width: 1800, quality: 96 }  // Maximum quality for crisp, clear pictures
+    ? { width: 1600, quality: 90 }  // Excellent quality, optimized file size
     : totalImages <= 100
-      ? { width: 1600, quality: 94 }  // Excellent quality for medium sets
-      : { width: 1400, quality: 92 }  // High quality for large batches
+      ? { width: 1400, quality: 88 }  // Great quality for medium sets
+      : { width: 1200, quality: 86 }  // Good quality for large batches
 
   // Aggressive parallel batching: 5-10× faster for large sets
   const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
@@ -330,7 +330,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
             ? await pdfDoc.embedPng(imgBytes)
             : await pdfDoc.embedJpg(imgBytes)
           
-          const imgDims = image.scale(0.4) // Higher scale for sharper, more visible images
+          const imgDims = image.scale(0.35) // Optimized scale for quality and file size
           const maxImgWidth = (page.getWidth() - 2 * margin) * 0.7 // 70% of page width for crisp display
           const maxImgHeight = 380
           
@@ -385,7 +385,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 1600, quality = 94): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 1400, quality = 88): Promise<Uint8Array> {
   // Optimization: Use Supabase render CDN with aggressive compression
   // Pre-compress to JPG with optimized settings for 5-10× faster processing
   let fetchUrl = url
