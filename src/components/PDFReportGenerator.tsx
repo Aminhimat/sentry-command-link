@@ -63,6 +63,17 @@ export class PDFReportGenerator {
     this.currentY = this.margin;
   }
 
+  // Sanitize text to prevent WinAnsi encoding errors
+  private sanitizeText(text: string): string {
+    if (!text) return '';
+    // Replace newlines with spaces and remove other problematic characters
+    return text
+      .replace(/[\n\r]/g, ' ') // Replace newlines with spaces
+      .replace(/[\t]/g, ' ')    // Replace tabs with spaces
+      .replace(/\s+/g, ' ')     // Replace multiple spaces with single space
+      .trim();
+  }
+
   private addPageIfNeeded(requiredHeight: number = 30) {
     if (this.currentY + requiredHeight > this.pageHeight - this.margin) {
       this.doc.addPage();
@@ -103,7 +114,7 @@ export class PDFReportGenerator {
     
     // Use full available width for company name (from logo to right margin)
     const availableWidth = this.pageWidth - companyNameX - this.margin - 10;
-    const companyName = company?.name || 'Security Company';
+    const companyName = this.sanitizeText(company?.name || 'Security Company');
     
     // Use splitTextToSize to handle long company names
     const wrappedName = this.doc.splitTextToSize(companyName, availableWidth);
@@ -161,7 +172,7 @@ export class PDFReportGenerator {
     // No automatic page addition here since we handle it manually in generateReport
 
     const reportDate = new Date(report.created_at);
-    const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard';
+    const guardName = this.sanitizeText(report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard');
     
     // Extract severity level from report text to determine header color
     let severityLevel = 'none';
@@ -253,8 +264,8 @@ export class PDFReportGenerator {
       // Keep it within left column, leaving space for description box
       const maxLocationWidth = 80; // Constrain to left side of page
       
-      // Wrap location text if it's too long
-      const locationText = `Location: ${report.location_address}`;
+      // Sanitize and wrap location text if it's too long
+      const locationText = this.sanitizeText(`Location: ${report.location_address}`);
       const wrappedLocation = this.doc.splitTextToSize(locationText, maxLocationWidth);
       
       // Display wrapped location text (up to 2 lines to keep compact)
@@ -279,10 +290,10 @@ export class PDFReportGenerator {
       let displayText = '';
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
-        displayText = descriptionValue;
+        displayText = this.sanitizeText(descriptionValue);
       } else if (report.report_text) {
         // If no formatted description, use the entire report text as description
-        displayText = report.report_text.trim();
+        displayText = this.sanitizeText(report.report_text.trim());
       }
       
       // Use default if still empty
@@ -334,7 +345,7 @@ export class PDFReportGenerator {
       // Display Severity label at the very bottom of the table entry
       const severityLine = lines.find(line => line.startsWith('Severity:'));
       if (severityLine) {
-        const severityValue = severityLine.replace('Severity:', '').trim().toLowerCase();
+        const severityValue = this.sanitizeText(severityLine.replace('Severity:', '').trim().toLowerCase());
         const severityText = `Severity: ${severityValue.charAt(0).toUpperCase() + severityValue.slice(1)}`;
         
         // Determine label color based on severity level
@@ -380,7 +391,7 @@ export class PDFReportGenerator {
     // Right side - Image attached to description box
     if (report.image_url) {
       // Watermark text: Company name + Guard name + timestamp (will be truncated to fit)
-      const companyName = company?.name || 'Security Co';
+      const companyName = this.sanitizeText(company?.name || 'Security Co');
       const wmText = `${companyName} • ${guardName} • ${reportDate.toLocaleString()}`;
 
       // Image positioned with small space after description box - on right side
@@ -477,9 +488,9 @@ export class PDFReportGenerator {
         const fontSize = Math.max(3, Math.min(5, barHeight - 1));
         this.doc.setFontSize(fontSize);
 
-        // Truncate text to fit available width
+        // Sanitize and truncate text to fit available width
         const maxTextWidth = width - padding * 2;
-        let text = watermarkText;
+        let text = this.sanitizeText(watermarkText);
         while (this.doc.getTextWidth(text) > maxTextWidth && text.length > 1) {
           text = text.slice(0, -2) + '…';
         }
