@@ -6,17 +6,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Lazy load heavy dashboard components
-const Index = lazy(() => import("./pages/Index"));
-const AuthPage = lazy(() => import("./pages/AuthPage"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const CompanyDashboard = lazy(() => import("./pages/CompanyDashboard"));
-const CompanyShifts = lazy(() => import("./pages/CompanyShifts"));
-const CompanyGuards = lazy(() => import("./pages/CompanyGuards"));
-const CompanyProperties = lazy(() => import("./pages/CompanyProperties"));
-const GuardDashboard = lazy(() => import("./pages/GuardDashboard"));
-const ChangePasswordPage = lazy(() => import("./pages/ChangePasswordPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+// Lazy load heavy dashboard components with error logging
+const lazyWithLog = (loader: () => Promise<any>, name: string) =>
+  lazy(() =>
+    loader().catch((e) => {
+      console.error(`Lazy import failed: ${name}`, e);
+      throw e;
+    })
+  );
+
+const Index = lazyWithLog(() => import("./pages/Index"), 'Index');
+const AuthPage = lazyWithLog(() => import("./pages/AuthPage"), 'AuthPage');
+const AdminDashboard = lazyWithLog(() => import("./pages/AdminDashboard"), 'AdminDashboard');
+const CompanyDashboard = lazyWithLog(() => import("./pages/CompanyDashboard"), 'CompanyDashboard');
+const CompanyShifts = lazyWithLog(() => import("./pages/CompanyShifts"), 'CompanyShifts');
+const CompanyGuards = lazyWithLog(() => import("./pages/CompanyGuards"), 'CompanyGuards');
+const CompanyProperties = lazyWithLog(() => import("./pages/CompanyProperties"), 'CompanyProperties');
+const GuardDashboard = lazyWithLog(() => import("./pages/GuardDashboard"), 'GuardDashboard');
+const ChangePasswordPage = lazyWithLog(() => import("./pages/ChangePasswordPage"), 'ChangePasswordPage');
+const NotFound = lazyWithLog(() => import("./pages/NotFound"), 'NotFound');
 
 // Loading component
 const PageLoader = () => (
