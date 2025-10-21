@@ -531,43 +531,30 @@ export class PDFReportGenerator {
 
   private async preloadAllImages(reports: Report[]): Promise<Map<string, HTMLImageElement>> {
     const imageMap = new Map<string, HTMLImageElement>();
-    const imagePromises: Promise<void>[] = [];
-
-    reports.forEach(report => {
-      if (report.image_url) {
-        const promise = new Promise<void>(async (resolve) => {
-          try {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            
-            img.onload = () => {
-              imageMap.set(report.image_url!, img);
-              resolve();
-            };
-            
-            img.onerror = () => {
-              console.warn('Failed to preload image:', report.image_url);
-              resolve(); // Don't block on failed images
-            };
-            
-            // Load images for compression
-            img.src = report.image_url!;
-          } catch (error) {
-            console.error('Error preloading image:', error);
-            resolve();
-          }
-        });
-        imagePromises.push(promise);
+    const reportsWithImages = reports.filter(r => r.image_url);
+    
+    const loadPromises = reportsWithImages.map(async (report) => {
+      return new Promise<{ url: string; img: HTMLImageElement } | null>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => resolve({ url: report.image_url!, img });
+        img.onerror = (error) => {
+          console.error(`Failed to load image ${report.image_url}:`, error);
+          resolve(null);
+        };
+        
+        img.src = report.image_url!;
+      });
+    });
+    
+    const results = await Promise.all(loadPromises);
+    results.forEach(result => {
+      if (result) {
+        imageMap.set(result.url, result.img);
       }
     });
-
-    // Wait for all images to load (or fail) with 12s timeout for compression
-    await Promise.race([
-      Promise.all(imagePromises),
-      new Promise(resolve => setTimeout(resolve, 12000))
-    ]);
-
-    console.log(`Preloaded ${imageMap.size} images for compression`);
+    
     return imageMap;
   }
 

@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import StatsCards from "@/components/StatsCards";
 import IncidentsTable from "@/components/IncidentsTable";
-import { generatePDFReport } from "@/components/PDFReportGenerator";
+import { generateFastPDFReport } from "@/components/PDFReportGeneratorNew";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -803,8 +803,8 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF directly in browser
-      await generatePDFReport(reportsForPDF, company, {
+      // Generate PDF with optimized fast generator
+      await generateFastPDFReport(reportsForPDF, company, {
         ...reportFilters,
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString()
