@@ -153,7 +153,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
 
   // Ultra-conservative settings to avoid OOM with 280+ images
   const transform = { width: 512, quality: 50 }
-  console.log('Transform settings:', transform, 'totalImages:', reportsWithImages.length)
+  console.log('Transform settings:', transform, 'totalImages:', totalImages)
 
   // Process 2 images per page instead of 5 to reduce memory pressure
   const perPage = 2
