@@ -803,12 +803,78 @@ const CompanyDashboard = () => {
         return report;
       });
 
-      // Generate PDF directly in browser
-      await generatePDFReport(reportsForPDF, company, {
-        ...reportFilters,
-        startDate: startDateTime.toISOString(),
-        endDate: endDateTime.toISOString()
-      });
+      // Decide generation path: server for large sets, client for small
+      const imageCount = reportsForPDF.filter(r => r.image_url).length;
+      const isLarge = imageCount > 50 || reportsForPDF.length > 250;
+
+      if (!isLarge) {
+        // Client-side generation (fast for small sets)
+        await generatePDFReport(reportsForPDF, company, {
+          ...reportFilters,
+          startDate: startDateTime.toISOString(),
+          endDate: endDateTime.toISOString()
+        });
+      } else {
+        // Server-side generation for large reports (hundreds of images / 100+ pages)
+        toast({
+          title: "Generating on server",
+          description: "Large report detected. Building PDF in the background...",
+        });
+
+        const { data: start, error: fnError } = await supabase.functions.invoke('generate-pdf-report', {
+          body: {
+            reports: reportsForPDF,
+            company,
+            reportFilters: {
+              ...reportFilters,
+              startDate: startDateTime.toISOString(),
+              endDate: endDateTime.toISOString()
+            },
+            userId: userProfile.user_id,
+          }
+        });
+
+        if (fnError) throw fnError;
+        const filename = start?.filename as string | undefined;
+        if (!filename) throw new Error('Failed to start server PDF generation');
+
+        // Poll pdf_generation_status until completed/failed (max ~5 minutes)
+        const timeoutMs = 5 * 60 * 1000;
+        const intervalMs = 2000;
+        const startTs = Date.now();
+        let downloaded = false;
+
+        while (Date.now() - startTs < timeoutMs) {
+          const { data: statusRows, error: statusErr } = await supabase
+            .from('pdf_generation_status')
+            .select('status, download_url, error_message, created_at')
+            .eq('user_id', userProfile.user_id)
+            .eq('filename', filename)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (statusErr) throw statusErr;
+          const status = statusRows?.[0];
+
+          if (status?.status === 'completed' && status.download_url) {
+            toast({ title: 'Report ready', description: 'Your PDF is ready. Downloading...' });
+            window.open(status.download_url, '_blank');
+            downloaded = true;
+            break;
+          }
+
+          if (status?.status === 'failed') {
+            throw new Error(status.error_message || 'Server PDF generation failed');
+          }
+
+          // Wait before next poll
+          await new Promise((r) => setTimeout(r, intervalMs));
+        }
+
+        if (!downloaded) {
+          throw new Error('Timed out waiting for server PDF generation');
+        }
+      }
 
     } catch (error: any) {
       console.error('Error generating report:', error);
