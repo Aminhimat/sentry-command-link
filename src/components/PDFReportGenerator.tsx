@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { imageOptimizer } from '@/utils/imageOptimization';
 
 interface Report {
@@ -469,9 +468,19 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // High-quality compression for maximum clarity and visibility
-      const imageData = canvas.toDataURL('image/jpeg', 0.96);
-      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'SLOW');
+      // Use Blob for better memory efficiency (vs dataURL)
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92);
+      });
+      
+      // Convert blob to base64 for jsPDF
+      const reader = new FileReader();
+      const imageData = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      
+      this.doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
 
       // Draw watermark overlay (bottom of picture) if provided
       if (watermarkText) {
@@ -615,8 +624,14 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Save the PDF with compression
-    this.doc.save(filename);
+    // Optimized download with proper cleanup
+    const pdfBlob = this.doc.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url); // Clean up memory
   }
 }
 
