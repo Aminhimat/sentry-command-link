@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import imageCompression from 'browser-image-compression';
 import { imageOptimizer } from '@/utils/imageOptimization';
 
 interface Report {
@@ -435,57 +434,6 @@ export class PDFReportGenerator {
 
   private async processImageToPDF(img: HTMLImageElement, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
-      // Smart compression: Only compress very large images to save memory
-      const originalW = img.naturalWidth || img.width;
-      const originalH = img.naturalHeight || img.height;
-      const shouldCompress = originalW > 2048 || originalH > 2048;
-      
-      if (shouldCompress) {
-        try {
-          // Create temporary canvas for blob conversion
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = originalW;
-          tempCanvas.height = originalH;
-          const tempCtx = tempCanvas.getContext('2d');
-          if (tempCtx) {
-            tempCtx.drawImage(img, 0, 0);
-            const blob = await new Promise<Blob>((res) => {
-              tempCanvas.toBlob((b) => res(b!), 'image/jpeg', 1.0);
-            });
-            
-            const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
-            
-            // Apply guide's smart compression settings for best quality/size balance
-            let compressed: File;
-            try {
-              compressed = await imageCompression(file, {
-                maxSizeMB: 0.6,          // Smaller size, still sharp
-                maxWidthOrHeight: 2048,  // Limit huge images
-                initialQuality: 0.82,    // Perfect clarity (visually lossless)
-                useWebWorker: false      // Avoid module worker import issues in some environments
-              });
-            } catch (e) {
-              console.warn('imageCompression failed, falling back to original file', e);
-              compressed = file;
-            }
-            
-            // Create new image from compressed file
-            const compressedUrl = URL.createObjectURL(compressed);
-            const compressedImg = new Image();
-            compressedImg.src = compressedUrl;
-            await new Promise((res) => {
-              compressedImg.onload = res;
-            });
-            
-            // Use compressed image
-            img = compressedImg;
-            URL.revokeObjectURL(compressedUrl);
-          }
-        } catch (compError) {
-          console.warn('Compression failed, using original:', compError);
-        }
-      }
-      
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
@@ -494,23 +442,23 @@ export class PDFReportGenerator {
         return;
       }
 
-      // Optimized DPI for best balance of quality and file size (150-200 range)
-      const targetDPI = 150; // Optimal DPI for excellent on-screen and print quality
+      // High DPI for maximum image clarity and visibility
+      const targetDPI = 200; // High DPI for sharp, crisp pictures
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
 
-      const imgW = img.naturalWidth || img.width;
-      const imgH = img.naturalHeight || img.height;
+      const originalW = img.naturalWidth || img.width;
+      const originalH = img.naturalHeight || img.height;
 
-      // Ideal pixel dimensions for the placed size (max 2048 to match compression settings)
-      const idealPxW = Math.min(Math.round(placedWIn * targetDPI), 2048);
-      const idealPxH = Math.min(Math.round(placedHIn * targetDPI), 2048);
+      // Ideal pixel dimensions for the placed size
+      const idealPxW = Math.round(placedWIn * targetDPI);
+      const idealPxH = Math.round(placedHIn * targetDPI);
 
       // Scale down preserving aspect ratio; never upscale beyond original
-      const scale = Math.min(idealPxW / imgW, idealPxH / imgH, 1);
-      const canvasW = Math.max(1, Math.round(imgW * scale));
-      const canvasH = Math.max(1, Math.round(imgH * scale));
+      const scale = Math.min(idealPxW / originalW, idealPxH / originalH, 1);
+      const canvasW = Math.max(1, Math.round(originalW * scale));
+      const canvasH = Math.max(1, Math.round(originalH * scale));
 
       canvas.width = canvasW;
       canvas.height = canvasH;
@@ -520,9 +468,9 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Use Blob for better memory efficiency with smart quality (0.82)
+      // Use Blob for better memory efficiency (vs dataURL)
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.82);
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92);
       });
       
       // Convert blob to base64 for jsPDF
