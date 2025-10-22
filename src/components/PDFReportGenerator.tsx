@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import imageCompression from 'browser-image-compression';
 import { imageOptimizer } from '@/utils/imageOptimization';
 
 interface Report {
@@ -442,8 +443,8 @@ export class PDFReportGenerator {
         return;
       }
 
-      // High DPI for maximum image clarity and visibility
-      const targetDPI = 200; // High DPI for sharp, crisp pictures
+      // Optimized DPI for best balance of quality and file size (150-200 range)
+      const targetDPI = 150; // Optimal DPI for excellent on-screen and print quality
       const mmToIn = 1 / 25.4;
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
@@ -451,9 +452,9 @@ export class PDFReportGenerator {
       const originalW = img.naturalWidth || img.width;
       const originalH = img.naturalHeight || img.height;
 
-      // Ideal pixel dimensions for the placed size
-      const idealPxW = Math.round(placedWIn * targetDPI);
-      const idealPxH = Math.round(placedHIn * targetDPI);
+      // Ideal pixel dimensions for the placed size (max 2048 to match compression settings)
+      const idealPxW = Math.min(Math.round(placedWIn * targetDPI), 2048);
+      const idealPxH = Math.min(Math.round(placedHIn * targetDPI), 2048);
 
       // Scale down preserving aspect ratio; never upscale beyond original
       const scale = Math.min(idealPxW / originalW, idealPxH / originalH, 1);
@@ -468,9 +469,9 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Use Blob for better memory efficiency (vs dataURL)
+      // Use Blob for better memory efficiency with smart quality (0.82)
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92);
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.82);
       });
       
       // Convert blob to base64 for jsPDF
