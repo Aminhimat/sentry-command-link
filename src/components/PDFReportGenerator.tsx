@@ -456,12 +456,18 @@ export class PDFReportGenerator {
             const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
             
             // Apply guide's smart compression settings for best quality/size balance
-            const compressed = await imageCompression(file, {
-              maxSizeMB: 0.6,          // Smaller size, still sharp
-              maxWidthOrHeight: 2048,  // Limit huge images
-              initialQuality: 0.82,    // Perfect clarity (visually lossless)
-              useWebWorker: true       // Non-blocking
-            });
+            let compressed: File;
+            try {
+              compressed = await imageCompression(file, {
+                maxSizeMB: 0.6,          // Smaller size, still sharp
+                maxWidthOrHeight: 2048,  // Limit huge images
+                initialQuality: 0.82,    // Perfect clarity (visually lossless)
+                useWebWorker: false      // Avoid module worker import issues in some environments
+              });
+            } catch (e) {
+              console.warn('imageCompression failed, falling back to original file', e);
+              compressed = file;
+            }
             
             // Create new image from compressed file
             const compressedUrl = URL.createObjectURL(compressed);
