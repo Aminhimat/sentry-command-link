@@ -154,10 +154,10 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   // Choose conservative transform for large sets to avoid OOM
   const totalImages = reportsWithImages.length
   const transform = totalImages > 150
-    ? { width: 800, quality: 60 }
+    ? { width: 640, quality: 55 }
     : totalImages > 60
-      ? { width: 1000, quality: 65 }
-      : { width: 1400, quality: 70 }
+      ? { width: 768, quality: 60 }
+      : { width: 1024, quality: 65 }
 
   console.log('Transform settings:', transform, 'totalImages:', totalImages)
 
@@ -267,7 +267,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 1000, quality = 65): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 768, quality = 60): Promise<Uint8Array> {
   // Use Supabase render CDN with JPEG conversion to reduce memory
   let fetchUrl = url
   try {
