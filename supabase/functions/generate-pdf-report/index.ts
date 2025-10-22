@@ -137,73 +137,52 @@ async function generateReportBackground(
   }
 }
 
-async function generatePDFWithImages(reports: any[], company: any, reportFilters: any): Promise<Uint8Array> {
-  console.log('Starting PDF generation with pdf-lib...')
-  console.time('pdf_generation_total')
+async function generateChunkedPDF(
+  reports: any[], 
+  company: any, 
+  reportFilters: any, 
+  imageCache: Map<string, Uint8Array>,
+  mainDoc: any
+): Promise<Uint8Array> {
+  console.log('Using chunked PDF generation for large report...')
+  const chunkSize = 30 // Process 30 reports per chunk
+  const chunks = []
   
-  const pdfDoc = await PDFDocument.create()
-  const margin = 50
-  const fontSize = 12
-  const titleFontSize = 20
-  const reportTitleSize = 14
-  
-  // Preload images with optimized compression and parallel batching
-  console.log('Preloading images...')
-  console.time('image_preload_total')
-  const reportsWithImages = reports.filter(report => report.image_url)
-  const imageCache = new Map()
-  
-  // High-resolution images for maximum visibility and clarity
-  const totalImages = reportsWithImages.length
-  const transform = totalImages <= 20
-    ? { width: 1800, quality: 96 }  // Maximum quality for crisp, clear pictures
-    : totalImages <= 100
-      ? { width: 1600, quality: 94 }  // Excellent quality for medium sets
-      : { width: 1400, quality: 92 }  // High quality for large batches
-
-  // Aggressive parallel batching: 5-10× faster for large sets
-  const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
-
-  // Parallel batch processing with progress tracking
-  const batchPromises = []
-  for (let i = 0; i < reportsWithImages.length; i += batchSize) {
-    const batch = reportsWithImages.slice(i, i + batchSize)
-    const batchNum = Math.floor(i / batchSize) + 1
+  for (let i = 0; i < reports.length; i += chunkSize) {
+    const chunkReports = reports.slice(i, i + chunkSize)
+    console.log(`Processing chunk ${Math.floor(i / chunkSize) + 1}/${Math.ceil(reports.length / chunkSize)}`)
     
-    // Process each batch in parallel
-    batchPromises.push(
-      Promise.all(batch.map(async (report) => {
-        try {
-          const imgBytes = await fetchImageAsBytes(report.image_url, transform.width, transform.quality)
-          return { url: report.image_url, bytes: imgBytes }
-        } catch (err) {
-          console.error(`Error preloading image in batch ${batchNum}:`, err)
-          return { url: report.image_url, bytes: null }
-        }
-      })).then(results => {
-        console.log(`✅ Batch ${batchNum}/${Math.ceil(reportsWithImages.length / batchSize)} complete`)
-        return results
-      })
-    )
+    const chunkDoc = await PDFDocument.create()
+    await addReportsToDocument(chunkDoc, chunkReports, imageCache, i)
+    chunks.push(chunkDoc)
   }
   
-  // Wait for all batches to complete in parallel (massive speed boost)
-  const allBatchResults = await Promise.all(batchPromises)
-  allBatchResults.flat().forEach(img => {
-    if (img.bytes) imageCache.set(img.url, img.bytes)
-  })
+  // Merge all chunks into main document
+  console.log('Merging chunks...')
+  const finalDoc = await PDFDocument.create()
   
-  console.timeEnd('image_preload_total')
-  console.log(`Cached ${imageCache.size} images`)
+  // Add header page to final doc
+  await addHeaderPage(finalDoc, company, reportFilters, reports.length)
+  
+  // Copy pages from all chunks
+  for (const chunkDoc of chunks) {
+    const pages = await finalDoc.copyPages(chunkDoc, chunkDoc.getPageIndices())
+    pages.forEach(p => finalDoc.addPage(p))
+  }
+  
+  console.log('Chunks merged successfully')
+  return await finalDoc.save()
+}
 
-  // Create header page
-  let page = pdfDoc.addPage([612, 792]) // Letter size
+async function addHeaderPage(doc: any, company: any, reportFilters: any, totalReports: number) {
+  const page = doc.addPage([612, 792])
+  const margin = 50
   let yPosition = page.getHeight() - margin
   
   page.drawText('SECURITY REPORT', {
     x: margin,
     y: yPosition,
-    size: titleFontSize,
+    size: 20,
     color: rgb(0, 0, 0),
   })
   yPosition -= 40
@@ -211,7 +190,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   page.drawText(`Company: ${company?.name || 'Security Company'}`, {
     x: margin,
     y: yPosition,
-    size: fontSize,
+    size: 12,
     color: rgb(0, 0, 0),
   })
   yPosition -= 20
@@ -221,32 +200,43 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   page.drawText(`Period: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`, {
     x: margin,
     y: yPosition,
-    size: fontSize,
+    size: 12,
     color: rgb(0, 0, 0),
   })
   yPosition -= 20
   
-  page.drawText(`Total Reports: ${reports.length}`, {
+  page.drawText(`Total Reports: ${totalReports}`, {
     x: margin,
     y: yPosition,
-    size: fontSize,
+    size: 12,
     color: rgb(0, 0, 0),
   })
-  yPosition -= 40
+}
 
-  // Process each report
+async function addReportsToDocument(
+  pdfDoc: any,
+  reports: any[],
+  imageCache: Map<string, Uint8Array>,
+  startIndex: number
+) {
+  const margin = 50
+  const fontSize = 12
+  const reportTitleSize = 14
+  
+  let page = pdfDoc.addPage([612, 792])
+  let yPosition = page.getHeight() - margin
+
   for (let i = 0; i < reports.length; i++) {
     const report = reports[i]
     const reportTime = new Date(report.created_at)
     const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard'
 
-    // Check if we need a new page for text
     if (yPosition < 200) {
       page = pdfDoc.addPage([612, 792])
       yPosition = page.getHeight() - margin
     }
 
-    page.drawText(`Report #${i + 1}`, {
+    page.drawText(`Report #${startIndex + i + 1}`, {
       x: margin,
       y: yPosition,
       size: reportTitleSize,
@@ -281,14 +271,13 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
     }
 
     if (report.report_text) {
-      // Split text into lines to fit page width
       const maxWidth = page.getWidth() - 2 * margin
       const words = report.report_text.split(' ')
       let line = ''
       
       for (const word of words) {
         const testLine = line + word + ' '
-        const testWidth = (testLine.length * (fontSize - 2) * 0.5) // Approximate width
+        const testWidth = (testLine.length * (fontSize - 2) * 0.5)
         
         if (testWidth > maxWidth && line.length > 0) {
           page.drawText(line, {
@@ -320,38 +309,33 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
       }
     }
 
-    // Add image if exists (use cached version)
     if (report.image_url) {
       const imgBytes = imageCache.get(report.image_url)
       if (imgBytes) {
         try {
-          // Embed image
           const image = report.image_url.toLowerCase().includes('.png')
             ? await pdfDoc.embedPng(imgBytes)
             : await pdfDoc.embedJpg(imgBytes)
           
-          const imgDims = image.scale(0.4) // Higher scale for sharper, more visible images
-          const maxImgWidth = (page.getWidth() - 2 * margin) * 0.7 // 70% of page width for crisp display
+          const imgDims = image.scale(0.35)
+          const maxImgWidth = (page.getWidth() - 2 * margin) * 0.65
           const maxImgHeight = 380
           
           let imgWidth = imgDims.width
           let imgHeight = imgDims.height
           
-          // Scale to fit page width
           if (imgWidth > maxImgWidth) {
             const scale = maxImgWidth / imgWidth
             imgWidth = maxImgWidth
             imgHeight = imgHeight * scale
           }
           
-          // Scale to fit max height
           if (imgHeight > maxImgHeight) {
             const scale = maxImgHeight / imgHeight
             imgHeight = maxImgHeight
             imgWidth = imgWidth * scale
           }
           
-          // New page for image if needed
           if (yPosition - imgHeight < margin) {
             page = pdfDoc.addPage([612, 792])
             yPosition = page.getHeight() - margin
@@ -380,14 +364,74 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
 
     yPosition -= 30
   }
+}
+
+async function generatePDFWithImages(reports: any[], company: any, reportFilters: any): Promise<Uint8Array> {
+  console.log('Starting PDF generation with pdf-lib...')
+  console.time('pdf_generation_total')
+  
+  const pdfDoc = await PDFDocument.create()
+  const margin = 50
+  const fontSize = 12
+  const titleFontSize = 20
+  const reportTitleSize = 14
+  
+  // Preload images with optimized compression and parallel batching
+  console.log('Preloading images...')
+  console.time('image_preload_total')
+  const reportsWithImages = reports.filter(report => report.image_url)
+  const imageCache = new Map()
+  
+  // Optimized compression settings for speed and quality balance
+  const totalImages = reportsWithImages.length
+  const transform = { width: 2000, quality: 80 }  // High quality, optimal file size
+
+  // Aggressive parallel batching: 5-10× faster for large sets
+  const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
+
+  // Parallel batch processing with Promise.allSettled for speed
+  const batchPromises = []
+  for (let i = 0; i < reportsWithImages.length; i += batchSize) {
+    const batch = reportsWithImages.slice(i, i + batchSize)
+    const batchNum = Math.floor(i / batchSize) + 1
+    
+    // Process each batch in parallel with allSettled for faster processing
+    batchPromises.push(
+      Promise.allSettled(batch.map(async (report) => {
+        const imgBytes = await fetchImageAsBytes(report.image_url, transform.width, transform.quality)
+        return { url: report.image_url, bytes: imgBytes }
+      })).then(results => {
+        console.log(`✅ Batch ${batchNum}/${Math.ceil(reportsWithImages.length / batchSize)} complete`)
+        return results.map(r => r.status === 'fulfilled' ? r.value : { url: '', bytes: null })
+      })
+    )
+  }
+  
+  // Wait for all batches to complete in parallel (massive speed boost)
+  const allBatchResults = await Promise.all(batchPromises)
+  allBatchResults.flat().forEach(img => {
+    if (img.bytes) imageCache.set(img.url, img.bytes)
+  })
+  
+  console.timeEnd('image_preload_total')
+  console.log(`Cached ${imageCache.size} images`)
+
+  // For large reports, use chunk-based generation
+  if (reports.length > 50) {
+    return await generateChunkedPDF(reports, company, reportFilters, imageCache, pdfDoc)
+  }
+
+  // For smaller reports, use direct generation
+  await addHeaderPage(pdfDoc, company, reportFilters, reports.length)
+  await addReportsToDocument(pdfDoc, reports, imageCache, 0)
 
   console.timeEnd('pdf_generation_total')
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 1600, quality = 94): Promise<Uint8Array> {
-  // Optimization: Use Supabase render CDN with aggressive compression
-  // Pre-compress to JPG with optimized settings for 5-10× faster processing
+async function fetchImageAsBytes(url: string, width = 2000, quality = 80): Promise<Uint8Array> {
+  // Optimization: Use Supabase render CDN with optimized compression
+  // Smart compression: maxSizeMB 0.4 equivalent, quality 0.8
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
