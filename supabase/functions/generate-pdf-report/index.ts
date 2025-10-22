@@ -142,24 +142,24 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   console.time('pdf_generation_total')
   
   const pdfDoc = await PDFDocument.create()
-  const margin = 50
+  const margin = 20
   const fontSize = 12
   const titleFontSize = 20
-  const reportTitleSize = 14
+  const captionSize = 10
   
-  // Preload images with optimized compression and parallel batching
+  // Preload images with smart compression and parallel batching
   console.log('Preloading images...')
   console.time('image_preload_total')
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // High-resolution images for maximum visibility and clarity
+  // Smart compression settings from guide: balanced quality and file size
   const totalImages = reportsWithImages.length
   const transform = totalImages <= 20
-    ? { width: 1800, quality: 96 }  // Maximum quality for crisp, clear pictures
+    ? { width: 2048, quality: 85 }  // Excellent quality for small sets
     : totalImages <= 100
-      ? { width: 1600, quality: 94 }  // Excellent quality for medium sets
-      : { width: 1400, quality: 92 }  // High quality for large batches
+      ? { width: 2048, quality: 82 }  // Perfect balance for medium sets
+      : { width: 1920, quality: 80 }  // Still sharp for large batches
 
   // Aggressive parallel batching: 5-10× faster for large sets
   const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
@@ -197,8 +197,10 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   console.log(`Cached ${imageCache.size} images`)
 
   // Create header page
-  let page = pdfDoc.addPage([612, 792]) // Letter size
-  let yPosition = page.getHeight() - margin
+  let page = pdfDoc.addPage([595, 842]) // A4 size
+  const pageWidth = 595
+  const pageHeight = 842
+  let yPosition = pageHeight - margin
   
   page.drawText('SECURITY REPORT', {
     x: margin,
@@ -234,160 +236,74 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   })
   yPosition -= 40
 
-  // Process each report
-  for (let i = 0; i < reports.length; i++) {
-    const report = reports[i]
-    const reportTime = new Date(report.created_at)
-    const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard'
+  // Professional grid layout: 5 images per page (2 columns × 3 rows)
+  const perPage = 5
+  const cols = 2
+  const rows = 3
+  const slotW = (pageWidth - margin * (cols + 1)) / cols
+  const slotH = (pageHeight - margin * (rows + 1)) / rows
 
-    // Check if we need a new page for text
-    if (yPosition < 200) {
-      page = pdfDoc.addPage([612, 792])
-      yPosition = page.getHeight() - margin
-    }
-
-    page.drawText(`Report #${i + 1}`, {
-      x: margin,
-      y: yPosition,
-      size: reportTitleSize,
-      color: rgb(0, 0, 0),
-    })
-    yPosition -= 25
-
-    page.drawText(`Date: ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}`, {
-      x: margin,
-      y: yPosition,
-      size: fontSize - 2,
-      color: rgb(0.2, 0.2, 0.2),
-    })
-    yPosition -= 15
+  // Process images in batches of 5
+  for (let i = 0; i < reportsWithImages.length; i += perPage) {
+    page = pdfDoc.addPage([pageWidth, pageHeight])
     
-    page.drawText(`Guard: ${guardName}`, {
-      x: margin,
-      y: yPosition,
-      size: fontSize - 2,
-      color: rgb(0.2, 0.2, 0.2),
-    })
-    yPosition -= 15
-
-    if (report.location_address) {
-      page.drawText(`Location: ${report.location_address}`, {
-        x: margin,
-        y: yPosition,
-        size: fontSize - 2,
-        color: rgb(0.2, 0.2, 0.2),
-      })
-      yPosition -= 15
-    }
-
-    if (report.report_text) {
-      // Split text into lines to fit page width
-      const maxWidth = page.getWidth() - 2 * margin
-      const words = report.report_text.split(' ')
-      let line = ''
+    const batch = reportsWithImages.slice(i, i + perPage)
+    
+    for (let j = 0; j < batch.length; j++) {
+      const report = batch[j]
+      const col = j % cols
+      const row = Math.floor(j / cols)
+      const x = margin + col * (slotW + margin)
+      const y = pageHeight - margin - (row + 1) * (slotH + margin)
       
-      for (const word of words) {
-        const testLine = line + word + ' '
-        const testWidth = (testLine.length * (fontSize - 2) * 0.5) // Approximate width
-        
-        if (testWidth > maxWidth && line.length > 0) {
-          page.drawText(line, {
-            x: margin,
-            y: yPosition,
-            size: fontSize - 2,
-            color: rgb(0, 0, 0),
-          })
-          yPosition -= 15
-          line = word + ' '
-          
-          if (yPosition < 150) {
-            page = pdfDoc.addPage([612, 792])
-            yPosition = page.getHeight() - margin
-          }
-        } else {
-          line = testLine
-        }
-      }
-      
-      if (line.length > 0) {
-        page.drawText(line, {
-          x: margin,
-          y: yPosition,
-          size: fontSize - 2,
-          color: rgb(0, 0, 0),
-        })
-        yPosition -= 20
-      }
-    }
-
-    // Add image if exists (use cached version)
-    if (report.image_url) {
       const imgBytes = imageCache.get(report.image_url)
       if (imgBytes) {
         try {
-          // Embed image
           const image = report.image_url.toLowerCase().includes('.png')
             ? await pdfDoc.embedPng(imgBytes)
             : await pdfDoc.embedJpg(imgBytes)
           
-          const imgDims = image.scale(0.4) // Higher scale for sharper, more visible images
-          const maxImgWidth = (page.getWidth() - 2 * margin) * 0.7 // 70% of page width for crisp display
-          const maxImgHeight = 380
-          
-          let imgWidth = imgDims.width
-          let imgHeight = imgDims.height
-          
-          // Scale to fit page width
-          if (imgWidth > maxImgWidth) {
-            const scale = maxImgWidth / imgWidth
-            imgWidth = maxImgWidth
-            imgHeight = imgHeight * scale
-          }
-          
-          // Scale to fit max height
-          if (imgHeight > maxImgHeight) {
-            const scale = maxImgHeight / imgHeight
-            imgHeight = maxImgHeight
-            imgWidth = imgWidth * scale
-          }
-          
-          // New page for image if needed
-          if (yPosition - imgHeight < margin) {
-            page = pdfDoc.addPage([612, 792])
-            yPosition = page.getHeight() - margin
-          }
-          
-          page.drawImage(image, {
-            x: margin,
-            y: yPosition - imgHeight,
-            width: imgWidth,
-            height: imgHeight,
+          // Draw image with 15% space reserved for caption
+          const imgHeight = slotH * 0.85
+          page.drawImage(image, { 
+            x, 
+            y: y + 15, 
+            width: slotW, 
+            height: imgHeight 
           })
           
-          yPosition -= (imgHeight + 20)
+          // Add caption below image
+          const reportTime = new Date(report.created_at)
+          const guardName = report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown'
+          const caption = `${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()} - ${guardName}`
+          
+          page.drawText(caption, { 
+            x, 
+            y, 
+            size: captionSize, 
+            color: rgb(0.2, 0.2, 0.2),
+            maxWidth: slotW
+          })
         } catch (err) {
-          console.error('Error adding image:', err)
+          console.error('Error adding image to grid:', err)
           page.drawText('Image unavailable', {
-            x: margin,
-            y: yPosition,
-            size: fontSize - 2,
+            x,
+            y: y + slotH / 2,
+            size: captionSize,
             color: rgb(0.5, 0, 0),
           })
-          yPosition -= 20
         }
       }
     }
-
-    yPosition -= 30
   }
 
   console.timeEnd('pdf_generation_total')
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 1600, quality = 94): Promise<Uint8Array> {
-  // Optimization: Use Supabase render CDN with aggressive compression
-  // Pre-compress to JPG with optimized settings for 5-10× faster processing
+async function fetchImageAsBytes(url: string, width = 2048, quality = 82): Promise<Uint8Array> {
+  // Smart compression: Use Supabase render CDN with guide's recommended settings
+  // Compress to JPG with 0.82 quality (visually lossless) for optimal balance
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -396,7 +312,7 @@ async function fetchImageAsBytes(url: string, width = 1600, quality = 94): Promi
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length)
-        // Force JPG conversion + compression for maximum speed
+        // Apply smart compression: maxWidthOrHeight 2048, quality 82
         fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=origin`
       }
     }
@@ -405,7 +321,7 @@ async function fetchImageAsBytes(url: string, width = 1600, quality = 94): Promi
   }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000) // Reduced timeout for faster failure
+  const timeout = setTimeout(() => controller.abort(), 10000)
   
   try {
     const response = await fetch(fetchUrl, { 

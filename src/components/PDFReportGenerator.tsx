@@ -435,6 +435,51 @@ export class PDFReportGenerator {
 
   private async processImageToPDF(img: HTMLImageElement, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
+      // Smart compression: Only compress very large images to save memory
+      const originalW = img.naturalWidth || img.width;
+      const originalH = img.naturalHeight || img.height;
+      const shouldCompress = originalW > 2048 || originalH > 2048;
+      
+      if (shouldCompress) {
+        try {
+          // Create temporary canvas for blob conversion
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = originalW;
+          tempCanvas.height = originalH;
+          const tempCtx = tempCanvas.getContext('2d');
+          if (tempCtx) {
+            tempCtx.drawImage(img, 0, 0);
+            const blob = await new Promise<Blob>((res) => {
+              tempCanvas.toBlob((b) => res(b!), 'image/jpeg', 1.0);
+            });
+            
+            const file = new File([blob], 'image.jpg', { type: 'image/jpeg' });
+            
+            // Apply guide's smart compression settings for best quality/size balance
+            const compressed = await imageCompression(file, {
+              maxSizeMB: 0.6,          // Smaller size, still sharp
+              maxWidthOrHeight: 2048,  // Limit huge images
+              initialQuality: 0.82,    // Perfect clarity (visually lossless)
+              useWebWorker: true       // Non-blocking
+            });
+            
+            // Create new image from compressed file
+            const compressedUrl = URL.createObjectURL(compressed);
+            const compressedImg = new Image();
+            compressedImg.src = compressedUrl;
+            await new Promise((res) => {
+              compressedImg.onload = res;
+            });
+            
+            // Use compressed image
+            img = compressedImg;
+            URL.revokeObjectURL(compressedUrl);
+          }
+        } catch (compError) {
+          console.warn('Compression failed, using original:', compError);
+        }
+      }
+      
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
@@ -449,17 +494,17 @@ export class PDFReportGenerator {
       const placedWIn = width * mmToIn;
       const placedHIn = height * mmToIn;
 
-      const originalW = img.naturalWidth || img.width;
-      const originalH = img.naturalHeight || img.height;
+      const imgW = img.naturalWidth || img.width;
+      const imgH = img.naturalHeight || img.height;
 
       // Ideal pixel dimensions for the placed size (max 2048 to match compression settings)
       const idealPxW = Math.min(Math.round(placedWIn * targetDPI), 2048);
       const idealPxH = Math.min(Math.round(placedHIn * targetDPI), 2048);
 
       // Scale down preserving aspect ratio; never upscale beyond original
-      const scale = Math.min(idealPxW / originalW, idealPxH / originalH, 1);
-      const canvasW = Math.max(1, Math.round(originalW * scale));
-      const canvasH = Math.max(1, Math.round(originalH * scale));
+      const scale = Math.min(idealPxW / imgW, idealPxH / imgH, 1);
+      const canvasW = Math.max(1, Math.round(imgW * scale));
+      const canvasH = Math.max(1, Math.round(imgH * scale));
 
       canvas.width = canvasW;
       canvas.height = canvasH;
