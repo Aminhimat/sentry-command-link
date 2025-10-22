@@ -151,15 +151,14 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   console.log('Preparing image transform settings...')
   const reportsWithImages = reports.filter((report) => report.image_url)
 
-  // Choose conservative transform for large sets to avoid OOM
-  const totalImages = reportsWithImages.length
-  const transform = totalImages > 150
-    ? { width: 640, quality: 55 }
-    : totalImages > 60
-      ? { width: 768, quality: 60 }
-      : { width: 1024, quality: 65 }
-
+  // Ultra-conservative settings to avoid OOM with 280+ images
+  const transform = { width: 512, quality: 50 }
   console.log('Transform settings:', transform, 'totalImages:', totalImages)
+
+  // Process 2 images per page instead of 5 to reduce memory pressure
+  const perPage = 2
+  const cols = 1
+  const rows = 2
 
   // Create header page
   let page = pdfDoc.addPage([595, 842]) // A4 size
@@ -201,15 +200,16 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   })
   yPosition -= 40
 
-  // Professional grid layout: 5 images per page (2 columns × 3 rows)
-  const perPage = 5
-  const cols = 2
-  const rows = 3
+  // Layout already configured above (2 images per page, 1 column, 2 rows)
   const slotW = (pageWidth - margin * (cols + 1)) / cols
   const slotH = (pageHeight - margin * (rows + 1)) / rows
 
-  // Process images in batches of 5 (sequential fetch to keep memory low)
+  // Process images in batches (sequential fetch to keep memory low)
+  console.log(`Processing ${reportsWithImages.length} images, ${perPage} per page...`)
   for (let i = 0; i < reportsWithImages.length; i += perPage) {
+    if (i % 20 === 0) {
+      console.log(`Progress: ${i}/${reportsWithImages.length} images processed`)
+    }
     page = pdfDoc.addPage([pageWidth, pageHeight])
 
     const batch = reportsWithImages.slice(i, i + perPage)
@@ -267,7 +267,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return await pdfDoc.save()
 }
 
-async function fetchImageAsBytes(url: string, width = 768, quality = 60): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 512, quality = 50): Promise<Uint8Array> {
   // Use Supabase render CDN with JPEG conversion to reduce memory
   let fetchUrl = url
   try {
