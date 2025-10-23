@@ -26,12 +26,12 @@ export async function compressImageForPDF(imageUrl: string, targetMaxPx?: number
     const blob = await response.blob();
     const file = new File([blob], 'image.jpg', { type: blob.type });
 
-    // Near-lossless quality with efficient compression
+    // Optimized dimensions + high quality = smaller size, perfect clarity
     const options: PDFCompressionOptions = {
-      maxSizeMB: 0.15,             // ~150 KB per image for near-perfect quality
-      maxWidthOrHeight: targetMaxPx ?? 1500, // 1500px for sharp images
+      maxSizeMB: 0.08,             // ~80 KB per image - efficient size
+      maxWidthOrHeight: targetMaxPx ?? 1000, // 1000px matches PDF display size
       useWebWorker: true,
-      initialQuality: 0.90,        // 90% quality for near-lossless clarity
+      initialQuality: 0.92,        // 92% quality for perfect visual clarity
       alwaysKeepResolution: false,
       fileType: 'image/jpeg'       // JPEG for universal compatibility
     };
