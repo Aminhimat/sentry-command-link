@@ -412,10 +412,8 @@ export class PDFReportGenerator {
 
   private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
-      // Compute target pixel dimension based on on-page size (≈180 DPI)
-      const inchesW = width / 25.4;
-      const inchesH = height / 25.4;
-      const targetMaxPx = Math.max(1, Math.round(Math.max(inchesW, inchesH) * 180));
+      // For multi-image reports (5 photos/page), use fixed small size
+      const targetMaxPx = 800;
 
       // Use browser-image-compression for optimal size reduction
       const compressedImageData = await compressImageForPDF(imageUrl, targetMaxPx);
