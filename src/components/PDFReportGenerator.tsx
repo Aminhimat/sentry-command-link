@@ -424,7 +424,24 @@ export class PDFReportGenerator {
           resolve();
         };
 
-        img.src = imageUrl;
+        // Use Supabase transform for optimal compression (JPEG, 2000px, quality 82)
+        if (imageUrl.includes('/storage/v1/object/public/')) {
+          try {
+            const url = new URL(imageUrl);
+            const marker = '/storage/v1/object/public/';
+            const idx = url.pathname.indexOf(marker);
+            if (idx !== -1) {
+              const after = url.pathname.slice(idx + marker.length);
+              img.src = `${url.origin}/storage/v1/render/image/public/${after}?width=2000&quality=82&resize=contain&format=jpeg`;
+            } else {
+              img.src = imageUrl;
+            }
+          } catch {
+            img.src = imageUrl;
+          }
+        } else {
+          img.src = imageUrl;
+        }
       } catch (error) {
         console.error('Error adding image to entry:', error);
         resolve();
@@ -468,9 +485,9 @@ export class PDFReportGenerator {
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, canvasW, canvasH);
 
-      // Use Blob for better memory efficiency (vs dataURL)
+      // Use Blob for better memory efficiency and JPEG compression (quality 0.82)
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92);
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.82);  // Smart compression: sharp but light
       });
       
       // Convert blob to base64 for jsPDF
@@ -624,8 +641,10 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Optimized download with proper cleanup
+    // Optimized download with proper cleanup and size logging
     const pdfBlob = this.doc.output('blob');
+    console.log(`PDF generated. Size: ${(pdfBlob.size / (1024 * 1024)).toFixed(2)} MB for ${reports.length} reports`);
+    
     const url = URL.createObjectURL(pdfBlob);
     const a = document.createElement('a');
     a.href = url;

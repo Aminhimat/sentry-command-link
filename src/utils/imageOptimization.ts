@@ -16,10 +16,10 @@ class ImageOptimizer {
     options: Partial<CompressionOptions> = {}
   ): Promise<{ compressedFile: File; compressionRatio: number }> {
     const defaultOptions: CompressionOptions = {
-      quality: 0.85,
-      maxWidth: 1280,
-      maxHeight: 720,
-      format: 'webp',
+      quality: 0.82,      // Optimal balance: keeps clarity, reduces size
+      maxWidth: 2000,     // Perfect for A4 pages at 150-200 DPI
+      maxHeight: 2000,
+      format: 'jpeg',     // JPEG for photos (4-6× smaller than PNG)
       progressive: true
     };
 
@@ -43,10 +43,12 @@ class ImageOptimizer {
           canvas.width = width;
           canvas.height = height;
 
-          // Use better quality scaling
+          // Use better quality scaling and remove metadata
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
+            // Clear canvas to remove any metadata
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, width, height);
 
             canvas.toBlob(
@@ -129,9 +131,9 @@ class ImageOptimizer {
 
   async optimizeForConnection(file: File, connectionSpeed: 'slow' | 'medium' | 'fast'): Promise<File> {
     const speedConfigs = {
-      slow: { quality: 0.75, maxWidth: 960, maxHeight: 540, format: 'webp' as const },
-      medium: { quality: 0.85, maxWidth: 1280, maxHeight: 720, format: 'webp' as const },
-      fast: { quality: 0.9, maxWidth: 1920, maxHeight: 1080, format: 'webp' as const }
+      slow: { quality: 0.78, maxWidth: 1600, maxHeight: 1600, format: 'jpeg' as const },
+      medium: { quality: 0.82, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const },
+      fast: { quality: 0.85, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const }
     };
 
     const config = speedConfigs[connectionSpeed];
