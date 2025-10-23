@@ -396,9 +396,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // High-quality images with WebP format for better compression + quality
+  // Optimized for ~155 KB per page (9 MB / 58 pages)
   const totalImages = reportsWithImages.length
-  const transform = { width: 1800, quality: 85, format: 'webp' }  // WebP: smaller + better quality
+  const transform = { width: 1600, quality: 82, format: 'webp' }  // Balanced quality + size
   
   // Aggressive parallel batching: fetch 20-50 images concurrently for maximum speed
   const batchSize = totalImages > 300 ? 50 : totalImages > 150 ? 40 : totalImages > 50 ? 30 : 20
@@ -452,9 +452,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 1800, quality = 85, format = 'webp'): Promise<Uint8Array> {
-  // Optimized with Supabase Render CDN: WebP format gives 30-70% smaller size + better quality
-  // 1800px width @ 85 quality provides sharp images while keeping file size reasonable
+async function fetchImageAsBytes(url: string, width = 1600, quality = 82, format = 'webp'): Promise<Uint8Array> {
+  // Optimized for ~155 KB per page: 1600px @ 82% quality
+  // Target: 9 MB for 58 pages with excellent image clarity
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
