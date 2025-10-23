@@ -10,6 +10,7 @@ interface PDFCompressionOptions {
   useWebWorker?: boolean;
   initialQuality?: number;
   alwaysKeepResolution?: boolean;
+  fileType?: string;
 }
 
 /**
@@ -27,11 +28,12 @@ export async function compressImageForPDF(imageUrl: string, targetMaxPx?: number
 
     // Aggressive compression for multi-image PDFs (5 photos/page)
     const options: PDFCompressionOptions = {
-      maxSizeMB: 0.02,             // ~20 KB per image (30 images ≈ 600 KB total target)
-      maxWidthOrHeight: targetMaxPx ?? 600, // Smaller display size for tighter PDFs
+      maxSizeMB: 0.01,             // ~10 KB per image (30 images ≈ 300 KB target)
+      maxWidthOrHeight: targetMaxPx ?? 480, // Tighter size for very small PDFs
       useWebWorker: true,
-      initialQuality: 0.5,         // Lower quality for extra reduction
-      alwaysKeepResolution: false
+      initialQuality: 0.4,         // Further reduction
+      alwaysKeepResolution: false,
+      fileType: 'image/jpeg'       // Force JPEG for best compression
     };
 
     console.log('Compressing image:', imageUrl.substring(0, 50) + '...');

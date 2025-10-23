@@ -400,10 +400,10 @@ export class PDFReportGenerator {
       const compressedImageData = compressedImages?.get(report.image_url);
       if (compressedImageData) {
         // Use the pre-compressed image data directly (faster)
-        this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 9, 60, 40, undefined, 'FAST');
+        this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 12, 60, 40, undefined, 'FAST');
       } else {
         // Fallback: compress on the fly
-        await this.addImageToEntry(report.image_url, imageX, this.currentY + 9, 60, 40, wmText);
+        await this.addImageToEntry(report.image_url, imageX, this.currentY + 12, 60, 40, wmText);
       }
     }
     
@@ -413,7 +413,7 @@ export class PDFReportGenerator {
   private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
       // For multi-image reports (5 photos/page), use fixed small size
-      const targetMaxPx = 600;
+      const targetMaxPx = 480;
 
       // Use browser-image-compression for optimal size reduction
       const compressedImageData = await compressImageForPDF(imageUrl, targetMaxPx);
