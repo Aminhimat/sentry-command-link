@@ -145,8 +145,8 @@ async function generateChunkedPDF(
   mainDoc: any
 ): Promise<Uint8Array> {
   console.log('Using chunked PDF generation for large report...')
-  // Dynamic chunk size: larger chunks for better performance with 500+ images
-  const chunkSize = reports.length > 400 ? 150 : reports.length > 200 ? 100 : reports.length > 100 ? 60 : 30
+  // Optimized chunk size: balance memory usage with merge overhead
+  const chunkSize = reports.length > 400 ? 100 : reports.length > 200 ? 80 : reports.length > 100 ? 60 : 40
   const chunks = []
   
   for (let i = 0; i < reports.length; i += chunkSize) {
@@ -323,9 +323,13 @@ async function addReportsToDocument(
       const imgBytes = imageCache.get(report.image_url)
       if (imgBytes) {
         try {
-          const image = report.image_url.toLowerCase().includes('.png')
-            ? await pdfDoc.embedPng(imgBytes)
-            : await pdfDoc.embedJpg(imgBytes)
+          // Try to embed as JPEG first (most common from WebP conversion), fallback to PNG
+          let image
+          try {
+            image = await pdfDoc.embedJpg(imgBytes)
+          } catch {
+            image = await pdfDoc.embedPng(imgBytes)
+          }
           
           const imgDims = image.scale(0.35)
           const maxImgWidth = (page.getWidth() - 2 * margin) * 0.65
@@ -392,12 +396,12 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // High-quality images for better PDF output
+  // High-quality images with WebP format for better compression + quality
   const totalImages = reportsWithImages.length
-  const transform = { width: 1200, quality: 88 }  // High quality images
+  const transform = { width: 1800, quality: 85, format: 'webp' }  // WebP: smaller + better quality
   
-  // Ultra-aggressive parallel batching for maximum speed
-  const batchSize = totalImages > 300 ? 100 : totalImages > 150 ? 75 : totalImages > 50 ? 50 : 25
+  // Aggressive parallel batching: fetch 20-50 images concurrently for maximum speed
+  const batchSize = totalImages > 300 ? 50 : totalImages > 150 ? 40 : totalImages > 50 ? 30 : 20
 
   // Parallel batch processing with Promise.allSettled for speed
   const batchPromises = []
@@ -408,10 +412,10 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
     // Process each batch in parallel with allSettled for faster processing
     batchPromises.push(
       Promise.allSettled(batch.map(async (report) => {
-        const imgBytes = await fetchImageAsBytes(report.image_url, transform.width, transform.quality)
+        const imgBytes = await fetchImageAsBytes(report.image_url, transform.width, transform.quality, transform.format)
         return { url: report.image_url, bytes: imgBytes }
       })).then(results => {
-        console.log(`✅ Batch ${batchNum}/${Math.ceil(reportsWithImages.length / batchSize)} complete`)
+        console.log(`✅ Batch ${batchNum}/${Math.ceil(reportsWithImages.length / batchSize)} complete (${results.filter(r => r.status === 'fulfilled').length}/${batch.length} succeeded)`)
         return results.map(r => r.status === 'fulfilled' ? r.value : { url: '', bytes: null })
       })
     )
@@ -448,9 +452,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promise<Uint8Array> {
-  // High-quality rendering: Use Supabase render CDN for crisp, clear images
-  // For multi-image reports: 1200px width, quality 88 for excellent visual quality
+async function fetchImageAsBytes(url: string, width = 1800, quality = 85, format = 'webp'): Promise<Uint8Array> {
+  // Optimized with Supabase Render CDN: WebP format gives 30-70% smaller size + better quality
+  // 1800px width @ 85 quality provides sharp images while keeping file size reasonable
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -459,8 +463,8 @@ async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promi
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length)
-        // High-quality compression: JPEG format, 1200px width, quality 88 for crisp images
-        fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=jpeg`
+        // WebP format: automatic CDN optimization (smaller files, better quality than JPEG)
+        fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=${format}`
       }
     }
   } catch (_) {
@@ -468,15 +472,16 @@ async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promi
   }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 10000) // Reduced timeout for faster failure
+  const timeout = setTimeout(() => controller.abort(), 15000) // Longer timeout for high-quality images
   
   try {
     const response = await fetch(fetchUrl, { 
       signal: controller.signal, 
-      headers: { Accept: 'image/jpeg,image/png,*/*' } 
+      headers: { Accept: 'image/webp,image/jpeg,image/png,*/*' } 
     })
     
     if (!response.ok) {
+      console.warn(`Failed to fetch optimized image, trying original: ${response.status}`)
       // Fallback: fetch original and accept as-is
       const resp = await fetch(url, { 
         signal: controller.signal,
@@ -485,7 +490,9 @@ async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promi
       return new Uint8Array(await resp.arrayBuffer())
     }
 
-    return new Uint8Array(await response.arrayBuffer())
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    console.log(`Fetched ${format} image: ${(bytes.length / 1024).toFixed(1)} KB`)
+    return bytes
   } finally {
     clearTimeout(timeout)
   }
