@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { imageOptimizer } from '@/utils/imageOptimization';
+import { compressImageForPDF, preloadAndCompressImages } from '@/utils/pdfImageCompression';
 
 interface Report {
   id: string;
@@ -166,7 +167,7 @@ export class PDFReportGenerator {
     this.currentY += 15;
   }
 
-  private async addReportEntry(report: Report, index: number, company: Company | null, preloadedImages?: Map<string, HTMLImageElement>) {
+  private async addReportEntry(report: Report, index: number, company: Company | null, compressedImages?: Map<string, string>) {
     const entryHeight = 50; // Reduced to minimize bottom spacing and fit 5 reports per page
     // No automatic page addition here since we handle it manually in generateReport
 
@@ -387,7 +388,7 @@ export class PDFReportGenerator {
       }
     }
     
-    // Right side - Image attached to description box
+    // Right side - Image with compression
     if (report.image_url) {
       // Watermark text: Company name + Guard name + timestamp (will be truncated to fit)
       const companyName = this.sanitizeText(company?.name || 'Security Co');
@@ -395,58 +396,28 @@ export class PDFReportGenerator {
 
       // Image positioned with small space after description box - on right side
       const imageX = this.pageWidth - this.margin - 52; // Adjusted for larger image
-      await this.addImageToEntry(report.image_url, imageX, this.currentY + 9, 60, 40, wmText, preloadedImages?.get(report.image_url));
+      
+      const compressedImageData = compressedImages?.get(report.image_url);
+      if (compressedImageData) {
+        // Use the pre-compressed image data directly (faster)
+        this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 9, 60, 40, undefined, 'FAST');
+      } else {
+        // Fallback: compress on the fly
+        await this.addImageToEntry(report.image_url, imageX, this.currentY + 9, 60, 40, wmText);
+      }
     }
     
     this.currentY += entryHeight;
   }
 
-  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string, preloadedImage?: HTMLImageElement): Promise<void> {
-    return new Promise(async (resolve) => {
-      try {
-        // Use preloaded image if available, otherwise load normally
-        if (preloadedImage) {
-          await this.processImageToPDF(preloadedImage, x, y, width, height, watermarkText);
-          resolve();
-          return;
-        }
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        img.onload = async () => {
-          await this.processImageToPDF(img, x, y, width, height, watermarkText);
-          resolve();
-        };
-
-        img.onerror = (error) => {
-          console.error('Failed to load image:', imageUrl, error);
-          resolve();
-        };
-
-        // Use Supabase transform for optimal compression (JPEG, 2000px, quality 82)
-        if (imageUrl.includes('/storage/v1/object/public/')) {
-          try {
-            const url = new URL(imageUrl);
-            const marker = '/storage/v1/object/public/';
-            const idx = url.pathname.indexOf(marker);
-            if (idx !== -1) {
-              const after = url.pathname.slice(idx + marker.length);
-              img.src = `${url.origin}/storage/v1/render/image/public/${after}?width=2000&quality=82&resize=contain&format=jpeg`;
-            } else {
-              img.src = imageUrl;
-            }
-          } catch {
-            img.src = imageUrl;
-          }
-        } else {
-          img.src = imageUrl;
-        }
-      } catch (error) {
-        console.error('Error adding image to entry:', error);
-        resolve();
-      }
-    });
+  private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
+    try {
+      // Use browser-image-compression for optimal size reduction
+      const compressedImageData = await compressImageForPDF(imageUrl);
+      this.doc.addImage(compressedImageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+    } catch (error) {
+      console.error('Error adding image to entry:', error);
+    }
   }
 
   private async processImageToPDF(img: HTMLImageElement, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
@@ -566,38 +537,28 @@ export class PDFReportGenerator {
     });
   }
 
-  private async preloadAllImages(reports: Report[]): Promise<Map<string, HTMLImageElement>> {
-    const imageMap = new Map<string, HTMLImageElement>();
-    const reportsWithImages = reports.filter(r => r.image_url);
-    
-    const loadPromises = reportsWithImages.map(async (report) => {
-      return new Promise<{ url: string; img: HTMLImageElement } | null>((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        img.onload = () => resolve({ url: report.image_url!, img });
-        img.onerror = (error) => {
-          console.error(`Failed to load image ${report.image_url}:`, error);
-          resolve(null);
-        };
-        
-        img.src = report.image_url!;
-      });
-    });
-    
-    const results = await Promise.all(loadPromises);
-    results.forEach(result => {
-      if (result) {
-        imageMap.set(result.url, result.img);
-      }
-    });
-    
-    return imageMap;
+  private async preloadAllImages(reports: Report[]): Promise<Map<string, string>> {
+    const imageUrls = reports
+      .map(r => r.image_url)
+      .filter((url): url is string => !!url);
+
+    if (imageUrls.length === 0) return new Map();
+
+    console.log(`Preloading and compressing ${imageUrls.length} images with browser-image-compression...`);
+
+    // Use the new compression utility with batching
+    const compressedImages = await preloadAndCompressImages(imageUrls, 10);
+
+    console.log(`Successfully compressed ${compressedImages.size} images`);
+    return compressedImages;
   }
 
   public async generateReport(reports: Report[], company: Company | null, reportFilters: any): Promise<void> {
-    // Preload all images in parallel first
-    const preloadedImages = await this.preloadAllImages(reports);
+    console.log('Starting PDF generation with', reports.length, 'reports');
+    console.log('Using browser-image-compression for optimal file size...');
+    
+    // Preload and compress all images first
+    const compressedImages = await this.preloadAllImages(reports);
 
     // Add header to first page
     await this.drawHeader(company, reportFilters);
@@ -612,7 +573,7 @@ export class PDFReportGenerator {
         await this.drawHeader(company, reportFilters);
       }
       
-      await this.addReportEntry(reports[i], i, company, preloadedImages);
+      await this.addReportEntry(reports[i], i, company, compressedImages);
     }
 
     // Add page number to the last page
