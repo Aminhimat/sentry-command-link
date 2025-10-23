@@ -396,9 +396,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // Optimized for ~155 KB per page (9 MB / 58 pages)
+  // Optimized for ~31 KB per image (9 MB / 58 pages = 290 photos)
   const totalImages = reportsWithImages.length
-  const transform = { width: 1600, quality: 82, format: 'webp' }  // Balanced quality + size
+  const transform = { width: 1500, quality: 78, format: 'webp' }  // Target: ~31 KB per image
   
   // Aggressive parallel batching: fetch 20-50 images concurrently for maximum speed
   const batchSize = totalImages > 300 ? 50 : totalImages > 150 ? 40 : totalImages > 50 ? 30 : 20
@@ -452,9 +452,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 1600, quality = 82, format = 'webp'): Promise<Uint8Array> {
-  // Optimized for ~155 KB per page: 1600px @ 82% quality
-  // Target: 9 MB for 58 pages with excellent image clarity
+async function fetchImageAsBytes(url: string, width = 1500, quality = 78, format = 'webp'): Promise<Uint8Array> {
+  // Optimized for ~31 KB per image: 1500px @ 78% quality
+  // Target: 9 MB for 58 pages (290 photos), ~1 MB for 6 pages (30 photos)
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
