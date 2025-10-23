@@ -145,7 +145,8 @@ async function generateChunkedPDF(
   mainDoc: any
 ): Promise<Uint8Array> {
   console.log('Using chunked PDF generation for large report...')
-  const chunkSize = 30 // Process 30 reports per chunk
+  // Dynamic chunk size: larger chunks for better performance with 500+ images
+  const chunkSize = reports.length > 400 ? 150 : reports.length > 200 ? 100 : reports.length > 100 ? 60 : 30
   const chunks = []
   
   for (let i = 0; i < reports.length; i += chunkSize) {
@@ -391,12 +392,12 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // Optimized compression for 57 pages (~285 images) targeting 6.5 MB
+  // Optimized compression for large reports with aggressive parallelization
   const totalImages = reportsWithImages.length
-  const transform = { width: 800, quality: 78 }  // Higher quality for 6.5 MB target
-
-  // Aggressive parallel batching: 5-10× faster for large sets
-  const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
+  const transform = { width: 800, quality: 75 }  // Balanced quality + speed
+  
+  // Ultra-aggressive parallel batching for maximum speed
+  const batchSize = totalImages > 300 ? 100 : totalImages > 150 ? 75 : totalImages > 50 ? 50 : 25
 
   // Parallel batch processing with Promise.allSettled for speed
   const batchPromises = []
@@ -447,9 +448,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 800, quality = 78): Promise<Uint8Array> {
-  // Optimization: Use Supabase render CDN for 6.5 MB target (57 pages)
-  // For multi-image reports: 800px width, quality 78
+async function fetchImageAsBytes(url: string, width = 800, quality = 75): Promise<Uint8Array> {
+  // Optimization: Use Supabase render CDN with balanced quality/speed (75 quality)
+  // For multi-image reports: 800px width for good quality + fast processing
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -458,7 +459,7 @@ async function fetchImageAsBytes(url: string, width = 800, quality = 78): Promis
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length)
-        // Optimized compression: JPEG format, 800px width, quality 78 (6.5 MB for 57 pages)
+        // Optimized compression: JPEG format, 800px width, quality 75 for speed + quality balance
         fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=jpeg`
       }
     }
