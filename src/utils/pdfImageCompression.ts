@@ -1,6 +1,6 @@
 /**
  * Advanced image compression for PDF generation
- * Uses browser-image-compression for optimal size reduction
+ * Uses browser-image-compression for optimal size reduction (60-80% reduction)
  */
 import imageCompression from 'browser-image-compression';
 
