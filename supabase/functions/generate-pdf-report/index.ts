@@ -392,9 +392,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   const reportsWithImages = reports.filter(report => report.image_url)
   const imageCache = new Map()
   
-  // Optimized compression for large reports with aggressive parallelization
+  // High-quality images for better PDF output
   const totalImages = reportsWithImages.length
-  const transform = { width: 800, quality: 75 }  // Balanced quality + speed
+  const transform = { width: 1200, quality: 88 }  // High quality images
   
   // Ultra-aggressive parallel batching for maximum speed
   const batchSize = totalImages > 300 ? 100 : totalImages > 150 ? 75 : totalImages > 50 ? 50 : 25
@@ -448,9 +448,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 800, quality = 75): Promise<Uint8Array> {
-  // Optimization: Use Supabase render CDN with balanced quality/speed (75 quality)
-  // For multi-image reports: 800px width for good quality + fast processing
+async function fetchImageAsBytes(url: string, width = 1200, quality = 88): Promise<Uint8Array> {
+  // High-quality rendering: Use Supabase render CDN for crisp, clear images
+  // For multi-image reports: 1200px width, quality 88 for excellent visual quality
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -459,7 +459,7 @@ async function fetchImageAsBytes(url: string, width = 800, quality = 75): Promis
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length)
-        // Optimized compression: JPEG format, 800px width, quality 75 for speed + quality balance
+        // High-quality compression: JPEG format, 1200px width, quality 88 for crisp images
         fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=jpeg`
       }
     }
