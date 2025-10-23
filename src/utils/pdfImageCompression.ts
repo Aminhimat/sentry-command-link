@@ -15,9 +15,10 @@ interface PDFCompressionOptions {
 /**
  * Compress an image for PDF embedding with optimal settings
  * @param imageUrl - URL of the image to compress
+ * @param targetMaxPx - Optional max dimension in pixels based on on-page size
  * @returns Compressed image as base64 data URL
  */
-export async function compressImageForPDF(imageUrl: string): Promise<string> {
+export async function compressImageForPDF(imageUrl: string, targetMaxPx?: number): Promise<string> {
   try {
     // Fetch the image as a blob
     const response = await fetch(imageUrl);
@@ -27,7 +28,7 @@ export async function compressImageForPDF(imageUrl: string): Promise<string> {
     // Smart compression settings from Amin's guide
     const options: PDFCompressionOptions = {
       maxSizeMB: 0.4,              // 0.3-0.6 is ideal balance
-      maxWidthOrHeight: 2000,      // Perfect for A4 at 150-200 DPI
+      maxWidthOrHeight: targetMaxPx ?? 2000, // Derive from on-page size when provided
       useWebWorker: true,          // Faster compression
       initialQuality: 0.82,        // Keeps visual clarity
       alwaysKeepResolution: false

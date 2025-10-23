@@ -447,7 +447,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 2000, quality = 80): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 1500, quality = 82): Promise<Uint8Array> {
   // Optimization: Use Supabase render CDN with optimized compression
   // Smart compression: maxSizeMB 0.4 equivalent, quality 0.8
   let fetchUrl = url
