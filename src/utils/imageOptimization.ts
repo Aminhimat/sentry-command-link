@@ -8,6 +8,7 @@ interface CompressionOptions {
   maxHeight: number;
   format: 'jpeg' | 'webp' | 'png';
   progressive?: boolean;
+  useWebP?: boolean; // WebP is 30-40% smaller than JPEG
 }
 
 class ImageOptimizer {
@@ -20,10 +21,16 @@ class ImageOptimizer {
       maxWidth: 2000,     // Perfect for A4 pages at 150-200 DPI
       maxHeight: 2000,
       format: 'jpeg',     // JPEG for photos (4-6× smaller than PNG)
-      progressive: true
+      progressive: true,
+      useWebP: false      // WebP gives 30-40% better compression
     };
 
     const opts = { ...defaultOptions, ...options };
+    
+    // Use WebP if supported and requested
+    if (opts.useWebP && this.supportsWebP()) {
+      opts.format = 'webp';
+    }
     
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -131,15 +138,22 @@ class ImageOptimizer {
 
   async optimizeForConnection(file: File, connectionSpeed: 'slow' | 'medium' | 'fast'): Promise<File> {
     const speedConfigs = {
-      slow: { quality: 0.78, maxWidth: 1600, maxHeight: 1600, format: 'jpeg' as const },
-      medium: { quality: 0.82, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const },
-      fast: { quality: 0.85, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const }
+      slow: { quality: 0.78, maxWidth: 1600, maxHeight: 1600, format: 'jpeg' as const, useWebP: true },
+      medium: { quality: 0.82, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const, useWebP: true },
+      fast: { quality: 0.85, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const, useWebP: false }
     };
 
     const config = speedConfigs[connectionSpeed];
     const { compressedFile } = await this.compressImage(file, config);
     
     return compressedFile;
+  }
+
+  private supportsWebP(): boolean {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
   }
 }
 
