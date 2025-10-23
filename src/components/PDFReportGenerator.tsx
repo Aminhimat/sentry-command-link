@@ -413,7 +413,7 @@ export class PDFReportGenerator {
   private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
       // For multi-image reports (5 photos/page), use fixed small size
-      const targetMaxPx = 800;
+      const targetMaxPx = 600;
 
       // Use browser-image-compression for optimal size reduction
       const compressedImageData = await compressImageForPDF(imageUrl, targetMaxPx);

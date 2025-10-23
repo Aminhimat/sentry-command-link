@@ -393,7 +393,7 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   
   // Aggressive compression for multi-image reports (5 photos/page)
   const totalImages = reportsWithImages.length
-  const transform = { width: 800, quality: 65 }  // Small size for reports with many images
+  const transform = { width: 600, quality: 50 }  // Smaller size for many images (aiming ~0.5MB/6 pages)
 
   // Aggressive parallel batching: 5-10× faster for large sets
   const batchSize = totalImages > 100 ? 50 : totalImages > 50 ? 25 : 10
@@ -447,9 +447,9 @@ async function generatePDFWithImages(reports: any[], company: any, reportFilters
   return pdfBytes
 }
 
-async function fetchImageAsBytes(url: string, width = 800, quality = 65): Promise<Uint8Array> {
+async function fetchImageAsBytes(url: string, width = 600, quality = 50): Promise<Uint8Array> {
   // Optimization: Use Supabase render CDN with aggressive compression
-  // For multi-image reports: 800px width, 65% quality
+  // For multi-image reports: 600px width, quality 50
   let fetchUrl = url
   try {
     if (url.includes('/storage/v1/object/public/')) {
@@ -458,7 +458,7 @@ async function fetchImageAsBytes(url: string, width = 800, quality = 65): Promis
       const idx = u.pathname.indexOf(marker)
       if (idx !== -1) {
         const after = u.pathname.slice(idx + marker.length)
-        // Aggressive compression: JPEG format, 800px width, quality 65 (multi-image reports)
+        // Aggressive compression: JPEG format, 600px width, quality 50 (multi-image reports)
         fetchUrl = `${u.origin}/storage/v1/render/image/public/${after}?width=${width}&quality=${quality}&resize=contain&format=jpeg`
       }
     }

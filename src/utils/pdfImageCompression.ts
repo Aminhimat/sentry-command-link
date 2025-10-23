@@ -27,10 +27,10 @@ export async function compressImageForPDF(imageUrl: string, targetMaxPx?: number
 
     // Aggressive compression for multi-image PDFs (5 photos/page)
     const options: PDFCompressionOptions = {
-      maxSizeMB: 0.08,             // ~80 KB per image (30 images = 2.4 MB)
-      maxWidthOrHeight: targetMaxPx ?? 800, // Small display size
+      maxSizeMB: 0.02,             // ~20 KB per image (30 images ≈ 600 KB total target)
+      maxWidthOrHeight: targetMaxPx ?? 600, // Smaller display size for tighter PDFs
       useWebWorker: true,
-      initialQuality: 0.65,        // Balance quality vs size
+      initialQuality: 0.5,         // Lower quality for extra reduction
       alwaysKeepResolution: false
     };
 
