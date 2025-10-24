@@ -634,16 +634,18 @@ const CompanyGuards = () => {
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="editPassword">New Password</Label>
+                    <Label htmlFor="editPassword">New Password (Optional)</Label>
                     <Input
                       id="editPassword"
                       type="password"
                       value={editGuardData.newPassword}
                       onChange={(e) => setEditGuardData({ ...editGuardData, newPassword: e.target.value })}
-                      required
                       minLength={6}
-                      placeholder="At least 6 characters"
+                      placeholder="Leave blank to keep current password"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Only enter a password if you want to change it
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="editAssignedProperty">Assign to Property</Label>
