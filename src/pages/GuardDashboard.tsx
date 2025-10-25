@@ -204,6 +204,13 @@ const GuardDashboard = () => {
     console.log('🌍 Starting location tracking for shift:', shiftId);
     setLocationTracking(true);
 
+    // Inform user that location tracking is now active
+    toast({
+      title: "📍 Location Tracking Active",
+      description: "Your location is being tracked for security purposes during your shift.",
+      duration: 4000,
+    });
+
     // Function to update location
     const updateLocation = async () => {
       try {
@@ -1353,15 +1360,9 @@ const GuardDashboard = () => {
         throw new Error('User profile not found');
       }
 
-      // MANDATORY location access for starting shift
-      toast({
-        title: "Location Required",
-        description: "Please allow location access to start your shift...",
-      });
-
+      // Get location automatically
       let position;
       try {
-        await checkLocationPermissions();
         position = await getLocation();
       } catch (locationError: any) {
         console.error('Location access failed:', locationError);
@@ -1417,12 +1418,13 @@ const GuardDashboard = () => {
 
       setCurrentShift(newShift);
       
-      // Start location tracking
+      // Start location tracking (will show informational message)
       startLocationTracking(newShift.id, profile.id);
       
       toast({
-        title: "Shift Started",
-        description: "Your shift has been started successfully with live location tracking.",
+        title: "✅ Shift Started",
+        description: "Your shift has started. Location tracking is now active for security purposes.",
+        duration: 3000,
       });
       
     } catch (error: any) {
