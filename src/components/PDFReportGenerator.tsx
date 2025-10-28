@@ -408,16 +408,16 @@ export class PDFReportGenerator {
           const imgY = this.currentY + 12;
           const imgWidth = 60;
           const imgHeight = 40;
-          const barHeight = 4;
+          const barHeight = 6;
           
           // Background bar (solid black)
           this.doc.setFillColor(0, 0, 0);
           this.doc.rect(imgX, imgY + imgHeight - barHeight, imgWidth, barHeight, 'F');
           
-          // Text
+          // White text
           this.doc.setTextColor(255, 255, 255);
           this.doc.setFont('helvetica', 'bold');
-          this.doc.setFontSize(4);
+          this.doc.setFontSize(6);
           
           const maxTextWidth = imgWidth - 2;
           let text = this.sanitizeText(wmText);
@@ -425,7 +425,9 @@ export class PDFReportGenerator {
             text = text.slice(0, -2) + '…';
           }
           
-          this.doc.text(text, imgX + 1, imgY + imgHeight - 1);
+          // Position text in the center of the bar
+          const textY = imgY + imgHeight - barHeight / 2 + 1;
+          this.doc.text(text, imgX + 1, textY);
           this.doc.setTextColor(0, 0, 0);
           this.doc.setFont('helvetica', 'normal');
         }
