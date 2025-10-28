@@ -410,12 +410,9 @@ export class PDFReportGenerator {
           const imgHeight = 40;
           const barHeight = 4;
           
-          // Background bar with transparency
-          this.doc.saveGraphicsState();
+          // Background bar (solid black)
           this.doc.setFillColor(0, 0, 0);
-          this.doc.setGState({ opacity: 0.7 });
           this.doc.rect(imgX, imgY + imgHeight - barHeight, imgWidth, barHeight, 'F');
-          this.doc.restoreGraphicsState();
           
           // Text
           this.doc.setTextColor(255, 255, 255);
