@@ -409,10 +409,11 @@ export class PDFReportGenerator {
           const imgWidth = 60;
           const imgHeight = 40;
           const barHeight = 6;
+          const offsetUp = 3;
           
-          // Background bar (solid black)
+          // Background bar (solid black) - moved up
           this.doc.setFillColor(0, 0, 0);
-          this.doc.rect(imgX, imgY + imgHeight - barHeight, imgWidth, barHeight, 'F');
+          this.doc.rect(imgX, imgY + imgHeight - barHeight - offsetUp, imgWidth, barHeight, 'F');
           
           // White text
           this.doc.setTextColor(255, 255, 255);
@@ -426,7 +427,7 @@ export class PDFReportGenerator {
           }
           
           // Position text in the center of the bar
-          const textY = imgY + imgHeight - barHeight / 2 + 1;
+          const textY = imgY + imgHeight - barHeight / 2 + 1 - offsetUp;
           this.doc.text(text, imgX + 1, textY);
           this.doc.setTextColor(0, 0, 0);
           this.doc.setFont('helvetica', 'normal');
