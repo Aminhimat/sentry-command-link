@@ -409,9 +409,9 @@ export class PDFReportGenerator {
           const imgWidth = 60;
           const imgHeight = 40;
           const barHeight = 6;
-          const offsetUp = 3;
+          const offsetUp = 1;
           
-          // Background bar (solid black) - moved up
+          // Background bar (solid black)
           this.doc.setFillColor(0, 0, 0);
           this.doc.rect(imgX, imgY + imgHeight - barHeight - offsetUp, imgWidth, barHeight, 'F');
           
