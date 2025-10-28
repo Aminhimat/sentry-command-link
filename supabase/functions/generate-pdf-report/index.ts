@@ -362,6 +362,29 @@ async function addReportsToDocument(
             height: imgHeight,
           })
           
+          // Add watermark text overlay at bottom of image
+          const watermarkText = `${guardName} - ${reportTime.toLocaleDateString()} ${reportTime.toLocaleTimeString()}`
+          const watermarkHeight = 20
+          const watermarkY = yPosition - imgHeight
+          
+          // Draw semi-transparent black background for watermark
+          page.drawRectangle({
+            x: margin,
+            y: watermarkY,
+            width: imgWidth,
+            height: watermarkHeight,
+            color: rgb(0, 0, 0),
+            opacity: 0.7,
+          })
+          
+          // Draw white text on top
+          page.drawText(watermarkText, {
+            x: margin + 5,
+            y: watermarkY + 5,
+            size: 10,
+            color: rgb(1, 1, 1),
+          })
+          
           yPosition -= (imgHeight + 20)
         } catch (err) {
           console.error('Error adding image:', err)

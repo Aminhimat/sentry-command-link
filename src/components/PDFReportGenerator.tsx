@@ -401,6 +401,37 @@ export class PDFReportGenerator {
       if (compressedImageData) {
         // Use the pre-compressed image data directly (faster)
         this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 12, 60, 40, undefined, 'FAST');
+        
+        // Add watermark overlay
+        if (wmText) {
+          const imgX = imageX;
+          const imgY = this.currentY + 12;
+          const imgWidth = 60;
+          const imgHeight = 40;
+          const barHeight = 4;
+          
+          // Background bar with transparency
+          this.doc.saveGraphicsState();
+          this.doc.setFillColor(0, 0, 0);
+          this.doc.setGState({ opacity: 0.7 });
+          this.doc.rect(imgX, imgY + imgHeight - barHeight, imgWidth, barHeight, 'F');
+          this.doc.restoreGraphicsState();
+          
+          // Text
+          this.doc.setTextColor(255, 255, 255);
+          this.doc.setFont('helvetica', 'bold');
+          this.doc.setFontSize(4);
+          
+          const maxTextWidth = imgWidth - 2;
+          let text = this.sanitizeText(wmText);
+          while (this.doc.getTextWidth(text) > maxTextWidth && text.length > 1) {
+            text = text.slice(0, -2) + '…';
+          }
+          
+          this.doc.text(text, imgX + 1, imgY + imgHeight - 1);
+          this.doc.setTextColor(0, 0, 0);
+          this.doc.setFont('helvetica', 'normal');
+        }
       } else {
         // Fallback: compress on the fly
         await this.addImageToEntry(report.image_url, imageX, this.currentY + 12, 60, 40, wmText);
