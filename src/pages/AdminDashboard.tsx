@@ -74,6 +74,7 @@ const AdminDashboard = () => {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [guardsCount, setGuardsCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [propertiesWithPhotoActivity, setPropertiesWithPhotoActivity] = useState(0);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [newProperty, setNewProperty] = useState({
     name: "",
@@ -155,6 +156,7 @@ const AdminDashboard = () => {
       await fetchCompanies();
       await fetchGuards();
       await fetchProperties();
+      await fetchPropertiesWithPhotoActivity();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -254,6 +256,44 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load properties",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchPropertiesWithPhotoActivity = async () => {
+    try {
+      // Get the date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      // Fetch reports with images from the last 30 days
+      const { data, error } = await supabase
+        .from('guard_reports')
+        .select(`
+          guard_id,
+          profiles!inner(assigned_property_id)
+        `)
+        .not('image_url', 'is', null)
+        .gte('created_at', thirtyDaysAgo.toISOString());
+
+      if (error) {
+        throw error;
+      }
+
+      // Count unique properties that have photo activity
+      const uniqueProperties = new Set(
+        data
+          ?.map((report: any) => report.profiles?.assigned_property_id)
+          .filter((propertyId: string | null) => propertyId !== null)
+      );
+
+      setPropertiesWithPhotoActivity(uniqueProperties.size);
+    } catch (error) {
+      console.error('Error fetching properties with photo activity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load photo activity data",
         variant: "destructive",
       });
     }
@@ -694,7 +734,7 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card className="shadow-card">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
@@ -742,6 +782,18 @@ const AdminDashboard = () => {
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Guards</p>
                   <p className="text-xl sm:text-2xl font-bold">{guardsCount}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-chart-2" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Sites with Photos</p>
+                  <p className="text-xl sm:text-2xl font-bold">{propertiesWithPhotoActivity}</p>
                 </div>
               </div>
             </CardContent>
