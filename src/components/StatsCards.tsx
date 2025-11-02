@@ -1,3 +1,4 @@
+import React from "react";
 import { Users, Activity, AlertTriangle, FileText } from "lucide-react";
 
 interface StatsCardsProps {
