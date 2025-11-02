@@ -1030,7 +1030,7 @@ const CompanyDashboard = () => {
               </Button>
             </Link>
             <Link to="/company/properties">
-              <Button variant="ghost" size="sm" className="h-10">
+              <Button variant="ghost" size="sm" className="h-10 text-xs sm:text-sm text-primary hover:text-primary/90">
                 Properties/Sites
               </Button>
             </Link>
