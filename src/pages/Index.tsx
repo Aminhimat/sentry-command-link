@@ -1,4 +1,3 @@
-import React from "react";
 import SecurityPlatformLanding from "@/components/SecurityPlatformLanding";
 
 const Index = () => {

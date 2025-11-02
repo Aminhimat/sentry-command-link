@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -287,7 +287,7 @@ const CompanyProperties = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 font-sans">
       {/* Enhanced Header with Gradient */}
       <div className="border-b bg-card/80 backdrop-blur-sm shadow-sm">
-        <div className="flex h-16 items-center px-6 max-w-7xl mx-auto">
+        <div className="flex h-20 items-center px-6 max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link to="/company">
               <Button variant="outline" size="sm" className="shadow-sm hover:shadow-md transition-all">
@@ -295,16 +295,16 @@ const CompanyProperties = () => {
                 Back to Dashboard
               </Button>
             </Link>
-            <div className="h-8 w-px bg-border" />
+            <div className="h-10 w-px bg-border" />
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-glow shadow-md">
-                <MapPin className="h-5 w-5 text-primary-foreground" />
+                <MapPin className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                   Properties & Sites
                 </h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {company?.name} • Security Locations Management
                 </p>
               </div>
@@ -313,7 +313,6 @@ const CompanyProperties = () => {
           <div className="ml-auto">
             <Button 
               onClick={() => setShowPropertiesForm(true)}
-              size="sm"
               className="shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-primary to-primary-glow"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -334,13 +333,13 @@ const CompanyProperties = () => {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Plus className="h-5 w-5 text-primary" />
                   </div>
-                  <CardTitle className="text-lg">Add New Property/Site</CardTitle>
+                  <CardTitle className="text-xl">Add New Property/Site</CardTitle>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setShowPropertiesForm(false)} className="hover:bg-destructive/10 hover:text-destructive">
                   ×
                 </Button>
               </div>
-              <CardDescription className="mt-2 text-sm">
+              <CardDescription className="mt-2">
                 Add a new property or site location for your security operations
               </CardDescription>
             </CardHeader>
@@ -417,7 +416,7 @@ const CompanyProperties = () => {
                   <div className="p-2 rounded-lg bg-accent/10">
                     <Edit className="h-5 w-5 text-accent" />
                   </div>
-                  <CardTitle className="text-lg">Edit Property/Site</CardTitle>
+                  <CardTitle className="text-xl">Edit Property/Site</CardTitle>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => {
                   setShowEditForm(false);
@@ -432,7 +431,7 @@ const CompanyProperties = () => {
                   ×
                 </Button>
               </div>
-              <CardDescription className="mt-2 text-sm">
+              <CardDescription className="mt-2">
                 Update property or site location details
               </CardDescription>
             </CardHeader>
@@ -513,13 +512,13 @@ const CompanyProperties = () => {
           <CardHeader className="bg-gradient-to-r from-secondary/30 to-secondary/10 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-3 text-xl">
+                <CardTitle className="flex items-center gap-3 text-2xl">
                   <div className="p-2 rounded-lg bg-primary/10">
-                    <Shield className="h-5 w-5 text-primary" />
+                    <Shield className="h-6 w-6 text-primary" />
                   </div>
                   All Properties & Sites
                 </CardTitle>
-                <CardDescription className="mt-2 text-sm">
+                <CardDescription className="mt-2 text-base">
                   {properties.length} {properties.length === 1 ? 'location' : 'locations'} where your security services are provided
                 </CardDescription>
               </div>
@@ -534,11 +533,11 @@ const CompanyProperties = () => {
             <div className="space-y-4">
               {properties.length === 0 ? (
                 <div className="text-center p-16 bg-gradient-to-br from-secondary/20 to-secondary/5 rounded-xl border-2 border-dashed border-border">
-                  <div className="p-3 rounded-full bg-primary/10 w-fit mx-auto mb-4">
-                    <MapPin className="h-12 w-12 text-primary" />
+                  <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
+                    <MapPin className="h-16 w-16 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold mb-3">No Properties Added Yet</h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto text-sm">
+                  <h3 className="text-2xl font-bold mb-3">No Properties Added Yet</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto text-lg">
                     Start by adding your first property or site location to manage your security operations effectively
                   </p>
                   <Button 
@@ -561,37 +560,37 @@ const CompanyProperties = () => {
                         animationDelay: `${index * 50}ms`
                       }}
                     >
-                      <CardContent className="p-5">
+                      <CardContent className="p-6">
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-4">
-                              <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary-glow/20 shadow-sm">
-                                <MapPin className="h-5 w-5 text-primary" />
+                              <div className="p-2.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary-glow/20 shadow-sm">
+                                <MapPin className="h-6 w-6 text-primary" />
                               </div>
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-foreground mb-1">{property.name}</h3>
+                                <h3 className="text-2xl font-bold text-foreground">{property.name}</h3>
                                 <Badge 
                                   variant={property.is_active ? "default" : "secondary"}
-                                  className="text-xs"
+                                  className="mt-1"
                                 >
                                   {property.is_active ? '✓ Active' : 'Inactive'}
                                 </Badge>
                               </div>
                             </div>
-                            <div className="grid md:grid-cols-2 gap-4 text-sm bg-secondary/20 rounded-lg p-4">
+                            <div className="grid md:grid-cols-2 gap-6 text-sm bg-secondary/20 rounded-lg p-4">
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground text-sm">Address</p>
-                                    <p className="text-muted-foreground text-xs">{property.location_address || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground">Address</p>
+                                    <p className="text-muted-foreground">{property.location_address || 'Not provided'}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                   <Activity className="h-4 w-4 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground text-sm">Email</p>
-                                    <p className="text-muted-foreground text-xs">{property.email || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground">Email</p>
+                                    <p className="text-muted-foreground">{property.email || 'Not provided'}</p>
                                   </div>
                                 </div>
                               </div>
@@ -599,15 +598,15 @@ const CompanyProperties = () => {
                                 <div className="flex items-start gap-2">
                                   <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground text-sm">Phone</p>
-                                    <p className="text-muted-foreground text-xs">{property.phone || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground">Phone</p>
+                                    <p className="text-muted-foreground">{property.phone || 'Not provided'}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                   <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground text-sm">Created</p>
-                                    <p className="text-muted-foreground text-xs">{new Date(property.created_at).toLocaleDateString()}</p>
+                                    <p className="font-semibold text-foreground">Created</p>
+                                    <p className="text-muted-foreground">{new Date(property.created_at).toLocaleDateString()}</p>
                                   </div>
                                 </div>
                               </div>
