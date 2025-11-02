@@ -1068,17 +1068,9 @@ const CompanyDashboard = () => {
           <TabsContent value="dashboard">
             <StatsCards guards={guards} incidents={reports} />
             <IncidentsTable incidents={reports} />
-          </TabsContent>
-          
-          <TabsContent value="tracking">
-            {userProfile?.company_id && (
-              <LiveGuardMap companyId={userProfile.company_id} />
-            )}
-          </TabsContent>
-        </Tabs>
 
-        {/* Create Guard Form */}
-        {showCreateGuardForm && (
+            {/* Create Guard Form */}
+            {showCreateGuardForm && (
           <Card className="mb-4 sm:mb-6">
             <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
@@ -1403,6 +1395,14 @@ const CompanyDashboard = () => {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+          
+          <TabsContent value="tracking">
+            {userProfile?.company_id && (
+              <LiveGuardMap companyId={userProfile.company_id} />
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Shift Details Modal */}
         <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
