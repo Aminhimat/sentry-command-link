@@ -1,5 +1,5 @@
-const CACHE_NAME = 'guardhq-v1';
-const RUNTIME_CACHE = 'guardhq-runtime';
+const CACHE_NAME = 'guardhq-v2';
+const RUNTIME_CACHE = 'guardhq-runtime-v2';
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
