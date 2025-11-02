@@ -12,14 +12,8 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'esnext',
-    minify: 'terser',
+    minify: mode === 'production' ? 'esbuild' : false,
     cssMinify: true,
-    terserOptions: {
-      compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production',
-      },
-    },
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
