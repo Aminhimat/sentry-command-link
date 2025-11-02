@@ -301,10 +301,10 @@ const CompanyProperties = () => {
                 <MapPin className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                   Properties & Sites
                 </h1>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {company?.name} • Security Locations Management
                 </p>
               </div>
@@ -512,18 +512,18 @@ const CompanyProperties = () => {
           <CardHeader className="bg-gradient-to-r from-secondary/30 to-secondary/10 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-3 text-2xl">
+                <CardTitle className="flex items-center gap-3 text-lg">
                   <div className="p-2 rounded-lg bg-primary/10">
-                    <Shield className="h-6 w-6 text-primary" />
+                    <Shield className="h-5 w-5 text-primary" />
                   </div>
                   All Properties & Sites
                 </CardTitle>
-                <CardDescription className="mt-2 text-base">
+                <CardDescription className="mt-2 text-xs">
                   {properties.length} {properties.length === 1 ? 'location' : 'locations'} where your security services are provided
                 </CardDescription>
               </div>
               {properties.length > 0 && (
-                <Badge variant="outline" className="text-base px-4 py-2">
+                <Badge variant="outline" className="text-xs px-3 py-1">
                   {properties.length} Total
                 </Badge>
               )}
@@ -568,45 +568,45 @@ const CompanyProperties = () => {
                                 <MapPin className="h-6 w-6 text-primary" />
                               </div>
                               <div className="flex-1">
-                                <h3 className="text-2xl font-bold text-foreground">{property.name}</h3>
+                                <h3 className="text-base font-bold text-foreground">{property.name}</h3>
                                 <Badge 
                                   variant={property.is_active ? "default" : "secondary"}
-                                  className="mt-1"
+                                  className="mt-1 text-xs"
                                 >
                                   {property.is_active ? '✓ Active' : 'Inactive'}
                                 </Badge>
                               </div>
                             </div>
-                            <div className="grid md:grid-cols-2 gap-6 text-sm bg-secondary/20 rounded-lg p-4">
+                            <div className="grid md:grid-cols-2 gap-6 text-xs bg-secondary/20 rounded-lg p-4">
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
-                                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <MapPin className="h-3 w-3 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground">Address</p>
-                                    <p className="text-muted-foreground">{property.location_address || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground text-xs">Address</p>
+                                    <p className="text-muted-foreground text-xs">{property.location_address || 'Not provided'}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <Activity className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <Activity className="h-3 w-3 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground">Email</p>
-                                    <p className="text-muted-foreground">{property.email || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground text-xs">Email</p>
+                                    <p className="text-muted-foreground text-xs">{property.email || 'Not provided'}</p>
                                   </div>
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
-                                  <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <Shield className="h-3 w-3 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground">Phone</p>
-                                    <p className="text-muted-foreground">{property.phone || 'Not provided'}</p>
+                                    <p className="font-semibold text-foreground text-xs">Phone</p>
+                                    <p className="text-muted-foreground text-xs">{property.phone || 'Not provided'}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                  <Calendar className="h-3 w-3 text-muted-foreground mt-0.5" />
                                   <div>
-                                    <p className="font-semibold text-foreground">Created</p>
-                                    <p className="text-muted-foreground">{new Date(property.created_at).toLocaleDateString()}</p>
+                                    <p className="font-semibold text-foreground text-xs">Created</p>
+                                    <p className="text-muted-foreground text-xs">{new Date(property.created_at).toLocaleDateString()}</p>
                                   </div>
                                 </div>
                               </div>
