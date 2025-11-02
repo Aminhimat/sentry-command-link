@@ -1067,6 +1067,7 @@ const CompanyDashboard = () => {
           
           <TabsContent value="dashboard">
             <StatsCards guards={guards} incidents={reports} />
+            <IncidentsTable incidents={reports} />
           </TabsContent>
           
           <TabsContent value="tracking">
@@ -1402,8 +1403,6 @@ const CompanyDashboard = () => {
             </CardContent>
           </Card>
         )}
-
-        <IncidentsTable incidents={reports} />
 
         {/* Shift Details Modal */}
         <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
