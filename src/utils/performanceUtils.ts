@@ -77,3 +77,94 @@ export const memoryUtils = {
     return cleaned;
   }
 };
+
+// Network utilities
+export const networkUtils = {
+  // Detect user's network connection speed
+  getConnectionSpeed: (): 'slow' | 'medium' | 'fast' => {
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      const effectiveType = connection?.effectiveType;
+      
+      if (effectiveType === '4g') return 'fast';
+      if (effectiveType === '3g') return 'medium';
+      return 'slow';
+    }
+    
+    return 'medium'; // Default fallback
+  },
+
+  // Check if user prefers reduced data usage
+  preferReducedData: (): boolean => {
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      return connection?.saveData === true;
+    }
+    return false;
+  },
+
+  // Check if device is on a slow connection
+  isSlowConnection: (): boolean => {
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      return connection?.saveData || 
+             connection?.effectiveType === 'slow-2g' || 
+             connection?.effectiveType === '2g';
+    }
+    return false;
+  }
+};
+
+// Resource loading utilities
+export const resourceUtils = {
+  // Preload critical resources
+  preloadResource: (url: string, as: string): void => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.href = url;
+    link.as = as;
+    document.head.appendChild(link);
+  },
+
+  // Defer non-critical JavaScript
+  deferScript: (src: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
+  }
+};
+
+// Performance monitoring
+export const performanceMonitoring = {
+  // Measure and log page load performance
+  measurePageLoad: (): void => {
+    if ('performance' in window) {
+      window.addEventListener('load', () => {
+        const perfData = window.performance.timing;
+        const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
+        const connectTime = perfData.responseEnd - perfData.requestStart;
+        const renderTime = perfData.domComplete - perfData.domLoading;
+        
+        console.log('Performance Metrics:', {
+          pageLoadTime: `${pageLoadTime}ms`,
+          connectTime: `${connectTime}ms`,
+          renderTime: `${renderTime}ms`,
+        });
+      });
+    }
+  },
+
+  // Monitor Core Web Vitals (optional - requires web-vitals package)
+  reportWebVitals: (onPerfEntry?: (metric: any) => void) => {
+    if (onPerfEntry && onPerfEntry instanceof Function) {
+      // Optional: Install web-vitals package to enable this feature
+      // npm install web-vitals
+      console.log('Web Vitals monitoring available with web-vitals package');
+    }
+  }
+};

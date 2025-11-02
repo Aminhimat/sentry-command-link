@@ -17,10 +17,13 @@
     <meta name="author" content="GuardHQ" />
     <link rel="icon" href="/icon.png" type="image/png" />
     
-    <!-- Professional Dashboard Font -->
+    <!-- Performance Optimizations -->
+    <link rel="dns-prefetch" href="https://dzxkvzdwapaoeewqiyyq.supabase.co">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preload" href="/icon.png" as="image">
     
     <!-- PWA Icons -->
     <link rel="apple-touch-icon" href="/icon.png">
@@ -39,5 +42,16 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('Service Worker registered'))
+            .catch(err => console.log('Service Worker registration failed:', err));
+        });
+      }
+    </script>
   </body>
 </html>
