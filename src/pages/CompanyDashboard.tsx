@@ -1020,17 +1020,17 @@ const CompanyDashboard = () => {
               </Button>
             </Link>
             <Link to="/company/shifts">
-              <Button variant="ghost" size="sm" className="h-10">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
                 Shifts
               </Button>
             </Link>
             <Link to="/company/guards">
-              <Button variant="ghost" size="sm" className="h-10">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
                 Guards
               </Button>
             </Link>
             <Link to="/company/properties">
-              <Button variant="ghost" size="sm" className="h-10">
+              <Button variant="ghost" size="sm" className="bg-background text-foreground shadow-sm h-10">
                 Properties/Sites
               </Button>
             </Link>
