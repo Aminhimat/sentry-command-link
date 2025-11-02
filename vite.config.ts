@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'esnext',
-    minify: 'terser',
+    minify: mode === 'production' ? 'terser' : false,
     cssMinify: true,
     terserOptions: {
       compress: {
@@ -38,8 +38,7 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
     mode === 'production' && viteCompression({
       algorithm: 'gzip',
       ext: '.gz',
@@ -53,9 +52,13 @@ export default defineConfig(({ mode }) => ({
       deleteOriginFile: false,
     }),
   ].filter(Boolean),
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
 }));
