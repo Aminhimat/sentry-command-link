@@ -20,6 +20,10 @@ export default defineConfig(({ mode }) => ({
         mobile: path.resolve(__dirname, 'mobile.html')
       },
       output: {
+        // Add proper hashing for cache busting
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'supabase': ['@supabase/supabase-js'],
@@ -51,5 +55,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    force: mode === 'development', // Force re-optimization in dev
   },
 }));
