@@ -53,11 +53,18 @@ export default defineConfig(({ mode }) => ({
     }),
   ].filter(Boolean),
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: [
+      'react', 'react-dom', 'react-router-dom',
+      '@radix-ui/react-tabs', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'
+    ],
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
+      react: path.resolve(__dirname, 'node_modules/react/index.js'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom/index.js'),
+      'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client.js'),
     },
     dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
