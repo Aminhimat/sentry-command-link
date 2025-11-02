@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, MapPin, ArrowLeft, Eye, Edit, Activity, Calendar } from "lucide-react";
+import { Shield, Plus, MapPin, ArrowLeft, Eye, Edit, Activity, Calendar, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 
@@ -265,6 +265,42 @@ const CompanyProperties = () => {
       toast({
         title: "Error",
         description: "Failed to update property",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteProperty = async (property: Property) => {
+    if (!confirm(`Are you sure you want to delete "${property.name}"?`)) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { error } = await supabase
+        .from('properties')
+        .delete()
+        .eq('id', property.id);
+
+      if (error) {
+        console.error('Property delete error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `Property "${property.name}" deleted successfully!`,
+      });
+
+      if (userProfile?.company_id) {
+        await fetchProperties(userProfile.company_id);
+      }
+    } catch (error) {
+      console.error('Error deleting property:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete property",
         variant: "destructive",
       });
     } finally {
@@ -625,6 +661,15 @@ const CompanyProperties = () => {
                             >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteProperty(property)}
+                              className="shadow-sm hover:shadow-md transition-all hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
                             </Button>
                           </div>
                         </div>
