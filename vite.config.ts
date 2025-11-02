@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'esnext',
-    minify: mode === 'production' ? 'terser' : false,
+    minify: 'terser',
     cssMinify: true,
     terserOptions: {
       compress: {
@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    mode === 'development' &&
+    componentTagger(),
     mode === 'production' && viteCompression({
       algorithm: 'gzip',
       ext: '.gz',
@@ -52,20 +53,9 @@ export default defineConfig(({ mode }) => ({
       deleteOriginFile: false,
     }),
   ].filter(Boolean),
-  optimizeDeps: {
-    include: [
-      'react', 'react-dom', 'react-router-dom',
-      '@radix-ui/react-tabs', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'
-    ],
-  },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      react: path.resolve(__dirname, 'node_modules/react/index.js'),
-      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom/index.js'),
-      'react-dom/client': path.resolve(__dirname, 'node_modules/react-dom/client.js'),
+      "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
 }));
