@@ -20,7 +20,6 @@ import { backgroundSync } from "@/utils/backgroundSync";
 import { Badge } from "@/components/ui/badge";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { imageOptimizer } from "@/utils/imageOptimization";
-import { QRCodeSVG } from 'qrcode.react';
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -49,8 +48,6 @@ const GuardDashboard = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingReports, setPendingReports] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [qrGeneratorText, setQrGeneratorText] = useState("");
-  const [qrGeneratedFor, setQrGeneratedFor] = useState("");
   const { toast } = useToast();
 
   // Function to play success sound
@@ -1699,7 +1696,7 @@ const GuardDashboard = () => {
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
                 <Tabs defaultValue="properties" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 touch-manipulation">
+                  <TabsList className="grid w-full grid-cols-2 touch-manipulation">
                     <TabsTrigger 
                       value="properties" 
                       className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
@@ -1713,13 +1710,6 @@ const GuardDashboard = () => {
                     >
                       <QrCode className="h-4 w-4" />
                       QR Scan
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="qr-generate" 
-                      className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
-                    >
-                      <QrCode className="h-4 w-4" />
-                      Generate
                     </TabsTrigger>
                   </TabsList>
                   
@@ -1846,120 +1836,7 @@ const GuardDashboard = () => {
                        )}
                      </div>
                    </TabsContent>
-
-                   <TabsContent value="qr-generate" className="space-y-4">
-                     <div className="space-y-4">
-                       <div className="space-y-2">
-                         <Label htmlFor="qr-property-select">Select Property to Generate QR</Label>
-                         <Select 
-                           value={qrGeneratedFor}
-                           onValueChange={(value) => {
-                             const selectedProperty = properties.find(prop => prop.id === value);
-                             if (selectedProperty) {
-                               setQrGeneratedFor(value);
-                               setQrGeneratorText(selectedProperty.name);
-                             }
-                           }}
-                         >
-                           <SelectTrigger>
-                             <SelectValue placeholder="Select a property" />
-                           </SelectTrigger>
-                           <SelectContent className="bg-background border shadow-xl z-[9999]">
-                             {properties.map((property) => (
-                               <SelectItem key={property.id} value={property.id}>
-                                 <div className="flex flex-col">
-                                   <span className="font-medium">{property.name}</span>
-                                   {property.location_address && (
-                                     <span className="text-xs text-muted-foreground">{property.location_address}</span>
-                                   )}
-                                 </div>
-                               </SelectItem>
-                             ))}
-                           </SelectContent>
-                         </Select>
-                       </div>
-
-                       <div className="space-y-2">
-                         <Label htmlFor="qr-custom-text">Or Enter Custom Text</Label>
-                         <Input
-                           id="qr-custom-text"
-                           placeholder="Enter text for QR code..."
-                           value={qrGeneratorText}
-                           onChange={(e) => {
-                             setQrGeneratorText(e.target.value);
-                             setQrGeneratedFor("");
-                           }}
-                         />
-                       </div>
-
-                       {qrGeneratorText && (
-                         <div className="flex flex-col items-center gap-4 p-4 bg-muted rounded-lg">
-                           <div className="bg-white p-4 rounded-lg">
-                             <QRCodeSVG 
-                               value={qrGeneratorText}
-                               size={200}
-                               level="H"
-                               includeMargin={true}
-                             />
-                           </div>
-                           <p className="text-sm text-center font-medium">
-                             QR Code: {qrGeneratorText}
-                           </p>
-                           <Button
-                             type="button"
-                             variant="outline"
-                             onClick={() => {
-                               const svg = document.querySelector('#qr-scanner-container svg');
-                               if (svg) {
-                                 const svgData = new XMLSerializer().serializeToString(svg);
-                                 const canvas = document.createElement('canvas');
-                                 const ctx = canvas.getContext('2d');
-                                 const img = new Image();
-                                 
-                                 img.onload = () => {
-                                   canvas.width = img.width;
-                                   canvas.height = img.height;
-                                   ctx?.drawImage(img, 0, 0);
-                                   
-                                   canvas.toBlob((blob) => {
-                                     if (blob) {
-                                       const url = URL.createObjectURL(blob);
-                                       const a = document.createElement('a');
-                                       a.href = url;
-                                       a.download = `qr-${qrGeneratorText.replace(/[^a-z0-9]/gi, '-')}.png`;
-                                       a.click();
-                                       URL.revokeObjectURL(url);
-                                       
-                                       toast({
-                                         title: "QR Code Downloaded",
-                                         description: "QR code saved to your device",
-                                       });
-                                     }
-                                   });
-                                 };
-                                 
-                                 img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
-                               }
-                             }}
-                             className="w-full flex items-center gap-2"
-                           >
-                             <Download className="h-4 w-4" />
-                             Download QR Code
-                           </Button>
-                         </div>
-                       )}
-
-                       {!qrGeneratorText && (
-                         <div className="text-center p-8 bg-muted/50 rounded-lg">
-                           <QrCode className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                           <p className="text-sm text-muted-foreground">
-                             Select a property or enter text to generate a QR code
-                           </p>
-                         </div>
-                       )}
-                     </div>
-                   </TabsContent>
-                 </Tabs>
+                </Tabs>
                </div>
 
                {/* Issue Severity */}
