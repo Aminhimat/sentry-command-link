@@ -55,7 +55,11 @@ All colors MUST be HSL.
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(210 100% 60%));
     --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Performance optimizations */
+  scroll-behavior: smooth;
+  font-display: swap;
 
     --sidebar-background: 0 0% 98%;
 
