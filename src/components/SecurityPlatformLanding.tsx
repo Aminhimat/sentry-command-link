@@ -84,28 +84,28 @@ const SecurityPlatformLanding = () => {
         />
         <div className="absolute inset-0 bg-primary/80" />
         
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-6">
-          <div className="flex items-center justify-center mb-6">
-            <Shield className="h-16 w-16 mr-4 text-accent" />
-            <h1 className="text-6xl font-bold">GuardHQ</h1>
+        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center mb-6 gap-3 sm:gap-4">
+            <Shield className="h-12 w-12 sm:h-16 sm:w-16 text-accent" />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold">GuardHQ</h1>
           </div>
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg lg:text-xl mb-8 text-white/90 max-w-2xl mx-auto leading-relaxed">
             Complete security management platform for modern security companies. 
             Manage teams, track patrols, and ensure compliance with real-time monitoring.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
             <Button 
               variant="hero" 
-              size="xl" 
-              className="animate-slide-in"
+              size="lg"
+              className="animate-slide-in w-full sm:w-auto min-h-[48px] text-base"
               onClick={() => navigate('/auth?mode=guard')}
             >
               Guard Login
             </Button>
             <Button 
               variant="ghost-white" 
-              size="xl" 
-              className="animate-slide-in"
+              size="lg"
+              className="animate-slide-in w-full sm:w-auto min-h-[48px] text-base"
               onClick={() => navigate('/auth')}
             >
               Admin Login
@@ -115,11 +115,11 @@ const SecurityPlatformLanding = () => {
       </section>
 
       {/* Demo on Demand Section */}
-      <section className="py-20 bg-muted/50">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Demo on Demand</h2>
-            <p className="text-muted-foreground text-lg mb-6">
+      <section className="py-12 sm:py-16 lg:py-20 bg-muted/50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">Demo on Demand</h2>
+            <p className="text-muted-foreground text-base sm:text-lg mb-4 sm:mb-6">
               See GuardHQ in action with a personalized demo tailored to your security needs
             </p>
             <div className="max-w-3xl mx-auto text-left">
@@ -164,6 +164,7 @@ const SecurityPlatformLanding = () => {
                       value={formData.firstName}
                       onChange={handleInputChange}
                       placeholder="Enter your first name"
+                      className="min-h-[44px] text-base"
                       required
                     />
                   </div>
@@ -177,6 +178,7 @@ const SecurityPlatformLanding = () => {
                       value={formData.lastName}
                       onChange={handleInputChange}
                       placeholder="Enter your last name"
+                      className="min-h-[44px] text-base"
                       required
                     />
                   </div>
@@ -193,6 +195,7 @@ const SecurityPlatformLanding = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Enter your email address"
+                    className="min-h-[44px] text-base"
                     required
                   />
                 </div>
@@ -208,6 +211,7 @@ const SecurityPlatformLanding = () => {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     placeholder="Enter your phone number"
+                    className="min-h-[44px] text-base"
                     required
                   />
                 </div>
@@ -223,13 +227,14 @@ const SecurityPlatformLanding = () => {
                     onChange={handleInputChange}
                     placeholder="Tell us about your security needs and what you'd like to see in the demo"
                     rows={4}
+                    className="min-h-[100px] text-base"
                     required
                   />
                 </div>
                 
                 <Button 
                   type="submit" 
-                  className="w-full" 
+                  className="w-full min-h-[48px]" 
                   size="lg"
                   disabled={isSubmitting}
                 >

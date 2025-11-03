@@ -25,11 +25,11 @@ const buttonVariants = cva(
         "ghost-white": "border border-white/20 text-white hover:bg-white/10 bg-transparent",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        xl: "h-14 rounded-lg px-10 text-base",
-        icon: "h-10 w-10",
+        default: "h-10 px-4 py-2 md:h-10",
+        sm: "h-9 rounded-md px-3 md:h-9",
+        lg: "h-12 rounded-md px-6 md:h-11 md:px-8",
+        xl: "h-14 rounded-lg px-8 text-base md:px-10",
+        icon: "h-11 w-11 md:h-10 md:w-10",
       },
     },
     defaultVariants: {

@@ -336,11 +336,11 @@ const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6">
       <Card className="w-full max-w-md shadow-elevated">
-        <CardHeader className="text-center">
-          <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
-          <CardTitle className="text-2xl">
+        <CardHeader className="text-center space-y-3">
+          <Shield className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
+          <CardTitle className="text-xl sm:text-2xl">
             {isSignUp 
               ? "Create Admin Account" 
               : isGuardLogin 
@@ -390,15 +390,15 @@ const AuthPage = () => {
               <Label htmlFor="email">{isGuardLogin ? "Username" : "Email"}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type={isGuardLogin ? "text" : "email"}
-                  placeholder={isGuardLogin ? "username" : "admin@example.com"}
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
+                  <Input
+                    id="email"
+                    type={isGuardLogin ? "text" : "email"}
+                    placeholder={isGuardLogin ? "username" : "admin@example.com"}
+                    className="pl-10 min-h-[44px]"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
               </div>
             </div>
             
@@ -410,7 +410,7 @@ const AuthPage = () => {
                   <Input
                     id="password"
                     type="password"
-                    className="pl-10"
+                    className="pl-10 min-h-[44px]"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -423,7 +423,7 @@ const AuthPage = () => {
             <Button 
               type="submit" 
               variant="hero" 
-              className="w-full" 
+              className="w-full min-h-[48px]" 
               disabled={isLoading}
             >
               {isLoading 
