@@ -16,6 +16,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { SmoothSection } from "@/components/SmoothSection";
 
 interface Company {
   id: string;
@@ -734,8 +735,9 @@ const AdminDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <Card className="shadow-card">
+        <SmoothSection>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <Card className="shadow-card">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
                 <Building className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
@@ -799,6 +801,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
+        </SmoothSection>
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="analytics" className="w-full">
@@ -808,7 +811,9 @@ const AdminDashboard = () => {
           </TabsList>
           
           <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
-            <CompanyAnalytics />
+            <SmoothSection>
+              <CompanyAnalytics />
+            </SmoothSection>
           </TabsContent>
           
           <TabsContent value="companies" className="space-y-4 sm:space-y-6">
@@ -823,6 +828,7 @@ const AdminDashboard = () => {
 
             {/* Create Company Form */}
             {showCreateForm && (
+            <SmoothSection>
             <Card className="mb-4 sm:mb-6 shadow-elevated">
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Create New Security Company</CardTitle>
@@ -977,11 +983,13 @@ const AdminDashboard = () => {
               </form>
             </CardContent>
           </Card>
+          </SmoothSection>
         )}
 
             {/* Edit Company Form */}
             {showEditForm && editingCompany && (
-              <Card className="mb-4 sm:mb-6 shadow-elevated">
+              <SmoothSection>
+                <Card className="mb-4 sm:mb-6 shadow-elevated">
                 <CardHeader>
                   <CardTitle className="text-lg sm:text-xl">Edit Company: {editingCompany.name}</CardTitle>
                   <CardDescription className="text-sm">
@@ -1083,10 +1091,12 @@ const AdminDashboard = () => {
                   </form>
                 </CardContent>
               </Card>
+              </SmoothSection>
             )}
 
             {/* Companies List */}
-            <div className="grid gap-4 sm:gap-6">
+            <SmoothSection>
+              <div className="grid gap-4 sm:gap-6">
               {companies.map((company) => (
                 <Card key={company.id} className="shadow-card hover:shadow-elevated transition-smooth">
                   <CardContent className="p-4 sm:p-6">
@@ -1184,6 +1194,7 @@ const AdminDashboard = () => {
                 </Card>
               )}
             </div>
+            </SmoothSection>
           </TabsContent>
 
 

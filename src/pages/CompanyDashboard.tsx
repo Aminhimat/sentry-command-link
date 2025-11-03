@@ -20,6 +20,7 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
+import { SmoothSection } from "@/components/SmoothSection";
 
 interface Profile {
   id: string;
@@ -1066,19 +1067,24 @@ const CompanyDashboard = () => {
           </TabsList>
           
           <TabsContent value="dashboard">
-            <StatsCards guards={guards} incidents={reports} />
+            <SmoothSection>
+              <StatsCards guards={guards} incidents={reports} />
+            </SmoothSection>
           </TabsContent>
           
           <TabsContent value="tracking">
-            {userProfile?.company_id && (
-              <LiveGuardMap companyId={userProfile.company_id} />
-            )}
+            <SmoothSection>
+              {userProfile?.company_id && (
+                <LiveGuardMap companyId={userProfile.company_id} />
+              )}
+            </SmoothSection>
           </TabsContent>
         </Tabs>
 
         {/* Create Guard Form */}
         {showCreateGuardForm && (
-          <Card className="mb-4 sm:mb-6">
+          <SmoothSection>
+            <Card className="mb-4 sm:mb-6">
             <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base sm:text-lg">Create New Guard</CardTitle>
@@ -1158,6 +1164,7 @@ const CompanyDashboard = () => {
               </form>
             </CardContent>
           </Card>
+          </SmoothSection>
         )}
 
         {/* Generate Report Form */}
@@ -1403,7 +1410,9 @@ const CompanyDashboard = () => {
           </Card>
         )}
 
-        <IncidentsTable incidents={reports} />
+        <SmoothSection>
+          <IncidentsTable incidents={reports} />
+        </SmoothSection>
 
         {/* Shift Details Modal */}
         <Dialog open={!!selectedShift} onOpenChange={(open) => { if (!open) setSelectedShift(null); }}>
