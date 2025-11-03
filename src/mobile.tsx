@@ -13,7 +13,7 @@ function MobileApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <div className="App">
+        <div className="App border-4 border-primary min-h-screen">
           <Routes>
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<GuardAuthPage />} />
