@@ -83,14 +83,26 @@ const AuthPage = () => {
                     navigate('/admin');
                   } else if (role === 'company_admin') {
                     navigate('/company');
-                  } else if (role === 'guard') {
-                    // Validate guard login constraints before navigating
-                    validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                      if (allowed) {
-                        navigate('/guard');
-                      }
-                    });
-                  } else {
+              } else if (role === 'guard') {
+                // Validate guard login constraints before navigating
+                setTimeout(async () => {
+                  // First enforce single session (sign out other devices/browsers)
+                  try {
+                    await supabase.auth.signOut({ scope: 'others' });
+                    console.log('Successfully signed out other sessions for guard');
+                  } catch (sessionError) {
+                    console.error('Failed to sign out other sessions:', sessionError);
+                    // Continue with login even if this fails
+                  }
+
+                  // Then validate guard login constraints
+                  validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                    if (allowed) {
+                      navigate('/guard');
+                    }
+                  });
+                }, 0);
+              } else {
                     navigate('/');
                   }
                 }
@@ -139,12 +151,24 @@ const AuthPage = () => {
               } else if (role === 'company_admin') {
                 navigate('/company');
               } else if (role === 'guard') {
-                // Validate guard login constraints before navigating
-                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                  if (allowed) {
-                    navigate('/guard');
+                // Enforce single session and validate guard login constraints
+                setTimeout(async () => {
+                  // First enforce single session (sign out other devices/browsers)
+                  try {
+                    await supabase.auth.signOut({ scope: 'others' });
+                    console.log('Successfully signed out other sessions for guard');
+                  } catch (sessionError) {
+                    console.error('Failed to sign out other sessions:', sessionError);
+                    // Continue with login even if this fails
                   }
-                });
+
+                  // Validate guard login constraints before navigating
+                  validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                    if (allowed) {
+                      navigate('/guard');
+                    }
+                  });
+                }, 0);
               } else {
                 navigate('/');
               }

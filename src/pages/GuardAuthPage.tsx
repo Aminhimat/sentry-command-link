@@ -77,6 +77,16 @@ const GuardAuthPage = () => {
             });
             return;
           }
+
+          // Enforce single session for guards - sign out other devices/browsers
+          try {
+            await supabase.auth.signOut({ scope: 'others' });
+            console.log('Successfully signed out other sessions for guard');
+          } catch (sessionError) {
+            console.error('Failed to sign out other sessions:', sessionError);
+            // Continue with login even if this fails
+          }
+
           // Get ALL active login constraints for this guard
           const { data: constraints, error: cErr } = await supabase
             .from('guard_login_constraints')
