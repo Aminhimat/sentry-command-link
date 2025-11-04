@@ -145,7 +145,15 @@ const CompanyDashboard = () => {
     newPassword: "",
     assignedPropertyId: "none"
   });
-  const [reportFilters, setReportFilters] = useState({
+  const [reportFilters, setReportFilters] = useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+    startTime: string;
+    endTime: string;
+    guardId: string;
+    propertyId: string;
+    reportType: string;
+  }>({
     startDate: new Date(),
     endDate: new Date(),
     startTime: "00:00",
@@ -732,34 +740,43 @@ const CompanyDashboard = () => {
         `)
         .eq('company_id', userProfile.company_id);
 
-      // Apply date & time filters
-      let startDateTime: Date;
-      let endDateTime: Date;
+      // Apply date & time filters only if dates are selected
+      let startDateTime: string | null = null;
+      let endDateTime: string | null = null;
       
-      // Ensure we have valid Date objects
-      const startDateObj = reportFilters.startDate instanceof Date ? reportFilters.startDate : new Date(reportFilters.startDate);
-      const endDateObj = reportFilters.endDate instanceof Date ? reportFilters.endDate : new Date(reportFilters.endDate);
-      
-      if (reportFilters.reportType === 'daily') {
-        // Merge selected times with the chosen date
-        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
-        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
-        startDateTime = new Date(startDateObj);
-        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
-        endDateTime = new Date(startDateObj);
-        endDateTime.setHours(eh || 23, em || 59, 59, 999);
-      } else {
-        // For range reports, also apply time filters
-        const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
-        const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
-        startDateTime = new Date(startDateObj);
-        startDateTime.setHours(sh || 0, sm || 0, 0, 0);
-        endDateTime = new Date(endDateObj);
-        endDateTime.setHours(eh || 23, em || 59, 59, 999);
+      if (reportFilters.startDate && reportFilters.endDate) {
+        // Ensure we have valid Date objects
+        const startDateObj = reportFilters.startDate instanceof Date ? reportFilters.startDate : new Date(reportFilters.startDate);
+        const endDateObj = reportFilters.endDate instanceof Date ? reportFilters.endDate : new Date(reportFilters.endDate);
+        
+        let startDateTimeObj: Date;
+        let endDateTimeObj: Date;
+        
+        if (reportFilters.reportType === 'daily') {
+          // Merge selected times with the chosen date
+          const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+          const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
+          startDateTimeObj = new Date(startDateObj);
+          startDateTimeObj.setHours(sh || 0, sm || 0, 0, 0);
+          endDateTimeObj = new Date(startDateObj);
+          endDateTimeObj.setHours(eh || 23, em || 59, 59, 999);
+        } else {
+          // For range reports, also apply time filters
+          const [sh, sm] = (reportFilters.startTime || '00:00').split(':').map(Number);
+          const [eh, em] = (reportFilters.endTime || '23:59').split(':').map(Number);
+          startDateTimeObj = new Date(startDateObj);
+          startDateTimeObj.setHours(sh || 0, sm || 0, 0, 0);
+          endDateTimeObj = new Date(endDateObj);
+          endDateTimeObj.setHours(eh || 23, em || 59, 59, 999);
+        }
+        
+        startDateTime = startDateTimeObj.toISOString();
+        endDateTime = endDateTimeObj.toISOString();
+        
+        query = query
+          .gte('created_at', startDateTime)
+          .lte('created_at', endDateTime);
       }
-      query = query
-        .gte('created_at', startDateTime.toISOString())
-        .lte('created_at', endDateTime.toISOString());
 
       // Apply guard filter
       if (reportFilters.guardId !== 'all') {
@@ -807,8 +824,8 @@ const CompanyDashboard = () => {
       // Generate PDF directly in browser
       await generatePDFReport(reportsForPDF, company, {
         ...reportFilters,
-        startDate: startDateTime.toISOString(),
-        endDate: endDateTime.toISOString()
+        startDate: startDateTime || 'All',
+        endDate: endDateTime || 'All'
       });
 
     } catch (error: any) {
@@ -1248,14 +1265,14 @@ const CompanyDashboard = () => {
                         )}
                       >
                         <Calendar className="mr-2 h-4 w-4" />
-                        {reportFilters.startDate ? format(reportFilters.startDate, "PPP") : <span>Pick a date</span>}
+                        {reportFilters.startDate ? format(reportFilters.startDate, "PPP") : <span>All dates</span>}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <CalendarComponent
                         mode="single"
-                        selected={reportFilters.startDate}
-                        onSelect={(date) => date && setReportFilters({...reportFilters, startDate: date})}
+                        selected={reportFilters.startDate || undefined}
+                        onSelect={(date) => setReportFilters({...reportFilters, startDate: date || null})}
                         initialFocus
                         className="pointer-events-auto"
                       />
@@ -1276,14 +1293,14 @@ const CompanyDashboard = () => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {reportFilters.endDate ? format(reportFilters.endDate, "PPP") : <span>Pick a date</span>}
+                          {reportFilters.endDate ? format(reportFilters.endDate, "PPP") : <span>All dates</span>}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={reportFilters.endDate}
-                          onSelect={(date) => date && setReportFilters({...reportFilters, endDate: date})}
+                          selected={reportFilters.endDate || undefined}
+                          onSelect={(date) => setReportFilters({...reportFilters, endDate: date || null})}
                           initialFocus
                           className="pointer-events-auto"
                         />
@@ -1311,6 +1328,21 @@ const CompanyDashboard = () => {
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => setReportFilters({
+                    startDate: null,
+                    endDate: null,
+                    startTime: "00:00",
+                    endTime: "23:59",
+                    guardId: "all",
+                    propertyId: "all",
+                    reportType: "daily"
+                  })}
+                  className="flex-shrink-0"
+                >
+                  Reset Filters
+                </Button>
                 <Button 
                   onClick={handleGenerateReport}
                   disabled={isGeneratingReport || reports.length === 0}
