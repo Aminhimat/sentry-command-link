@@ -732,6 +732,10 @@ const CompanyDashboard = () => {
     try {
       setIsGeneratingReport(true);
       
+      // Declare these at function scope
+      let startDateTime: string = 'All';
+      let endDateTime: string = 'All';
+      
       let query = supabase
         .from('guard_reports')
         .select(`
@@ -741,9 +745,6 @@ const CompanyDashboard = () => {
         .eq('company_id', userProfile.company_id);
 
       // Apply date & time filters only if dates are selected
-      let startDateTime: string | null = null;
-      let endDateTime: string | null = null;
-      
       if (reportFilters.startDate && reportFilters.endDate) {
         // Ensure we have valid Date objects
         const startDateObj = reportFilters.startDate instanceof Date ? reportFilters.startDate : new Date(reportFilters.startDate);
@@ -824,8 +825,8 @@ const CompanyDashboard = () => {
       // Generate PDF directly in browser
       await generatePDFReport(reportsForPDF, company, {
         ...reportFilters,
-        startDate: startDateTime || 'All',
-        endDate: endDateTime || 'All'
+        startDate: startDateTime,
+        endDate: endDateTime
       });
 
     } catch (error: any) {
