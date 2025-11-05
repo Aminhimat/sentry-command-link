@@ -85,23 +85,11 @@ const AuthPage = () => {
                     navigate('/company');
               } else if (role === 'guard') {
                 // Validate guard login constraints before navigating
-                setTimeout(async () => {
-                  // First enforce single session (sign out other devices/browsers)
-                  try {
-                    await supabase.auth.signOut({ scope: 'others' });
-                    console.log('Successfully signed out other sessions for guard');
-                  } catch (sessionError) {
-                    console.error('Failed to sign out other sessions:', sessionError);
-                    // Continue with login even if this fails
+                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                  if (allowed) {
+                    navigate('/guard');
                   }
-
-                  // Then validate guard login constraints
-                  validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                    if (allowed) {
-                      navigate('/guard');
-                    }
-                  });
-                }, 0);
+                });
               } else {
                     navigate('/');
                   }
@@ -152,11 +140,18 @@ const AuthPage = () => {
                 navigate('/company');
               } else if (role === 'guard') {
                 // Enforce single session and validate guard login constraints
-                setTimeout(async () => {
+                (async () => {
                   // First enforce single session (sign out other devices/browsers)
                   try {
-                    await supabase.auth.signOut({ scope: 'others' });
-                    console.log('Successfully signed out other sessions for guard');
+                    const { error: sessionError } = await supabase.functions.invoke('enforce-single-session', {
+                      body: { userId: session.user!.id }
+                    });
+                    
+                    if (sessionError) {
+                      console.error('Failed to enforce single session:', sessionError);
+                    } else {
+                      console.log('Successfully signed out other sessions for guard');
+                    }
                   } catch (sessionError) {
                     console.error('Failed to sign out other sessions:', sessionError);
                     // Continue with login even if this fails
@@ -168,7 +163,7 @@ const AuthPage = () => {
                       navigate('/guard');
                     }
                   });
-                }, 0);
+                })();
               } else {
                 navigate('/');
               }

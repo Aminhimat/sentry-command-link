@@ -80,8 +80,15 @@ const GuardAuthPage = () => {
 
           // Enforce single session for guards - sign out other devices/browsers
           try {
-            await supabase.auth.signOut({ scope: 'others' });
-            console.log('Successfully signed out other sessions for guard');
+            const { error: sessionError } = await supabase.functions.invoke('enforce-single-session', {
+              body: { userId: authData.user.id }
+            });
+            
+            if (sessionError) {
+              console.error('Failed to enforce single session:', sessionError);
+            } else {
+              console.log('Successfully signed out other sessions for guard');
+            }
           } catch (sessionError) {
             console.error('Failed to sign out other sessions:', sessionError);
             // Continue with login even if this fails
