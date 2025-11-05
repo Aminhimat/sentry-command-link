@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -350,6 +350,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_reason: string | null
           assigned_property_id: string | null
           company_id: string | null
           created_at: string
@@ -357,7 +358,10 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string | null
+          login_location_lat: number | null
+          login_location_lng: number | null
           phone: string | null
+          requires_admin_approval: boolean | null
           requires_password_change: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -365,6 +369,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          approval_reason?: string | null
           assigned_property_id?: string | null
           company_id?: string | null
           created_at?: string
@@ -372,7 +377,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string | null
+          login_location_lat?: number | null
+          login_location_lng?: number | null
           phone?: string | null
+          requires_admin_approval?: boolean | null
           requires_password_change?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -380,6 +388,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          approval_reason?: string | null
           assigned_property_id?: string | null
           company_id?: string | null
           created_at?: string
@@ -387,7 +396,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string | null
+          login_location_lat?: number | null
+          login_location_lng?: number | null
           phone?: string | null
+          requires_admin_approval?: boolean | null
           requires_password_change?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -512,18 +524,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_user_company_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      is_platform_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_platform_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       company_status: "active" | "inactive" | "suspended"

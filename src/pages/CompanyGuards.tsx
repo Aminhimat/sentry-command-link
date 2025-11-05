@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, ArrowLeft, Eye, Edit, Trash2, Power } from "lucide-react";
+import { Shield, Plus, Users, ArrowLeft, Eye, Edit, Trash2, Power, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
+import { GuardApprovalDialog } from "@/components/GuardApprovalDialog";
 
 interface Profile {
   id: string;
@@ -39,6 +40,8 @@ interface Guard {
     id: string;
     name: string;
   };
+  requires_admin_approval?: boolean;
+  approval_reason?: string;
 }
 
 interface Property {
@@ -91,6 +94,8 @@ const CompanyGuards = () => {
     newPassword: "",
     assignedPropertyId: "none"
   });
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [guardToApprove, setGuardToApprove] = useState<Guard | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -334,6 +339,48 @@ const CompanyGuards = () => {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update guard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApproveGuard = async () => {
+    if (!guardToApprove) return;
+
+    try {
+      setIsLoading(true);
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          requires_admin_approval: false,
+          approval_reason: null
+        })
+        .eq('id', guardToApprove.id);
+
+      if (error) {
+        console.error('Guard approval error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Success",
+        description: `${guardToApprove.first_name} ${guardToApprove.last_name} has been approved and can now login.`,
+      });
+
+      setShowApprovalDialog(false);
+      setGuardToApprove(null);
+
+      if (userProfile?.company_id) {
+        await fetchGuards(userProfile.company_id);
+      }
+    } catch (error) {
+      console.error('Error approving guard:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to approve guard",
         variant: "destructive",
       });
     } finally {
@@ -734,15 +781,37 @@ const CompanyGuards = () => {
                         <TableCell className="text-sm">{guard.phone || 'Not provided'}</TableCell>
                         <TableCell className="text-sm">{guard.assigned_property?.name || 'None'}</TableCell>
                         <TableCell>
-                          <Badge variant={guard.is_active ? "default" : "secondary"}>
-                            {guard.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
+                          <div className="flex gap-2">
+                            <Badge variant={guard.is_active ? "default" : "secondary"}>
+                              {guard.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                            {guard.requires_admin_approval && (
+                              <Badge variant="destructive">
+                                Needs Approval
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {new Date(guard.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {guard.requires_admin_approval && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setGuardToApprove(guard);
+                                  setShowApprovalDialog(true);
+                                }}
+                                className="text-green-600 hover:text-green-700"
+                                disabled={isLoading}
+                                title="Approve Login"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button 
                               variant="outline" 
                               size="sm"
@@ -795,6 +864,14 @@ const CompanyGuards = () => {
           </CardContent>
         </Card>
       </div>
+
+      <GuardApprovalDialog
+        open={showApprovalDialog}
+        onOpenChange={setShowApprovalDialog}
+        guard={guardToApprove}
+        onApprove={handleApproveGuard}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

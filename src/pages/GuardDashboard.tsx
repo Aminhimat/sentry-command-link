@@ -20,10 +20,12 @@ import { backgroundSync } from "@/utils/backgroundSync";
 import { Badge } from "@/components/ui/badge";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { imageOptimizer } from "@/utils/imageOptimization";
+import { useLocationMonitoring } from "@/hooks/useLocationMonitoring";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [guardProfile, setGuardProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentShift, setCurrentShift] = useState<any>(null);
   const [shiftLoading, setShiftLoading] = useState(false);
@@ -318,11 +320,14 @@ const GuardDashboard = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, is_active')
+        .select('id, is_active, role')
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (profile?.id) {
+        // Store profile in state for location monitoring
+        setGuardProfile(profile);
+
         // Check if guard account is active
         if (profile.is_active === false) {
           await supabase.auth.signOut();
@@ -384,6 +389,9 @@ const GuardDashboard = () => {
 
     setUser(user);
   };
+
+  // Enable location monitoring for guards
+  useLocationMonitoring(guardProfile?.role === 'guard', !!user);
 
 
   const handleCameraCapture = async () => {

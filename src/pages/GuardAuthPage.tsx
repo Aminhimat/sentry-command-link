@@ -62,11 +62,22 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active')
+          .select('id, role, company_id, is_active, requires_admin_approval')
           .eq('user_id', authData.user.id)
           .single();
 
         if (profile?.role === 'guard') {
+          // Check if guard requires admin approval
+          if (profile.requires_admin_approval) {
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Admin Approval Required",
+              description: "Your account requires admin approval to login. Please contact your administrator.",
+            });
+            return;
+          }
+
           // Check if guard is active
           if (!profile.is_active) {
             await supabase.auth.signOut();
@@ -76,6 +87,32 @@ const GuardAuthPage = () => {
               description: "Your account has been deactivated. Please contact your administrator.",
             });
             return;
+          }
+
+          // Store login location if geolocation is available
+          if ('geolocation' in navigator) {
+            try {
+              const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  enableHighAccuracy: true,
+                  timeout: 10000,
+                  maximumAge: 0
+                });
+              });
+
+              await supabase
+                .from('profiles')
+                .update({
+                  login_location_lat: position.coords.latitude,
+                  login_location_lng: position.coords.longitude
+                })
+                .eq('id', profile.id);
+
+              console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
+            } catch (geoError) {
+              console.error('Failed to get login location:', geoError);
+              // Continue with login even if location storage fails
+            }
           }
 
           // Enforce single session for guards - sign out other devices/browsers
