@@ -382,23 +382,37 @@ const CompanyDashboard = () => {
     }
   };
 
-  // Function to process reports and convert property IDs to names
+  // Function to process reports and convert/fill property names
   const processReportsWithPropertyNames = (reportsData: Report[]) => {
-    return reportsData.map(report => {
+    return reportsData.map((report) => {
+      // 1) If location_address is a property UUID, convert to the property's name
       if (report.location_address && properties.length > 0) {
-        // Check if location_address is a property ID (UUID format)
-        const propertyMatch = properties.find(prop => prop.id === report.location_address);
+        const propertyMatch = properties.find(
+          (prop) => prop.id === report.location_address
+        );
         if (propertyMatch) {
           return {
             ...report,
-            location_address: propertyMatch.name
+            location_address: propertyMatch.name,
           };
         }
       }
+
+      // 2) If location_address is missing, try to fill from guard's assigned property
+      if (!report.location_address) {
+        const guardRecord = (guards as any[]).find((g) => g.id === report.guard_id);
+        const assignedName = guardRecord?.assigned_property?.name;
+        if (assignedName) {
+          return {
+            ...report,
+            location_address: assignedName,
+          };
+        }
+      }
+
       return report;
     });
   };
-
   const fetchCompany = async (companyId: string) => {
     try {
       const { data, error } = await supabase
@@ -493,34 +507,21 @@ const CompanyDashboard = () => {
     await fetchPropertiesForCompany(userProfile.company_id);
   };
 
-  // Re-process reports whenever properties change
+  // Re-process reports whenever properties or guards change
   useEffect(() => {
-    if (properties.length > 0 && reports.length > 0) {
-      const processedReports = reports.map(report => {
-        if (report.location_address && properties.length > 0) {
-          // Check if location_address is a property ID (UUID format)
-          const propertyMatch = properties.find(prop => prop.id === report.location_address);
-          if (propertyMatch) {
-            return {
-              ...report,
-              location_address: propertyMatch.name
-            };
-          }
-        }
-        return report;
-      });
-      
+    if (reports.length > 0) {
+      const processedReports = processReportsWithPropertyNames(reports);
+
       // Only update if there are actual changes
-      const hasChanges = processedReports.some((report, index) => 
+      const hasChanges = processedReports.some((report, index) =>
         report.location_address !== reports[index].location_address
       );
-      
+
       if (hasChanges) {
         setReports(processedReports);
       }
     }
-  }, [properties.length]); // Only depend on properties length to avoid circular updates
-
+  }, [properties.length, guards.length]);
   const handleCreateProperty = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userProfile?.company_id) return;
