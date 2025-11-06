@@ -1777,47 +1777,59 @@ const GuardDashboard = () => {
                 <Label htmlFor="site">Work Site *</Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  {(() => {
-                    return (
-                      <Select 
-                        value={(selectedPropertyId || undefined) as any}
-                        onValueChange={(value) => {
-                          setSelectedPropertyId(value);
-                          const selectedProperty = properties.find(prop => prop.id === value);
-                          const siteName = selectedProperty ? selectedProperty.name : '';
-                          setTaskData({ 
-                            ...taskData, 
-                            site: siteName 
-                          });
-                          if (showMissingFieldsError.includes("Work Site")) {
-                            setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="pl-10" disabled={hasAssignedProperty}>
-                          <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
-                          {loadingProperties ? (
-                            <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
-                          ) : properties.length === 0 ? (
-                            <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
-                          ) : (
-                            properties.map((property) => (
-                              <SelectItem key={property.id} value={property.id}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{property.name}</span>
-                                  {property.location_address && (
-                                    <span className="text-xs text-muted-foreground">{property.location_address}</span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    );
-                  })()}
+                  {hasAssignedProperty ? (
+                    <div>
+                      <Input
+                        readOnly
+                        disabled
+                        value={properties[0]?.name || taskData.site || ''}
+                        className="pl-10"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Assigned by admin</p>
+                    </div>
+                  ) : (
+                    (() => {
+                      return (
+                        <Select 
+                          value={(selectedPropertyId || undefined) as any}
+                          onValueChange={(value) => {
+                            setSelectedPropertyId(value);
+                            const selectedProperty = properties.find(prop => prop.id === value);
+                            const siteName = selectedProperty ? selectedProperty.name : '';
+                            setTaskData({ 
+                              ...taskData, 
+                              site: siteName 
+                            });
+                            if (showMissingFieldsError.includes("Work Site")) {
+                              setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="pl-10">
+                            <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
+                            {loadingProperties ? (
+                              <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
+                            ) : properties.length === 0 ? (
+                              <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
+                            ) : (
+                              properties.map((property) => (
+                                <SelectItem key={property.id} value={property.id}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{property.name}</span>
+                                    {property.location_address && (
+                                      <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      );
+                    })()
+                  )}
                 </div>
                 {!loadingProperties && properties.length === 0 && (
                   <p className="text-sm text-muted-foreground">
