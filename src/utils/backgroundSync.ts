@@ -50,12 +50,25 @@ class BackgroundSyncService {
     let imageBlob: Blob | undefined;
     
     if (reportData.image) {
-      // Optimize image for storage
+      const originalSize = reportData.image.size;
+      const connectionSpeed = this.getConnectionSpeed();
+      
+      // Optimize image for storage based on connection speed
       const optimized = await imageOptimizer.optimizeForConnection(
         reportData.image, 
-        this.getConnectionSpeed()
+        connectionSpeed
       );
       imageBlob = optimized;
+      
+      const compressedSize = optimized.size;
+      const savedBytes = originalSize - compressedSize;
+      const savedPercent = Math.round((savedBytes / originalSize) * 100);
+      
+      console.log(`📦 Image optimized for ${connectionSpeed} connection:`, {
+        original: `${(originalSize / 1024 / 1024).toFixed(2)}MB`,
+        compressed: `${(compressedSize / 1024 / 1024).toFixed(2)}MB`,
+        saved: `${savedPercent}% (${(savedBytes / 1024 / 1024).toFixed(2)}MB)`
+      });
     }
 
     const reportId = await offlineStorage.saveReport({

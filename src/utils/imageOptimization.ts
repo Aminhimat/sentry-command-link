@@ -138,9 +138,9 @@ class ImageOptimizer {
 
   async optimizeForConnection(file: File, connectionSpeed: 'slow' | 'medium' | 'fast'): Promise<File> {
     const speedConfigs = {
-      slow: { quality: 0.78, maxWidth: 1600, maxHeight: 1600, format: 'jpeg' as const, useWebP: true },
-      medium: { quality: 0.82, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const, useWebP: true },
-      fast: { quality: 0.85, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const, useWebP: false }
+      slow: { quality: 0.65, maxWidth: 1200, maxHeight: 1200, format: 'jpeg' as const, useWebP: true },
+      medium: { quality: 0.75, maxWidth: 1600, maxHeight: 1600, format: 'jpeg' as const, useWebP: true },
+      fast: { quality: 0.82, maxWidth: 2000, maxHeight: 2000, format: 'jpeg' as const, useWebP: false }
     };
 
     const config = speedConfigs[connectionSpeed];

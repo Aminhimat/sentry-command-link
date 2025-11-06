@@ -635,6 +635,15 @@ const GuardDashboard = () => {
         console.log('Could not get location:', error);
       }
 
+      // Show compression notification if there's an image
+      if (data.image) {
+        toast({
+          title: "📦 Optimizing Image",
+          description: "Compressing for faster upload...",
+          duration: 2000,
+        });
+      }
+
       // Always save to offline storage first for reliability
       const reportId = await backgroundSync.saveReportForSync({
         taskType: data.taskType === "other" ? data.customTaskType : data.taskType,
