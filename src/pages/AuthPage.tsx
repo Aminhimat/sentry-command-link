@@ -139,25 +139,9 @@ const AuthPage = () => {
               } else if (role === 'company_admin') {
                 navigate('/company');
               } else if (role === 'guard') {
-                // Enforce single session and validate guard login constraints
+                // Single session enforcement is handled by the realtime hook in GuardDashboard
+                // Validate guard login constraints before navigating
                 (async () => {
-                  // First enforce single session (sign out other devices/browsers)
-                  try {
-                    const { error: sessionError } = await supabase.functions.invoke('enforce-single-session', {
-                      body: { userId: session.user!.id }
-                    });
-                    
-                    if (sessionError) {
-                      console.error('Failed to enforce single session:', sessionError);
-                    } else {
-                      console.log('Successfully signed out other sessions for guard');
-                    }
-                  } catch (sessionError) {
-                    console.error('Failed to sign out other sessions:', sessionError);
-                    // Continue with login even if this fails
-                  }
-
-                  // Validate guard login constraints before navigating
                   validateGuardLoginAllowed(session.user!.id).then((allowed) => {
                     if (allowed) {
                       navigate('/guard');

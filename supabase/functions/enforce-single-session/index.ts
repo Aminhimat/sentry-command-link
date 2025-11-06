@@ -45,20 +45,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`User has ${userData.user?.identities?.length || 0} sessions`);
+    console.log(`User found, revoking refresh tokens`);
 
-    // Revoke ALL refresh tokens for this user (global sign-out)
-    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId);
+    // Revoke ALL refresh tokens for this user by deleting them from the database
+    // This prevents other sessions from being able to refresh
+    const { error: deleteError } = await supabaseAdmin
+      .from('auth.refresh_tokens')
+      .delete()
+      .eq('user_id', userId);
     
-    if (signOutError) {
-      console.error('Error revoking sessions:', signOutError);
+    if (deleteError) {
+      console.error('Error deleting refresh tokens:', deleteError);
       return new Response(
-        JSON.stringify({ error: 'Failed to revoke sessions' }),
+        JSON.stringify({ error: 'Failed to revoke refresh tokens' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Successfully signed out all other sessions for user: ${userId}`);
+    console.log(`Successfully revoked all refresh tokens for user: ${userId}`);
 
     return new Response(
       JSON.stringify({ success: true, message: 'All other sessions signed out' }),

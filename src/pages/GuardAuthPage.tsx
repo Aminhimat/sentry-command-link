@@ -115,22 +115,9 @@ const GuardAuthPage = () => {
             }
           }
 
-          // Enforce single session for guards - sign out other devices/browsers
-          try {
-            const { error: sessionError } = await supabase.functions.invoke('enforce-single-session', {
-              body: { userId: authData.user.id }
-            });
-            
-            if (sessionError) {
-              console.error('Failed to enforce single session:', sessionError);
-            } else {
-              console.log('Successfully signed out other sessions for guard');
-            }
-          } catch (sessionError) {
-            console.error('Failed to sign out other sessions:', sessionError);
-            // Continue with login even if this fails
-          }
-
+          // Single session enforcement is handled by the realtime hook in GuardDashboard
+          // The hook will automatically log out other devices when this user opens the dashboard
+          
           // Get ALL active login constraints for this guard
           const { data: constraints, error: cErr } = await supabase
             .from('guard_login_constraints')
