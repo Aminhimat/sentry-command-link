@@ -341,8 +341,12 @@ const CompanyDashboard = () => {
         .from('guard_reports')
         .select(`
           *,
-          profiles!guard_reports_guard_id_fkey(first_name, last_name),
-          properties!guard_reports_property_id_fkey(name)
+          profiles:profiles!guard_reports_guard_id_fkey(
+            first_name, 
+            last_name,
+            properties(name)
+          ),
+          property:properties!guard_reports_property_id_fkey(name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
@@ -372,12 +376,19 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // Process reports with property names from join
-      const processedReports = data?.map((report: any) => ({
-        ...report,
-        guard: report.profiles,
-        location_address: report.properties?.name || report.location_address,
-      })) || [];
+      const processedReports = data?.map((report: any) => {
+        const siteName =
+          report.property?.name ||
+          report.location_address ||
+          report.profiles?.properties?.name ||
+          null;
+
+        return {
+          ...report,
+          guard: report.profiles,
+          location_address: siteName,
+        };
+      }) || [];
 
       console.log('Setting reports with property names:', processedReports);
       setReports(processReportsWithPropertyNames(processedReports));
@@ -418,7 +429,18 @@ const CompanyDashboard = () => {
         }
       }
 
-      // Do not fallback to guard's current assigned property to avoid rewriting history
+      // If still missing, use guard's assigned property name for display only
+      if (!report.location_address && guards.length > 0) {
+        const guardRecord = (guards as any[]).find((g) => g.id === report.guard_id);
+        const assignedName = (guardRecord as any)?.assigned_property?.name;
+        if (assignedName) {
+          return {
+            ...report,
+            location_address: assignedName,
+          };
+        }
+      }
+
       return report;
     });
   };
