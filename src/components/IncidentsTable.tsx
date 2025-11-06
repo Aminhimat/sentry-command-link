@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import IncidentDetailsModal from "./IncidentDetailsModal";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 
 interface IncidentsTableProps {
@@ -178,6 +179,14 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     setIsModalOpen(true);
   };
 
+  const handleResetFilters = () => {
+    setSelectedSite("all");
+    setSelectedGuard("all");
+    setSelectedDateFrom("");
+    setSelectedDateTo("");
+    setCurrentPage(1);
+  };
+
   return (
     <>
       <Card className="shadow-lg border-2 border-green-200">
@@ -242,6 +251,11 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                 />
                 <CalendarIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
               </div>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="secondary" size="sm" onClick={handleResetFilters}>
+                Reset filters
+              </Button>
             </div>
           </div>
         </CardHeader>
