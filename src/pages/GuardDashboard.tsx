@@ -664,11 +664,12 @@ const GuardDashboard = () => {
           : "Report saved offline, will upload when online",
       });
 
-      // Reset form immediately
+      // Reset form immediately - keep site populated for assigned property
+      const assignedPropertyName = selectedPropertyId && properties.length === 1 ? properties[0]?.name : "";
       setTaskData(prev => ({
-        taskType: "",
+        taskType: "security-patrol",
         customTaskType: "",
-        site: hasAssignedProperty ? (properties[0]?.name || "") : "",
+        site: assignedPropertyName || prev.site,
         description: "",
         severity: "none",
         image: null
