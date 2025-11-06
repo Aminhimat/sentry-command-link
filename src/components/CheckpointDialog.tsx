@@ -200,14 +200,14 @@ export function CheckpointDialog({ open, onClose, checkpoint, companyId }: Check
             <div className="space-y-2">
               <Label htmlFor="property">Property (Optional)</Label>
               <Select
-                value={formData.property_id}
-                onValueChange={(value) => setFormData({ ...formData, property_id: value })}
+                value={formData.property_id || "none"}
+                onValueChange={(value) => setFormData({ ...formData, property_id: value === "none" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a property" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {properties.map((property) => (
                     <SelectItem key={property.id} value={property.id}>
                       {property.name}
