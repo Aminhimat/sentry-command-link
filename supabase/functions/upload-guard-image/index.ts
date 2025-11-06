@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     // Get user profile with better error handling
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('id, company_id, first_name, last_name')
+      .select('id, company_id, first_name, last_name, assigned_property_id')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -109,6 +109,21 @@ Deno.serve(async (req) => {
       .getPublicUrl(fileName)
 
     const imageUrl = urlData.publicUrl
+    
+    // Resolve property/site info for historical accuracy
+    const propertyId = profile.assigned_property_id ?? null;
+    let siteName: string | null = reportData.site || null;
+    
+    if (!siteName && propertyId) {
+      const { data: property } = await supabaseClient
+        .from('properties')
+        .select('name')
+        .eq('id', propertyId)
+        .maybeSingle();
+      if (property?.name) {
+        siteName = property.name;
+      }
+    }
 
     // Submit report immediately with image URL (optimistic update)
     const { error: reportError } = await supabaseClient
@@ -116,9 +131,10 @@ Deno.serve(async (req) => {
       .insert({
         guard_id: profile.id,
         company_id: profile.company_id,
-        report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${reportData.taskType}\nSite: ${reportData.site}\nSeverity: ${reportData.severity}\nDescription: ${reportData.description}`,
+        property_id: propertyId,
+        report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${reportData.taskType}\nSite: ${siteName ?? ''}\nSeverity: ${reportData.severity}\nDescription: ${reportData.description}`,
         image_url: imageUrl,
-        location_address: reportData.site,
+        location_address: siteName,
         location_lat: reportData.location?.latitude,
         location_lng: reportData.location?.longitude
       })
