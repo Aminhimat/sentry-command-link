@@ -14,6 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkpoint_scans: {
+        Row: {
+          checkpoint_id: string
+          company_id: string
+          created_at: string
+          guard_id: string
+          id: string
+          image_url: string | null
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          scan_time: string
+          shift_id: string | null
+        }
+        Insert: {
+          checkpoint_id: string
+          company_id: string
+          created_at?: string
+          guard_id: string
+          id?: string
+          image_url?: string | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          scan_time?: string
+          shift_id?: string | null
+        }
+        Update: {
+          checkpoint_id?: string
+          company_id?: string
+          created_at?: string
+          guard_id?: string
+          id?: string
+          image_url?: string | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          scan_time?: string
+          shift_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkpoint_scans_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkpoint_scans_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "guard_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checkpoints: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          name: string
+          property_id: string | null
+          qr_code_data: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          name: string
+          property_id?: string | null
+          qr_code_data: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          name?: string
+          property_id?: string | null
+          qr_code_data?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkpoints_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null

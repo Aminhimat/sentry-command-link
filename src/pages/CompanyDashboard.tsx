@@ -1053,6 +1053,11 @@ const CompanyDashboard = () => {
                 Properties/Sites
               </Button>
             </Link>
+            <Link to="/company/checkpoints">
+              <Button variant="ghost" size="sm" className="h-10">
+                Checkpoints
+              </Button>
+            </Link>
             
             <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)} className="h-10">
               <Download className="h-4 w-4 mr-2" />

@@ -22,6 +22,7 @@ const CompanyDashboard = lazyWithLog(() => import("./pages/CompanyDashboard"), '
 const CompanyShifts = lazyWithLog(() => import("./pages/CompanyShifts"), 'CompanyShifts');
 const CompanyGuards = lazyWithLog(() => import("./pages/CompanyGuards"), 'CompanyGuards');
 const CompanyProperties = lazyWithLog(() => import("./pages/CompanyProperties"), 'CompanyProperties');
+const CompanyCheckpoints = lazyWithLog(() => import("./pages/CompanyCheckpoints"), 'CompanyCheckpoints');
 const GuardDashboard = lazyWithLog(() => import("./pages/GuardDashboard"), 'GuardDashboard');
 const ChangePasswordPage = lazyWithLog(() => import("./pages/ChangePasswordPage"), 'ChangePasswordPage');
 const NotFound = lazyWithLog(() => import("./pages/NotFound"), 'NotFound');
@@ -69,6 +70,7 @@ const App = () => {
               <Route path="/company/shifts" element={<CompanyShifts />} />
               <Route path="/company/guards" element={<CompanyGuards />} />
               <Route path="/company/properties" element={<CompanyProperties />} />
+              <Route path="/company/checkpoints" element={<CompanyCheckpoints />} />
               <Route path="/guard" element={<GuardDashboard />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

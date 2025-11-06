@@ -22,6 +22,8 @@ import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { imageOptimizer } from "@/utils/imageOptimization";
 import { useLocationMonitoring } from "@/hooks/useLocationMonitoring";
 import { useSingleSessionRealtime } from "@/hooks/useSingleSessionRealtime";
+import { QRScanner } from "@/components/QRScanner";
+import { CheckpointScanDialog } from "@/components/CheckpointScanDialog";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -51,6 +53,9 @@ const GuardDashboard = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingReports, setPendingReports] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showCheckpointScanner, setShowCheckpointScanner] = useState(false);
+  const [scannedCheckpoint, setScannedCheckpoint] = useState<any>(null);
+  const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const { toast } = useToast();
 
   // Enforce single active session for guards
@@ -396,6 +401,50 @@ const GuardDashboard = () => {
 
   // Enable location monitoring for guards
   useLocationMonitoring(guardProfile?.role === 'guard', !!user);
+
+  const handleCheckpointScan = async (qrData: string) => {
+    try {
+      setShowCheckpointScanner(false);
+      
+      // Query the checkpoint from database
+      const { data: checkpoint, error } = await supabase
+        .from('checkpoints')
+        .select('*')
+        .eq('qr_code_data', qrData)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching checkpoint:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to verify checkpoint. Please try again.',
+        });
+        return;
+      }
+
+      if (!checkpoint) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid QR Code',
+          description: 'This QR code is not a valid checkpoint.',
+        });
+        return;
+      }
+
+      // Show checkpoint confirmation dialog
+      setScannedCheckpoint(checkpoint);
+      setShowCheckpointDialog(true);
+    } catch (error: any) {
+      console.error('Checkpoint scan error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Scan Error',
+        description: error.message || 'Failed to process checkpoint scan.',
+      });
+    }
+  };
 
 
   const handleCameraCapture = async () => {
@@ -1613,6 +1662,18 @@ const GuardDashboard = () => {
                   {shiftLoading ? "Ending..." : "End Shift"}
                 </Button>
               )}
+              
+              {currentShift && (
+                <Button 
+                  onClick={() => setShowCheckpointScanner(true)}
+                  variant="outline"
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <QrCode className="h-4 w-4" />
+                  Scan Checkpoint
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1944,6 +2005,29 @@ const GuardDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Checkpoint Scanner */}
+      {showCheckpointScanner && (
+        <QRScanner
+          onScan={handleCheckpointScan}
+          onClose={() => setShowCheckpointScanner(false)}
+        />
+      )}
+
+      {/* Checkpoint Scan Dialog */}
+      {showCheckpointDialog && scannedCheckpoint && guardProfile && (
+        <CheckpointScanDialog
+          open={showCheckpointDialog}
+          onClose={() => {
+            setShowCheckpointDialog(false);
+            setScannedCheckpoint(null);
+          }}
+          checkpoint={scannedCheckpoint}
+          guardId={guardProfile.id}
+          companyId={guardProfile.company_id}
+          shiftId={currentShift?.id || null}
+        />
+      )}
     </div>
   );
 };
