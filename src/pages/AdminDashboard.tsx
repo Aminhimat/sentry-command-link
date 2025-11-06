@@ -271,10 +271,7 @@ const AdminDashboard = () => {
       // Fetch reports with images from the last 30 days
       const { data, error } = await supabase
         .from('guard_reports')
-        .select(`
-          guard_id,
-          profiles!inner(assigned_property_id)
-        `)
+        .select('property_id')
         .not('image_url', 'is', null)
         .gte('created_at', thirtyDaysAgo.toISOString());
 
@@ -285,7 +282,7 @@ const AdminDashboard = () => {
       // Count unique properties that have photo activity
       const uniqueProperties = new Set(
         data
-          ?.map((report: any) => report.profiles?.assigned_property_id)
+          ?.map((report: any) => report.property_id)
           .filter((propertyId: string | null) => propertyId !== null)
       );
 

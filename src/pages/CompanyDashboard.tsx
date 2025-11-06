@@ -54,6 +54,7 @@ interface Report {
   location_address: string | null;
   location_lat: number | null;
   location_lng: number | null;
+  property_id?: string | null;
   created_at: string;
   updated_at: string;
   guard?: {
@@ -385,7 +386,18 @@ const CompanyDashboard = () => {
   // Function to process reports and convert/fill property names
   const processReportsWithPropertyNames = (reportsData: Report[]) => {
     return reportsData.map((report) => {
-      // 1) If location_address is a property UUID, convert to the property's name
+      // Prefer explicit property_id if present to ensure historical accuracy
+      if (report.property_id && properties.length > 0) {
+        const byPropertyId = properties.find((prop) => prop.id === report.property_id);
+        if (byPropertyId) {
+          return {
+            ...report,
+            location_address: byPropertyId.name,
+          };
+        }
+      }
+
+      // If location_address is a property UUID, convert to the property's name
       if (report.location_address && properties.length > 0) {
         const propertyMatch = properties.find(
           (prop) => prop.id === report.location_address
@@ -398,18 +410,7 @@ const CompanyDashboard = () => {
         }
       }
 
-      // 2) If location_address is missing, try to fill from guard's assigned property
-      if (!report.location_address) {
-        const guardRecord = (guards as any[]).find((g) => g.id === report.guard_id);
-        const assignedName = guardRecord?.assigned_property?.name;
-        if (assignedName) {
-          return {
-            ...report,
-            location_address: assignedName,
-          };
-        }
-      }
-
+      // Do not fallback to guard's current assigned property to avoid rewriting history
       return report;
     });
   };
