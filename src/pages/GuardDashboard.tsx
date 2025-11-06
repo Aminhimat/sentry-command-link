@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { imageOptimizer } from "@/utils/imageOptimization";
 import { useLocationMonitoring } from "@/hooks/useLocationMonitoring";
+import { useSingleSessionRealtime } from "@/hooks/useSingleSessionRealtime";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -51,6 +52,9 @@ const GuardDashboard = () => {
   const [pendingReports, setPendingReports] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
+
+  // Enforce single active session for guards
+  useSingleSessionRealtime(user?.id);
 
   // Function to play success sound
   const playSuccessSound = () => {
