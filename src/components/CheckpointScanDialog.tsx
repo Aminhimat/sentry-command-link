@@ -28,6 +28,7 @@ interface CheckpointScanDialogProps {
   guardId: string;
   companyId: string;
   shiftId: string | null;
+  propertyId: string | null;
 }
 
 export function CheckpointScanDialog({
@@ -37,6 +38,7 @@ export function CheckpointScanDialog({
   guardId,
   companyId,
   shiftId,
+  propertyId,
 }: CheckpointScanDialogProps) {
   const { toast } = useToast();
   const [notes, setNotes] = useState('');
@@ -74,6 +76,7 @@ export function CheckpointScanDialog({
         guard_id: guardId,
         company_id: companyId,
         shift_id: shiftId,
+        property_id: propertyId,
         location_lat: location?.lat,
         location_lng: location?.lng,
         notes: notes.trim() || null,

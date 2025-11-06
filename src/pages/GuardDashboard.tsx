@@ -246,10 +246,10 @@ const GuardDashboard = () => {
       try {
         const position = await getLocation();
         
-        // Get user's company_id for the location record
+        // Get user's company_id and assigned_property_id for the location record
         const { data: profile } = await supabase
           .from('profiles')
-          .select('company_id')
+          .select('company_id, assigned_property_id')
           .eq('id', guardId)
           .single();
 
@@ -260,6 +260,7 @@ const GuardDashboard = () => {
               guard_id: guardId,
               shift_id: shiftId,
               company_id: profile.company_id,
+              property_id: profile.assigned_property_id,
               location_lat: position.latitude,
               location_lng: position.longitude,
               location_address: `${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
@@ -798,7 +799,7 @@ const GuardDashboard = () => {
         // Submit report without image (faster path)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, company_id, first_name, last_name')
+          .select('id, company_id, first_name, last_name, assigned_property_id')
           .eq('user_id', user?.id)
           .single();
 
@@ -813,6 +814,7 @@ const GuardDashboard = () => {
           .insert({
             guard_id: profile.id,
             company_id: profile.company_id,
+            property_id: profile.assigned_property_id,
             report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description.trim() || "Security Patrol"}`,
             location_address: taskData.site,
             location_lat: location?.latitude,
@@ -1442,7 +1444,7 @@ const GuardDashboard = () => {
       // Get user's profile
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, company_id')
+        .select('id, company_id, assigned_property_id')
         .eq('user_id', user.id)
         .single();
 
@@ -1484,6 +1486,7 @@ const GuardDashboard = () => {
         .insert({
           guard_id: profile.id,
           company_id: profile.company_id,
+          property_id: profile.assigned_property_id,
           location_lat: latitude,
           location_lng: longitude,
           location_address: locationAddress
@@ -1974,6 +1977,7 @@ const GuardDashboard = () => {
           guardId={guardProfile.id}
           companyId={guardProfile.company_id}
           shiftId={currentShift?.id || null}
+          propertyId={guardProfile.assigned_property_id || null}
         />
       )}
     </div>

@@ -26,6 +26,7 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           notes: string | null
+          property_id: string | null
           scan_time: string
           shift_id: string | null
         }
@@ -40,6 +41,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           scan_time?: string
           shift_id?: string | null
         }
@@ -54,6 +56,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           scan_time?: string
           shift_id?: string | null
         }
@@ -63,6 +66,13 @@ export type Database = {
             columns: ["checkpoint_id"]
             isOneToOne: false
             referencedRelation: "checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkpoint_scans_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -177,6 +187,7 @@ export type Database = {
           location_address: string | null
           location_lat: number
           location_lng: number
+          property_id: string | null
           shift_id: string
           updated_at: string
         }
@@ -190,6 +201,7 @@ export type Database = {
           location_address?: string | null
           location_lat: number
           location_lng: number
+          property_id?: string | null
           shift_id: string
           updated_at?: string
         }
@@ -203,10 +215,19 @@ export type Database = {
           location_address?: string | null
           location_lat?: number
           location_lng?: number
+          property_id?: string | null
           shift_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guard_locations_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guard_login_constraints: {
         Row: {
@@ -260,6 +281,7 @@ export type Database = {
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
+          property_id: string | null
           report_text: string | null
           shift_id: string | null
           updated_at: string
@@ -273,6 +295,7 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          property_id?: string | null
           report_text?: string | null
           shift_id?: string | null
           updated_at?: string
@@ -286,6 +309,7 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          property_id?: string | null
           report_text?: string | null
           shift_id?: string | null
           updated_at?: string
@@ -303,6 +327,13 @@ export type Database = {
             columns: ["guard_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guard_reports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -326,6 +357,7 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           notes: string | null
+          property_id: string | null
           updated_at: string
         }
         Insert: {
@@ -339,6 +371,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -352,6 +385,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -369,6 +403,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "guard_shifts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
         ]
       }
       incidents: {
@@ -381,6 +422,7 @@ export type Database = {
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
+          property_id: string | null
           severity: string | null
           status: string | null
           title: string
@@ -395,6 +437,7 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          property_id?: string | null
           severity?: string | null
           status?: string | null
           title: string
@@ -409,6 +452,7 @@ export type Database = {
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
+          property_id?: string | null
           severity?: string | null
           status?: string | null
           title?: string
@@ -427,6 +471,13 @@ export type Database = {
             columns: ["guard_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incidents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
