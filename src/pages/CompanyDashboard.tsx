@@ -386,7 +386,16 @@ const CompanyDashboard = () => {
   // Function to process reports and convert/fill property names
   const processReportsWithPropertyNames = (reportsData: Report[]) => {
     return reportsData.map((report) => {
-      // Prefer explicit property_id if present to ensure historical accuracy
+      // 0) Try to parse a site name from the report_text (historical entries)
+      let parsedSite: string | null = null;
+      if (report.report_text) {
+        const match = report.report_text.match(/Site:\s*(.+?)(?:\n|$)/i);
+        if (match && match[1]) {
+          parsedSite = match[1].trim();
+        }
+      }
+
+      // 1) Prefer explicit property_id if present to ensure historical accuracy
       if (report.property_id && properties.length > 0) {
         const byPropertyId = properties.find((prop) => prop.id === report.property_id);
         if (byPropertyId) {
@@ -397,11 +406,9 @@ const CompanyDashboard = () => {
         }
       }
 
-      // If location_address is a property UUID, convert to the property's name
+      // 2) If location_address is a property UUID, convert to the property's name
       if (report.location_address && properties.length > 0) {
-        const propertyMatch = properties.find(
-          (prop) => prop.id === report.location_address
-        );
+        const propertyMatch = properties.find((prop) => prop.id === report.location_address);
         if (propertyMatch) {
           return {
             ...report,
@@ -410,7 +417,15 @@ const CompanyDashboard = () => {
         }
       }
 
-      // Do not fallback to guard's current assigned property to avoid rewriting history
+      // 3) If still missing, use parsed site from report text (does not depend on current assignment)
+      if (!report.location_address && parsedSite) {
+        return {
+          ...report,
+          location_address: parsedSite,
+        };
+      }
+
+      // 4) Otherwise, leave as-is (avoid rewriting history with current assignments)
       return report;
     });
   };

@@ -24,9 +24,16 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
   const [selectedDateTo, setSelectedDateTo] = useState<string>("");
   const pageSize = 20;
 
+  // Helper to compute site with fallbacks (property name from report_text if needed)
+  const getSite = (incident: any) => {
+    if (incident.location_address) return incident.location_address;
+    const m = incident.report_text?.match(/Site:\s*(.+?)(?:\n|$)/i);
+    return m?.[1]?.trim() || 'Unknown Site';
+  };
+
   // Get unique sites from incidents
   const uniqueSites = useMemo(() => {
-    const sites = [...new Set(incidents.map(incident => incident.location_address || 'Unknown Site'))];
+    const sites = [...new Set(incidents.map(incident => getSite(incident)))];
     return sites.sort();
   }, [incidents]);
 
@@ -60,7 +67,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
     
     if (selectedSite !== "all") {
       filtered = filtered.filter(incident => 
-        (incident.location_address || 'Unknown Site') === selectedSite
+        getSite(incident) === selectedSite
       );
       console.log('📍 After site filter:', filtered.length);
     }
@@ -317,7 +324,7 @@ const IncidentsTable = ({ incidents }: IncidentsTableProps) => {
                           {incident.id.split('-')[0].toUpperCase()}
                         </td>
                         <td className={`p-2 sm:p-4 text-xs sm:text-sm font-medium ${isHighSeverity ? 'text-red-900 font-semibold' : 'text-gray-800'}`}>
-                          {incident.location_address || 'Unknown Site'}
+                          {getSite(incident)}
                         </td>
                         <td className={`p-2 sm:p-4 text-xs sm:text-sm ${isHighSeverity ? 'text-red-800 font-medium' : 'text-gray-700'} max-w-xs truncate`}>
                           {incident.report_text ? incident.report_text.split('\n')[0].replace('Task: ', '') : 'Security Report'}
