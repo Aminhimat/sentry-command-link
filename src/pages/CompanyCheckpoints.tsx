@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, QrCode, Download, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, QrCode, Download, MapPin, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react';
 import { CheckpointDialog } from '@/components/CheckpointDialog';
 import { Badge } from '@/components/ui/badge';
 import QRCodeLib from 'qrcode';
@@ -159,8 +159,18 @@ export default function CompanyCheckpoints() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Patrol Checkpoints</h1>
-          <p className="text-muted-foreground">
+          <div className="flex items-center gap-3 mb-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/company')}
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold">Patrol Checkpoints</h1>
+          </div>
+          <p className="text-muted-foreground ml-14">
             Create and manage QR code checkpoints for guard patrols
           </p>
         </div>
