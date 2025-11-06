@@ -809,8 +809,9 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // Convert property IDs to names in reports for PDF generation
+      // Convert property IDs to names and fill missing locations for PDF generation
       const reportsForPDF = data.map(report => {
+        // 1) If location_address is a property UUID, convert to the property's name
         if (report.location_address && properties.length > 0) {
           const propertyMatch = properties.find(prop => prop.id === report.location_address);
           if (propertyMatch) {
@@ -820,6 +821,19 @@ const CompanyDashboard = () => {
             };
           }
         }
+
+        // 2) If location_address is missing, try to fill from guard's assigned property
+        if (!report.location_address) {
+          const guardRecord = (guards as any[]).find((g) => g.id === report.guard_id);
+          const assignedName = guardRecord?.assigned_property?.name;
+          if (assignedName) {
+            return {
+              ...report,
+              location_address: assignedName
+            };
+          }
+        }
+
         return report;
       });
 
