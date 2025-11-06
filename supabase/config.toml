@@ -1,5 +1,8 @@
 project_id = "dzxkvzdwapaoeewqiyyq"
 
+[functions.check-guard-location]
+verify_jwt = false
+
 [functions.create-guard]
 verify_jwt = false
 
