@@ -58,6 +58,7 @@ const GuardDashboard = () => {
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const { toast } = useToast();
+  const hasAssignedProperty = Boolean(selectedPropertyId) && properties.length === 1;
 
   // Enforce single active session for guards
   useSingleSessionRealtime(user?.id);
@@ -1793,7 +1794,7 @@ const GuardDashboard = () => {
                           }
                         }}
                       >
-                        <SelectTrigger className="pl-10">
+                        <SelectTrigger className="pl-10" disabled={hasAssignedProperty}>
                           <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
                         </SelectTrigger>
                         <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
