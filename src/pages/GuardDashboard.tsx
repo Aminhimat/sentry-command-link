@@ -134,17 +134,6 @@ const GuardDashboard = () => {
     }
   }, [user]);
 
-  // Auto-select assigned property as default work site
-  useEffect(() => {
-    if (properties.length > 0 && !taskData.site) {
-      // If guard has only one property (their assigned property), auto-select it
-      if (properties.length === 1) {
-        setTaskData(prev => ({ ...prev, site: properties[0].name }));
-        console.log('Auto-selected assigned property:', properties[0].name);
-      }
-    }
-  }, [properties]);
-
   const fetchProperties = async () => {
     if (!user) return;
     
@@ -179,8 +168,11 @@ const GuardDashboard = () => {
         if (error) {
           console.error('Error fetching assigned property:', error);
           setProperties([]);
-        } else {
-          setProperties(data ? [data] : []);
+        } else if (data) {
+          setProperties([data]);
+          // Auto-select the assigned property immediately
+          setTaskData(prev => ({ ...prev, site: data.name }));
+          console.log('Auto-selected assigned property:', data.name);
         }
       } else {
         // If no specific property assigned, show all company properties (fallback)
