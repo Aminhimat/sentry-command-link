@@ -47,13 +47,13 @@ Deno.serve(async (req) => {
 
     console.log(`User has ${userData.user?.identities?.length || 0} sessions`);
 
-    // Sign out all sessions for this user
-    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId, 'others');
+    // Revoke ALL refresh tokens for this user (global sign-out)
+    const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(userId);
     
     if (signOutError) {
-      console.error('Error signing out other sessions:', signOutError);
+      console.error('Error revoking sessions:', signOutError);
       return new Response(
-        JSON.stringify({ error: 'Failed to sign out other sessions' }),
+        JSON.stringify({ error: 'Failed to revoke sessions' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
