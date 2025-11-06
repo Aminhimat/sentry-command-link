@@ -400,12 +400,12 @@ export class PDFReportGenerator {
       const compressedImageData = compressedImages?.get(report.image_url);
       if (compressedImageData) {
         // Use the pre-compressed image data directly (faster)
-        this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 12, 60, 40, undefined, 'FAST');
+        this.doc.addImage(compressedImageData, 'JPEG', imageX, this.currentY + 8, 60, 40, undefined, 'FAST');
         
         // Add watermark overlay
         if (wmText) {
           const imgX = imageX;
-          const imgY = this.currentY + 12;
+          const imgY = this.currentY + 8;
           const imgWidth = 60;
           const imgHeight = 40;
           const barHeight = 6;
