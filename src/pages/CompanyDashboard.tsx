@@ -337,32 +337,25 @@ const CompanyDashboard = () => {
   const fetchReportsForCompany = async (companyId: string) => {
     console.log('Fetching reports for company:', companyId);
     try {
-      // First, let's try a simpler query to see if there are any reports
-      const { data: allReports, error: allError } = await supabase
-        .from('guard_reports')
-        .select('*')
-        .eq('company_id', companyId);
-
-      console.log('All reports for company:', { allReports, allError });
-
-      // Now try the query with the join
       const { data, error } = await supabase
         .from('guard_reports')
         .select(`
           *,
-          guard:profiles!guard_reports_guard_id_fkey(first_name, last_name)
+          profiles!guard_reports_guard_id_fkey(first_name, last_name),
+          properties!guard_reports_property_id_fkey(name)
         `)
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
-      console.log('Reports query result:', { data, error });
-
       if (error) {
-        console.error('Error fetching reports:', error);
-        // Fallback to reports without guard info if join fails
+        console.error('Error fetching reports with property join:', error);
+        // Try fallback without property join
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('guard_reports')
-          .select('*')
+          .select(`
+            *,
+            profiles!guard_reports_guard_id_fkey(first_name, last_name)
+          `)
           .eq('company_id', companyId)
           .order('created_at', { ascending: false });
 
@@ -371,13 +364,23 @@ const CompanyDashboard = () => {
           return;
         }
 
-        console.log('Using fallback data:', fallbackData);
-        setReports(processReportsWithPropertyNames(fallbackData || []));
+        const processedFallback = fallbackData?.map(report => ({
+          ...report,
+          guard: report.profiles,
+        })) || [];
+        setReports(processReportsWithPropertyNames(processedFallback));
         return;
       }
 
-      console.log('Setting reports:', data);
-      setReports(processReportsWithPropertyNames(data || []));
+      // Process reports with property names from join
+      const processedReports = data?.map((report: any) => ({
+        ...report,
+        guard: report.profiles,
+        location_address: report.properties?.name || report.location_address,
+      })) || [];
+
+      console.log('Setting reports with property names:', processedReports);
+      setReports(processReportsWithPropertyNames(processedReports));
     } catch (error) {
       console.error('Error fetching reports:', error);
     }
@@ -387,13 +390,18 @@ const CompanyDashboard = () => {
   const processReportsWithPropertyNames = (reportsData: Report[]) => {
     return reportsData.map((report) => {
       // Prefer explicit property_id if present to ensure historical accuracy
-      if (report.property_id && properties.length > 0) {
+      if (report.property_id) {
         const byPropertyId = properties.find((prop) => prop.id === report.property_id);
         if (byPropertyId) {
           return {
             ...report,
             location_address: byPropertyId.name,
           };
+        }
+        // Property exists in report but not found in properties list
+        // Keep original location_address if it exists
+        if (report.location_address && !report.location_address.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          return report;
         }
       }
 
