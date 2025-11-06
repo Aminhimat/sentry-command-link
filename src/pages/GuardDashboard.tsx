@@ -56,6 +56,7 @@ const GuardDashboard = () => {
   const [showCheckpointScanner, setShowCheckpointScanner] = useState(false);
   const [scannedCheckpoint, setScannedCheckpoint] = useState<any>(null);
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Enforce single active session for guards
@@ -170,6 +171,7 @@ const GuardDashboard = () => {
           setProperties([]);
         } else if (data) {
           setProperties([data]);
+          setSelectedPropertyId(data.id);
           // Auto-select the assigned property immediately
           setTaskData(prev => ({ ...prev, site: data.name }));
           console.log('Auto-selected assigned property:', data.name);
@@ -196,6 +198,7 @@ const GuardDashboard = () => {
           });
         } else {
           setProperties(data || []);
+          setSelectedPropertyId(null);
         }
       }
     } catch (error) {
@@ -1774,21 +1777,17 @@ const GuardDashboard = () => {
                 <div className="relative">
                   <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   {(() => {
-                    // Check if the selected site matches any property name for proper selection display
-                    const selectedPropertyValue = properties.find(prop => prop.name === taskData.site)?.id || taskData.site;
-                    
                     return (
                       <Select 
-                        value={selectedPropertyValue}
+                        value={(selectedPropertyId || undefined) as any}
                         onValueChange={(value) => {
-                          // Find the selected property to get its name
+                          setSelectedPropertyId(value);
                           const selectedProperty = properties.find(prop => prop.id === value);
-                          const siteName = selectedProperty ? selectedProperty.name : value;
+                          const siteName = selectedProperty ? selectedProperty.name : '';
                           setTaskData({ 
                             ...taskData, 
                             site: siteName 
                           });
-                          // Clear error when user selects a work site
                           if (showMissingFieldsError.includes("Work Site")) {
                             setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
                           }
