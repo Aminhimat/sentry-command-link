@@ -1768,149 +1768,60 @@ const GuardDashboard = () => {
               {/* Site */}
               <div className="space-y-2">
                 <Label htmlFor="site">Work Site *</Label>
-                <Tabs defaultValue="properties" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 touch-manipulation">
-                    <TabsTrigger 
-                      value="properties" 
-                      className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
-                    >
-                      <Building className="h-4 w-4" />
-                      Properties
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="qr" 
-                      className="flex items-center gap-2 touch-manipulation transition-colors duration-100"
-                    >
-                      <QrCode className="h-4 w-4" />
-                      QR Scan
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                   <TabsContent value="properties" className="space-y-2">
-                     <div className="relative">
-                       <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                       {(() => {
-                         // Check if the selected site matches any property name for proper selection display
-                         const selectedPropertyValue = properties.find(prop => prop.name === taskData.site)?.id || taskData.site;
-                         
-                         return (
-                           <Select 
-                             value={selectedPropertyValue}
-                              onValueChange={(value) => {
-                                // Find the selected property to get its name
-                                const selectedProperty = properties.find(prop => prop.id === value);
-                                const siteName = selectedProperty ? selectedProperty.name : value;
-                                setTaskData({ 
-                                  ...taskData, 
-                                  site: siteName 
-                                });
-                                // Clear error when user selects a work site
-                                if (showMissingFieldsError.includes("Work Site")) {
-                                  setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
-                                }
-                              }}
-                           >
-                             <SelectTrigger className="pl-10">
-                               <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
-                             </SelectTrigger>
-                             <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
-                               {loadingProperties ? (
-                                 <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
-                               ) : properties.length === 0 ? (
-                                 <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
-                               ) : (
-                                 properties.map((property) => (
-                                   <SelectItem key={property.id} value={property.id}>
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">{property.name}</span>
-                                        {property.location_address && (
-                                          <span className="text-xs text-muted-foreground">{property.location_address}</span>
-                                        )}
-                                      </div>
-                                   </SelectItem>
-                                 ))
-                               )}
-                             </SelectContent>
-                           </Select>
-                         );
-                       })()}
-                     </div>
-                    {!loadingProperties && properties.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No work sites found. Contact your administrator to set up work sites.
-                      </p>
-                    )}
-                  </TabsContent>
-                  
-                  
-                   <TabsContent value="qr" className="space-y-2">
-                     <div className="text-center space-y-4">
-                        <div className="mx-auto w-64 h-48 bg-muted rounded-lg flex flex-col items-center justify-center relative overflow-hidden" id="qr-scanner-container">
-                          {showQrScanner ? (
-                            <>
-                              <div 
-                                ref={(container) => {
-                                  if (container && videoElement && !container.querySelector('video')) {
-                                    videoElement.className = 'w-full h-full object-cover rounded-lg';
-                                    container.appendChild(videoElement);
-                                  }
-                                }}
-                                className="w-full h-full relative"
-                              />
-                              <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none">
-                                <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-primary"></div>
-                                <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-primary"></div>
-                                <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-primary"></div>
-                                <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-primary"></div>
-                              </div>
-                            </>
+                <div className="relative">
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  {(() => {
+                    // Check if the selected site matches any property name for proper selection display
+                    const selectedPropertyValue = properties.find(prop => prop.name === taskData.site)?.id || taskData.site;
+                    
+                    return (
+                      <Select 
+                        value={selectedPropertyValue}
+                        onValueChange={(value) => {
+                          // Find the selected property to get its name
+                          const selectedProperty = properties.find(prop => prop.id === value);
+                          const siteName = selectedProperty ? selectedProperty.name : value;
+                          setTaskData({ 
+                            ...taskData, 
+                            site: siteName 
+                          });
+                          // Clear error when user selects a work site
+                          if (showMissingFieldsError.includes("Work Site")) {
+                            setShowMissingFieldsError(prev => prev.filter(field => field !== "Work Site"));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder={loadingProperties ? "Loading properties..." : "Select a work site"} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border border-border shadow-xl z-[9999] backdrop-blur-sm">
+                          {loadingProperties ? (
+                            <SelectItem value="loading" disabled>Loading work sites...</SelectItem>
+                          ) : properties.length === 0 ? (
+                            <SelectItem value="no-sites" disabled>No work sites available</SelectItem>
                           ) : (
-                           <>
-                             <Camera className="h-12 w-12 text-muted-foreground mb-2" />
-                             <p className="text-sm text-muted-foreground mb-2 px-2 text-center">
-                               Scan QR code to auto-fill and submit report
-                             </p>
-                             <p className="text-xs text-muted-foreground mb-4 px-2 text-center">
-                               No need to fill other fields - just scan and submit!
-                             </p>
-                              <Button
-                                type="button"
-                                onClick={startQrScanner}
-                                variant="outline"
-                                className="flex items-center gap-2"
-                              >
-                                <QrCode className="h-4 w-4" />
-                                Scan QR Code
-                              </Button>
-                           </>
-                         )}
-                       </div>
-                       
-                       {showQrScanner && (
-                          <Button
-                            type="button"
-                            onClick={stopQrScanner}
-                            variant="outline"
-                            className="w-full"
-                          >
-                            Stop Scanner
-                          </Button>
-                       )}
-                       
-                        {taskData.site && (
-                         <div className="p-3 bg-green-50 border border-green-200 rounded">
-                           <p className="text-sm text-green-800 font-medium">
-                             ✅ QR Scanned: {taskData.site}
-                           </p>
-                           <p className="text-xs text-green-600 mt-1">
-                             Ready to submit! All fields auto-filled.
-                           </p>
-                         </div>
-                       )}
-                     </div>
-                   </TabsContent>
-                </Tabs>
-               </div>
+                            properties.map((property) => (
+                              <SelectItem key={property.id} value={property.id}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{property.name}</span>
+                                  {property.location_address && (
+                                    <span className="text-xs text-muted-foreground">{property.location_address}</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
+                </div>
+                {!loadingProperties && properties.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No work sites found. Contact your administrator to set up work sites.
+                  </p>
+                )}
+              </div>
 
                {/* Issue Severity */}
               <div className="space-y-2">
