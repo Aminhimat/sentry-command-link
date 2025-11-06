@@ -808,15 +808,30 @@ const GuardDashboard = () => {
           throw new Error('User profile not found');
         }
 
+        // Resolve property/site info for historical accuracy
+        const propertyId = profile.assigned_property_id ?? null;
+        let siteName: string | null = taskData.site || null;
+        
+        if (!siteName && propertyId) {
+          const { data: property } = await supabase
+            .from('properties')
+            .select('name')
+            .eq('id', propertyId)
+            .maybeSingle();
+          if (property?.name) {
+            siteName = property.name;
+          }
+        }
+
         console.log('👤 Profile found, inserting report...');
         const { error: reportError } = await supabase
           .from('guard_reports')
           .insert({
             guard_id: profile.id,
             company_id: profile.company_id,
-            property_id: profile.assigned_property_id,
-            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${taskData.site}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description.trim() || "Security Patrol"}`,
-            location_address: taskData.site,
+            property_id: propertyId,
+            report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${taskData.taskType === "other" ? taskData.customTaskType : taskData.taskType}\nSite: ${siteName ?? ''}\nSeverity: ${taskData.severity}\nDescription: ${taskData.description.trim() || "Security Patrol"}`,
+            location_address: siteName,
             location_lat: location?.latitude,
             location_lng: location?.longitude
           });
