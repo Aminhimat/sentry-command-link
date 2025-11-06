@@ -136,6 +136,18 @@ const GuardDashboard = () => {
     }
   }, [user]);
 
+  // Ensure taskData.site stays populated when guard has assigned property
+  useEffect(() => {
+    if (hasAssignedProperty && properties[0]?.name) {
+      setTaskData(prev => {
+        if (prev.site !== properties[0].name) {
+          return { ...prev, site: properties[0].name };
+        }
+        return prev;
+      });
+    }
+  }, [hasAssignedProperty, properties]);
+
   const fetchProperties = async () => {
     if (!user) return;
     
@@ -644,14 +656,14 @@ const GuardDashboard = () => {
       });
 
       // Reset form immediately
-      setTaskData({
+      setTaskData(prev => ({
         taskType: "",
         customTaskType: "",
-        site: "",
+        site: hasAssignedProperty ? (properties[0]?.name || "") : "",
         description: "",
         severity: "none",
         image: null
-      });
+      }));
 
       // Show upload progress if online
       if (navigator.onLine) {
@@ -683,7 +695,7 @@ const GuardDashboard = () => {
     // Check which required fields are missing
     const missingFields = [];
     if (!taskData.taskType) missingFields.push("Task Type");
-    if (!taskData.site) missingFields.push("Work Site");  
+    if (!taskData.site && !hasAssignedProperty) missingFields.push("Work Site");  
     if (!taskData.severity) missingFields.push("Type of Issue");
     
     if (missingFields.length > 0) {
