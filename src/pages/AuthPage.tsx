@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Mail, Lock } from "lucide-react";
-import { getDeviceInfo } from '@/utils/deviceInfo';
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -85,16 +84,12 @@ const AuthPage = () => {
                   } else if (role === 'company_admin') {
                     navigate('/company');
               } else if (role === 'guard') {
-                // Ensure device is approved before proceeding
-                (async () => {
-                  const approved = await ensureGuardDeviceApproved(session.user!.id);
-                  if (!approved) return;
-                  // Validate guard login constraints before navigating
-                  const allowed = await validateGuardLoginAllowed(session.user!.id);
+                // Validate guard login constraints before navigating
+                validateGuardLoginAllowed(session.user!.id).then((allowed) => {
                   if (allowed) {
                     navigate('/guard');
                   }
-                })();
+                });
               } else {
                     navigate('/');
                   }
@@ -144,15 +139,14 @@ const AuthPage = () => {
               } else if (role === 'company_admin') {
                 navigate('/company');
               } else if (role === 'guard') {
-                // Ensure device is approved before proceeding
+                // Single session enforcement is handled by the realtime hook in GuardDashboard
+                // Validate guard login constraints before navigating
                 (async () => {
-                  const approved = await ensureGuardDeviceApproved(session.user!.id);
-                  if (!approved) return;
-                  // Validate guard login constraints before navigating
-                  const allowed = await validateGuardLoginAllowed(session.user!.id);
-                  if (allowed) {
-                    navigate('/guard');
-                  }
+                  validateGuardLoginAllowed(session.user!.id).then((allowed) => {
+                    if (allowed) {
+                      navigate('/guard');
+                    }
+                  });
                 })();
               } else {
                 navigate('/');
@@ -221,110 +215,6 @@ const AuthPage = () => {
         variant: "destructive",
         title: "Access Restricted",
         description: "Unable to verify login restrictions. Please contact your admin.",
-      });
-      return false;
-    }
-  };
-
-  // Ensure guard's device is approved (register if first time)
-  const ensureGuardDeviceApproved = async (userId: string): Promise<boolean> => {
-    console.log('=== DEVICE APPROVAL CHECK STARTED ===', userId);
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role, first_name, last_name')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      console.log('AuthPage: Profile data', { profile, profileError });
-
-      if (profileError) {
-        console.error('AuthPage: Profile fetch error', profileError);
-        return true; // Allow login on profile fetch error
-      }
-
-      if (profile?.role !== 'guard') {
-        console.log('AuthPage: Not a guard, skipping device check', profile?.role);
-        return true; // Not a guard, skip device checks
-      }
-
-      console.log('AuthPage: Guard detected, checking device...');
-      const deviceInfo = getDeviceInfo();
-      console.log('AuthPage: Device info', deviceInfo);
-
-      const { data: existingDevice, error: deviceError } = await supabase
-        .from('device_logins')
-        .select('approved')
-        .eq('device_id', deviceInfo.deviceId)
-        .eq('guard_id', profile.id)
-        .maybeSingle();
-
-      console.log('AuthPage: Existing device check', { existingDevice, deviceError });
-
-      if (deviceError) {
-        console.error('AuthPage: Error checking device', deviceError);
-        await supabase.auth.signOut();
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to verify device. Please try again.',
-        });
-        return false;
-      }
-
-      if (!existingDevice) {
-        console.log('AuthPage: No device found, registering...');
-        const { error: insertError } = await supabase
-          .from('device_logins')
-          .insert({
-            guard_id: profile.id,
-            guard_name: `${profile.first_name} ${profile.last_name}`,
-            device_id: deviceInfo.deviceId,
-            device_model: deviceInfo.deviceModel,
-            device_os: deviceInfo.deviceOS,
-            approved: false,
-          });
-
-        if (insertError) {
-          console.error('AuthPage: Error inserting device', insertError);
-          await supabase.auth.signOut();
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to register device. Please try again.',
-          });
-          return false;
-        }
-
-        await supabase.auth.signOut();
-        toast({
-          variant: 'destructive',
-          title: 'Device Pending Approval',
-          description: 'Your device is pending admin approval. Please contact your administrator.',
-        });
-        return false;
-      }
-
-      if (!existingDevice.approved) {
-        console.log('AuthPage: Device not approved yet');
-        await supabase.auth.signOut();
-        toast({
-          variant: 'destructive',
-          title: 'Device Pending Approval',
-          description: 'Your device is pending admin approval. Please contact your administrator.',
-        });
-        return false;
-      }
-
-      console.log('AuthPage: Device approved');
-      return true;
-    } catch (err) {
-      console.error('AuthPage: Device approval check failed', err);
-      await supabase.auth.signOut();
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Unable to verify device. Please try again.',
       });
       return false;
     }

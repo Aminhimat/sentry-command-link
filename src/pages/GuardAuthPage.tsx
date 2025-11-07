@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Session } from '@supabase/supabase-js';
-import { getDeviceInfo } from '@/utils/deviceInfo';
 
 const GuardAuthPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -63,84 +62,11 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active, requires_admin_approval, first_name, last_name')
+          .select('id, role, company_id, is_active, requires_admin_approval')
           .eq('user_id', authData.user.id)
           .single();
 
         if (profile?.role === 'guard') {
-          // Collect device information
-          console.log('Guard login detected, collecting device info...');
-          const deviceInfo = getDeviceInfo();
-          console.log('Device info collected:', deviceInfo);
-          
-          // Check if device exists and is approved
-          const { data: existingDevice, error: deviceError } = await supabase
-            .from('device_logins')
-            .select('approved')
-            .eq('device_id', deviceInfo.deviceId)
-            .eq('guard_id', profile.id)
-            .maybeSingle();
-          
-          console.log('Existing device check:', { existingDevice, deviceError });
-          
-          if (deviceError) {
-            console.error('Error checking device:', deviceError);
-            toast({
-              variant: "destructive",
-              title: "Error",
-              description: "Failed to verify device. Please try again.",
-            });
-            await supabase.auth.signOut();
-            return;
-          }
-          
-          if (!existingDevice) {
-            // Register new device
-            console.log('No device found, registering new device...');
-            const { error: insertError } = await supabase
-              .from('device_logins')
-              .insert({
-                guard_id: profile.id,
-                guard_name: `${profile.first_name} ${profile.last_name}`,
-                device_id: deviceInfo.deviceId,
-                device_model: deviceInfo.deviceModel,
-                device_os: deviceInfo.deviceOS,
-                approved: false
-              });
-            
-            if (insertError) {
-              console.error('Error inserting device:', insertError);
-              toast({
-                variant: "destructive",
-                title: "Error",
-                description: "Failed to register device. Please try again.",
-              });
-              await supabase.auth.signOut();
-              return;
-            }
-            
-            console.log('Device registered, awaiting approval');
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Device Pending Approval",
-              description: "Your device is pending admin approval. Please contact your administrator.",
-            });
-            return;
-          }
-          
-          if (!existingDevice.approved) {
-            console.log('Device not approved yet');
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Device Pending Approval",
-              description: "Your device is pending admin approval. Please contact your administrator.",
-            });
-            return;
-          }
-          
-          console.log('Device approved, proceeding with login...');
           // Check if guard requires admin approval
           if (profile.requires_admin_approval) {
             await supabase.auth.signOut();

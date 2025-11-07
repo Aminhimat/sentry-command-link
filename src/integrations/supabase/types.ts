@@ -176,42 +176,6 @@ export type Database = {
         }
         Relationships: []
       }
-      device_logins: {
-        Row: {
-          approved: boolean
-          created_at: string
-          device_id: string
-          device_model: string | null
-          device_os: string | null
-          guard_id: string
-          guard_name: string
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          approved?: boolean
-          created_at?: string
-          device_id: string
-          device_model?: string | null
-          device_os?: string | null
-          guard_id: string
-          guard_name: string
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          approved?: boolean
-          created_at?: string
-          device_id?: string
-          device_model?: string | null
-          device_os?: string | null
-          guard_id?: string
-          guard_name?: string
-          id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       guard_locations: {
         Row: {
           accuracy: number | null
