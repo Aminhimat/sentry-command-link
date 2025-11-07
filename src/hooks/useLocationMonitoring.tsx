@@ -73,7 +73,7 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
       }
 
       if (data && !data.withinRange) {
-        // Guard moved too far, they've been logged out
+        // Guard moved too far, they've been logged out by the edge function
         toast({
           variant: "destructive",
           title: "Location Alert",
@@ -81,9 +81,9 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
           duration: 10000,
         });
 
-        // Sign out locally and redirect
+        // Sign out locally and redirect to main auth page
         await supabase.auth.signOut();
-        navigate('/guard-auth');
+        navigate('/auth?mode=guard');
       }
     } catch (err) {
       console.error('Error in location check:', err);

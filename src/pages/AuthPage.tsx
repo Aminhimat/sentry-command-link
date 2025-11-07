@@ -164,11 +164,49 @@ const AuthPage = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role, requires_admin_approval')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (!profile?.id) return true; // No profile found, do not block
+
+      // Check if guard requires admin approval (due to moving too far)
+      if (profile.role === 'guard' && profile.requires_admin_approval) {
+        await supabase.auth.signOut();
+        toast({
+          variant: "destructive",
+          title: "Admin Approval Required",
+          description: "Your account requires admin approval to login. Please contact your administrator.",
+        });
+        return false;
+      }
+
+      // For guards, save their current login location
+      if (profile.role === 'guard') {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+
+          // Save login location to profile
+          await supabase
+            .from('profiles')
+            .update({
+              login_location_lat: position.coords.latitude,
+              login_location_lng: position.coords.longitude
+            })
+            .eq('id', profile.id);
+
+          console.log('Saved guard login location:', position.coords.latitude, position.coords.longitude);
+        } catch (locationError) {
+          console.error('Failed to get location:', locationError);
+          // Allow login even if location fails - they can enable it later
+        }
+      }
 
       const { data: constraints } = await supabase
         .from('guard_login_constraints')
