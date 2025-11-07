@@ -69,19 +69,35 @@ const GuardAuthPage = () => {
 
         if (profile?.role === 'guard') {
           // Collect device information
+          console.log('Guard login detected, collecting device info...');
           const deviceInfo = getDeviceInfo();
+          console.log('Device info collected:', deviceInfo);
           
           // Check if device exists and is approved
-          const { data: existingDevice } = await supabase
+          const { data: existingDevice, error: deviceError } = await supabase
             .from('device_logins')
             .select('approved')
             .eq('device_id', deviceInfo.deviceId)
             .eq('guard_id', profile.id)
-            .single();
+            .maybeSingle();
+          
+          console.log('Existing device check:', { existingDevice, deviceError });
+          
+          if (deviceError) {
+            console.error('Error checking device:', deviceError);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to verify device. Please try again.",
+            });
+            await supabase.auth.signOut();
+            return;
+          }
           
           if (!existingDevice) {
             // Register new device
-            await supabase
+            console.log('No device found, registering new device...');
+            const { error: insertError } = await supabase
               .from('device_logins')
               .insert({
                 guard_id: profile.id,
@@ -92,6 +108,18 @@ const GuardAuthPage = () => {
                 approved: false
               });
             
+            if (insertError) {
+              console.error('Error inserting device:', insertError);
+              toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to register device. Please try again.",
+              });
+              await supabase.auth.signOut();
+              return;
+            }
+            
+            console.log('Device registered, awaiting approval');
             await supabase.auth.signOut();
             toast({
               variant: "destructive",
@@ -102,6 +130,7 @@ const GuardAuthPage = () => {
           }
           
           if (!existingDevice.approved) {
+            console.log('Device not approved yet');
             await supabase.auth.signOut();
             toast({
               variant: "destructive",
@@ -110,6 +139,8 @@ const GuardAuthPage = () => {
             });
             return;
           }
+          
+          console.log('Device approved, proceeding with login...');
           // Check if guard requires admin approval
           if (profile.requires_admin_approval) {
             await supabase.auth.signOut();
