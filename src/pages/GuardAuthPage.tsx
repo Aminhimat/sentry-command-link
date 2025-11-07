@@ -67,16 +67,7 @@ const GuardAuthPage = () => {
           .single();
 
         if (profile?.role === 'guard') {
-          // Check if guard requires admin approval
-          if (profile.requires_admin_approval) {
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Admin Approval Required",
-              description: "Your account requires admin approval to login. Please contact your administrator.",
-            });
-            return;
-          }
+          // Admin approval disabled - skip approval check
 
           // Check if guard is active
           if (!profile.is_active) {
