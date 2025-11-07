@@ -232,7 +232,7 @@ const AuthPage = () => {
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role, first_name, last_name')
+        .select('id, role, first_name, last_name, requires_admin_approval, login_location_lat, login_location_lng')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -248,9 +248,54 @@ const AuthPage = () => {
         return true; // Not a guard, skip device checks
       }
 
+      // Check if guard requires admin approval (moved too far from login location)
+      if (profile.requires_admin_approval) {
+        console.log('AuthPage: Guard requires admin approval');
+        await supabase.auth.signOut();
+        toast({
+          variant: 'destructive',
+          title: 'Admin Approval Required',
+          description: 'Your account requires admin approval to login. Please contact your administrator.',
+        });
+        return false;
+      }
+
       console.log('AuthPage: Guard detected, checking device...');
       const deviceInfo = getDeviceInfo();
       console.log('AuthPage: Device info', deviceInfo);
+
+      // Get current location and save it as login location
+      try {
+        if ('geolocation' in navigator) {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+
+          console.log('AuthPage: Saving login location', position.coords.latitude, position.coords.longitude);
+          
+          // Save login location to profile
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              login_location_lat: position.coords.latitude,
+              login_location_lng: position.coords.longitude
+            })
+            .eq('id', profile.id);
+
+          if (updateError) {
+            console.error('AuthPage: Failed to save login location', updateError);
+          } else {
+            console.log('AuthPage: Login location saved successfully');
+          }
+        }
+      } catch (geoError) {
+        console.error('AuthPage: Failed to get location', geoError);
+        // Don't block login if we can't get location
+      }
 
       const { data: existingDevice, error: deviceError } = await supabase
         .from('device_logins')
