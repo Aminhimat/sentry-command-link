@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Session } from '@supabase/supabase-js';
+import { getDeviceInfo } from '@/utils/deviceInfo';
 
 const GuardAuthPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -62,11 +63,53 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active, requires_admin_approval')
+          .select('id, role, company_id, is_active, requires_admin_approval, first_name, last_name')
           .eq('user_id', authData.user.id)
           .single();
 
         if (profile?.role === 'guard') {
+          // Collect device information
+          const deviceInfo = getDeviceInfo();
+          
+          // Check if device exists and is approved
+          const { data: existingDevice } = await supabase
+            .from('device_logins')
+            .select('approved')
+            .eq('device_id', deviceInfo.deviceId)
+            .eq('guard_id', profile.id)
+            .single();
+          
+          if (!existingDevice) {
+            // Register new device
+            await supabase
+              .from('device_logins')
+              .insert({
+                guard_id: profile.id,
+                guard_name: `${profile.first_name} ${profile.last_name}`,
+                device_id: deviceInfo.deviceId,
+                device_model: deviceInfo.deviceModel,
+                device_os: deviceInfo.deviceOS,
+                approved: false
+              });
+            
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Device Pending Approval",
+              description: "Your device is pending admin approval. Please contact your administrator.",
+            });
+            return;
+          }
+          
+          if (!existingDevice.approved) {
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Device Pending Approval",
+              description: "Your device is pending admin approval. Please contact your administrator.",
+            });
+            return;
+          }
           // Check if guard requires admin approval
           if (profile.requires_admin_approval) {
             await supabase.auth.signOut();

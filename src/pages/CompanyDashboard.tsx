@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar, Upload, ImageIcon, LogOut } from "lucide-react";
+import { Shield, Plus, Users, Activity, FileText, Eye, MapPin, AlertTriangle, Download, Calendar, Upload, ImageIcon, LogOut, Smartphone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
 import { SmoothSection } from "@/components/SmoothSection";
+import DeviceApprovalDialog from "@/components/DeviceApprovalDialog";
 
 interface Profile {
   id: string;
@@ -165,6 +166,7 @@ const CompanyDashboard = () => {
   });
   const { toast } = useToast();
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [showDeviceApproval, setShowDeviceApproval] = useState(false);
 
   // Debug: Log all state variables to check for any issues
   console.log('Dashboard state:', { guards: guards.length, reports: reports.length, isLoading, userProfile });
@@ -1109,6 +1111,10 @@ const CompanyDashboard = () => {
               <Download className="h-4 w-4 mr-2" />
               Generate Report
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowDeviceApproval(true)} className="h-10">
+              <Smartphone className="h-4 w-4 mr-2" />
+              Devices
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setShowCreateGuardForm(true)} className="h-10">
               <Plus className="h-4 w-4 mr-2" />
               New Guard
@@ -1534,6 +1540,15 @@ const CompanyDashboard = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Device Approval Dialog */}
+        {userProfile?.company_id && (
+          <DeviceApprovalDialog
+            open={showDeviceApproval}
+            onOpenChange={setShowDeviceApproval}
+            companyId={userProfile.company_id}
+          />
+        )}
 
       </div>
     </div>
