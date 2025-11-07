@@ -73,11 +73,11 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
       }
 
       if (data && !data.withinRange) {
-        // Guard moved too far, they've been logged out by the edge function
+        // Guard moved too far, they've been logged out by policy
         toast({
           variant: "destructive",
           title: "Location Alert",
-          description: "You have moved too far from your login location. You have been logged out and require admin approval to login again.",
+          description: "You moved too far from your login location and have been logged out. Please log in again.",
           duration: 10000,
         });
 

@@ -100,13 +100,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if guard already requires approval
-    if (profile.requires_admin_approval) {
-      return new Response(
-        JSON.stringify({ withinRange: false, requiresApproval: true, message: 'Guard requires admin approval' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Admin approval disabled: previously checked requires_admin_approval here
+    // Now always proceed to calculate distance without blocking on approval flag
+
 
     // Check if login location exists
     if (!profile.login_location_lat || !profile.login_location_lng) {
@@ -129,32 +125,11 @@ Deno.serve(async (req) => {
 
     // If distance exceeds 1 mile, mark for approval and sign out
     if (distance > 1) {
-      console.log(`Guard exceeded 1 mile limit. Marking for approval and signing out.`);
-
-      // Update profile to require admin approval
-      const { error: updateError } = await supabaseClient
-        .from('profiles')
-        .update({
-          requires_admin_approval: true,
-          approval_reason: `Moved ${distance.toFixed(2)} miles away from login location`
-        })
-        .eq('id', profile.id);
-
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-      }
-
-      // Sign out the user using admin API
-      const { error: signOutError } = await supabaseAdmin.auth.admin.signOut(user.id);
-      
-      if (signOutError) {
-        console.error('Error signing out user:', signOutError);
-      }
+      console.log(`Guard exceeded 1 mile limit. Logging out without admin approval requirement.`);
 
       return new Response(
         JSON.stringify({ 
-          withinRange: false, 
-          requiresApproval: true,
+          withinRange: false,
           distance: distance.toFixed(2),
           message: 'Guard moved too far from login location and has been logged out'
         }),

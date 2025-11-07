@@ -170,16 +170,8 @@ const AuthPage = () => {
 
       if (!profile?.id) return true; // No profile found, do not block
 
-      // Check if guard requires admin approval (due to moving too far)
-      if (profile.role === 'guard' && profile.requires_admin_approval) {
-        await supabase.auth.signOut();
-        toast({
-          variant: "destructive",
-          title: "Admin Approval Required",
-          description: "Your account requires admin approval to login. Please contact your administrator.",
-        });
-        return false;
-      }
+      // Admin approval disabled - ignore requires_admin_approval flag and proceed
+
 
       // For guards, save their current login location
       if (profile.role === 'guard') {
