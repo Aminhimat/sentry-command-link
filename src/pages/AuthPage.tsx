@@ -86,15 +86,15 @@ const AuthPage = () => {
                     navigate('/company');
               } else if (role === 'guard') {
                 // Ensure device is approved before proceeding
-                ensureGuardDeviceApproved(session.user!.id).then((approved) => {
+                (async () => {
+                  const approved = await ensureGuardDeviceApproved(session.user!.id);
                   if (!approved) return;
                   // Validate guard login constraints before navigating
-                  validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                    if (allowed) {
-                      navigate('/guard');
-                    }
-                  });
-                });
+                  const allowed = await validateGuardLoginAllowed(session.user!.id);
+                  if (allowed) {
+                    navigate('/guard');
+                  }
+                })();
               } else {
                     navigate('/');
                   }
@@ -145,18 +145,15 @@ const AuthPage = () => {
                 navigate('/company');
               } else if (role === 'guard') {
                 // Ensure device is approved before proceeding
-                ensureGuardDeviceApproved(session.user!.id).then((approved) => {
+                (async () => {
+                  const approved = await ensureGuardDeviceApproved(session.user!.id);
                   if (!approved) return;
-                  // Single session enforcement is handled by the realtime hook in GuardDashboard
                   // Validate guard login constraints before navigating
-                  (async () => {
-                    validateGuardLoginAllowed(session.user!.id).then((allowed) => {
-                      if (allowed) {
-                        navigate('/guard');
-                      }
-                    });
-                  })();
-                });
+                  const allowed = await validateGuardLoginAllowed(session.user!.id);
+                  if (allowed) {
+                    navigate('/guard');
+                  }
+                })();
               } else {
                 navigate('/');
               }
@@ -231,15 +228,27 @@ const AuthPage = () => {
 
   // Ensure guard's device is approved (register if first time)
   const ensureGuardDeviceApproved = async (userId: string): Promise<boolean> => {
+    console.log('=== DEVICE APPROVAL CHECK STARTED ===', userId);
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, role, first_name, last_name')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (profile?.role !== 'guard') return true; // Not a guard, skip device checks
+      console.log('AuthPage: Profile data', { profile, profileError });
 
+      if (profileError) {
+        console.error('AuthPage: Profile fetch error', profileError);
+        return true; // Allow login on profile fetch error
+      }
+
+      if (profile?.role !== 'guard') {
+        console.log('AuthPage: Not a guard, skipping device check', profile?.role);
+        return true; // Not a guard, skip device checks
+      }
+
+      console.log('AuthPage: Guard detected, checking device...');
       const deviceInfo = getDeviceInfo();
       console.log('AuthPage: Device info', deviceInfo);
 
