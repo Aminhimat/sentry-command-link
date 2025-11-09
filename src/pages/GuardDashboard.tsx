@@ -1651,9 +1651,10 @@ const GuardDashboard = () => {
         </div>
       </div>
 
-      {/* Shift Management */}
-      <div className="px-6 pt-6">
+      {/* Combined Guard Dashboard Card */}
+      <div className="flex-1 p-6">
         <Card className="max-w-4xl mx-auto border-8 border-primary shadow-2xl">
+          {/* Shift Management Section */}
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
@@ -1676,7 +1677,7 @@ const GuardDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-4 justify-center mb-8">
               {!currentShift ? (
                 <Button 
                   onClick={handleStartShift}
@@ -1712,19 +1713,21 @@ const GuardDashboard = () => {
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Task Submission Form */}
-      <div className="flex-1 px-6 pb-6">
-        <Card className="max-w-4xl mx-auto border-8 border-primary shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center">
-              <ClipboardList className="h-6 w-6" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            {/* Separator */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Task Submission
+                </span>
+              </div>
+            </div>
+
+            {/* Task Submission Form Section */}
             {/* Missing Fields Error Display */}
             {showMissingFieldsError.length > 0 && (
               <div className="mb-6 p-4 border border-destructive bg-destructive/10 rounded-lg text-center">
