@@ -5,6 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+
+// TEMPORARY: Expose supabase for vulnerability testing
+// Remove this after testing!
+(window as any).supabase = supabase;
 
 // Lazy load heavy dashboard components with error logging
 const lazyWithLog = (loader: () => Promise<any>, name: string) =>
