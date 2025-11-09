@@ -1639,7 +1639,7 @@ const GuardDashboard = () => {
       <div className="border-b border-primary/20">
         <div className="flex h-16 items-center px-6 justify-center">
           <h1 className="text-xl font-semibold text-guard-foreground">
-            Welcome Guard {user?.user_metadata?.first_name || user?.email?.split('@')[0]}
+            Welcome {user?.user_metadata?.first_name || user?.email?.split('@')[0]}
           </h1>
         </div>
       </div>
