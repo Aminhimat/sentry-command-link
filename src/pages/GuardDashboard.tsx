@@ -1621,7 +1621,7 @@ const GuardDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative border-4 border-primary">
+    <div className="min-h-screen bg-guard relative border-4 border-primary">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
