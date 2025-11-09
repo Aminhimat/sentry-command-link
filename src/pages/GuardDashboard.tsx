@@ -1637,26 +1637,10 @@ const GuardDashboard = () => {
       )}
       {/* Header */}
       <div className="border-b bg-card">
-        <div className="flex h-16 items-center px-6">
-          <div className="flex items-center space-x-4">
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-xl font-semibold">Guard Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Welcome, {user?.email}
-              </p>
-            </div>
-          </div>
-          <div className="ml-auto">
-            <Button variant="outline" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          </div>
-        </div>
-        
-        {/* Connection Status */}
-        <div className="px-6 pb-4">
-          <ConnectionStatus isOnline={isOnline} pendingReports={pendingReports} />
+        <div className="flex h-16 items-center px-6 justify-center">
+          <h1 className="text-xl font-semibold text-guard-foreground">
+            Welcome Guard {user?.email?.split('@')[0]}
+          </h1>
         </div>
       </div>
 
