@@ -1651,13 +1651,13 @@ const GuardDashboard = () => {
         </div>
       </div>
 
-      {/* Shift Management */}
-      <div className="p-6 pb-0">
-        <Card className="max-w-2xl mx-auto">
+      {/* Shift Management & Task Submission */}
+      <div className="flex-1 p-6">
+        <Card className="max-w-6xl mx-auto">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
-              Shift Management
+              Shift Management & Task Submission
             </CardTitle>
             <CardDescription>
               {currentShift 
@@ -1676,8 +1676,9 @@ const GuardDashboard = () => {
               }
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 justify-center">
+          <CardContent className="space-y-8">
+            {/* Shift Controls */}
+            <div className="flex gap-4 justify-center pb-6 border-b">
               {!currentShift ? (
                 <Button 
                   onClick={handleStartShift}
@@ -1713,20 +1714,10 @@ const GuardDashboard = () => {
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Task Submission Form */}
-      <div className="flex-1 p-6 pt-4">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center">
-              <ClipboardList className="h-6 w-6" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Missing Fields Error Display */}
+            {/* Task Submission Form */}
+            <div className="space-y-4">
+              {/* Missing Fields Error Display */}
             {showMissingFieldsError.length > 0 && (
               <div className="mb-6 p-4 border border-destructive bg-destructive/10 rounded-lg text-center">
                 <h3 className="text-lg font-semibold text-destructive mb-2">Missing Required Fields</h3>
@@ -1959,6 +1950,7 @@ const GuardDashboard = () => {
                 </p>
               )}
             </form>
+            </div>
           </CardContent>
         </Card>
       </div>
