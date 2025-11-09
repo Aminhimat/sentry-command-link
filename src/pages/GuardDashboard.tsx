@@ -1651,74 +1651,8 @@ const GuardDashboard = () => {
         </div>
       </div>
 
-      {/* Shift Management */}
-      <div className="p-6 pb-0">
-        <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center">
-              <Clock className="h-6 w-6" />
-              Shift Management
-            </CardTitle>
-            <CardDescription>
-              {currentShift 
-                ? (
-                  <div className="space-y-2">
-                    <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
-                    {locationTracking && (
-                      <div className="flex items-center justify-center gap-2 text-green-600">
-                        <MapPin className="h-4 w-4 animate-pulse" />
-                        <span className="text-sm font-medium">Live location tracking active</span>
-                      </div>
-                    )}
-                  </div>
-                )
-                : "Start your shift to begin location tracking and work hours"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 justify-center">
-              {!currentShift ? (
-                <Button 
-                  onClick={handleStartShift}
-                  disabled={shiftLoading}
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  {shiftLoading ? "Starting..." : "Start Shift"}
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleEndShift}
-                  disabled={shiftLoading}
-                  variant="destructive"
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Square className="h-4 w-4" />
-                  {shiftLoading ? "Ending..." : "End Shift"}
-                </Button>
-              )}
-              
-              {currentShift && (
-                <Button 
-                  onClick={() => setShowCheckpointScanner(true)}
-                  variant="outline"
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <QrCode className="h-4 w-4" />
-                  Scan Checkpoint
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Task Submission Form */}
-      <div className="flex-1 p-6 pt-0">
+      <div className="flex-1 p-6">
         <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
