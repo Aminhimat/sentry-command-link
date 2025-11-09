@@ -77,9 +77,7 @@ export default {
 			},
 			guard: {
 				DEFAULT: 'hsl(var(--guard-background))',
-				foreground: 'hsl(var(--guard-foreground))',
-				card: 'hsl(var(--guard-card))',
-				'card-foreground': 'hsl(var(--guard-card-foreground))'
+				foreground: 'hsl(var(--guard-foreground))'
 			}
 			},
 			borderRadius: {

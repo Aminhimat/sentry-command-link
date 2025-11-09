@@ -48,8 +48,6 @@ All colors MUST be HSL.
     /* Guard App Colors */
     --guard-background: 210 29% 24%;
     --guard-foreground: 210 17% 98%;
-    --guard-card: 210 24% 30%;
-    --guard-card-foreground: 210 17% 98%;
 
     --border: 215 25% 85%;
     --input: 215 25% 90%;
@@ -112,8 +110,6 @@ All colors MUST be HSL.
     /* Guard App Colors */
     --guard-background: 210 29% 24%;
     --guard-foreground: 210 17% 98%;
-    --guard-card: 210 24% 30%;
-    --guard-card-foreground: 210 17% 98%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;

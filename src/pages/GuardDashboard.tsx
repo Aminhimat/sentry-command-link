@@ -1653,14 +1653,14 @@ const GuardDashboard = () => {
 
       {/* Shift Management */}
       <div className="p-6 pb-0">
-        <Card className="max-w-2xl mx-auto bg-guard-card border-guard-card-foreground/20">
+        <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center text-guard-card-foreground">
+            <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
               Shift Management
             </CardTitle>
-            <CardDescription className="text-guard-card-foreground/80">
-              {currentShift
+            <CardDescription>
+              {currentShift 
                 ? (
                   <div className="space-y-2">
                     <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
@@ -1676,7 +1676,7 @@ const GuardDashboard = () => {
               }
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-guard-card-foreground">
+          <CardContent>
             <div className="flex gap-4 justify-center">
               {!currentShift ? (
                 <Button 
@@ -1719,13 +1719,13 @@ const GuardDashboard = () => {
 
       {/* Task Submission Form */}
       <div className="flex-1 p-6 pt-4">
-        <Card className="max-w-2xl mx-auto bg-guard-card border-guard-card-foreground/20">
+        <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
-            <CardTitle className="flex items-center gap-2 justify-center text-guard-card-foreground">
+            <CardTitle className="flex items-center gap-2 justify-center">
               <ClipboardList className="h-6 w-6" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-guard-card-foreground">
+          <CardContent>
             {/* Missing Fields Error Display */}
             {showMissingFieldsError.length > 0 && (
               <div className="mb-6 p-4 border border-destructive bg-destructive/10 rounded-lg text-center">
@@ -1745,7 +1745,7 @@ const GuardDashboard = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Task Type */}
               <div className="space-y-2">
-                <Label htmlFor="taskType" className="flex items-center gap-2 text-guard-card-foreground">
+                <Label htmlFor="taskType" className="flex items-center gap-2">
                   Choose Task *
                   {!taskData.taskType && (
                     <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Required</span>
@@ -1805,7 +1805,7 @@ const GuardDashboard = () => {
 
               {/* Site */}
               <div className="space-y-2">
-                <Label htmlFor="site" className="text-guard-card-foreground">Work Site *</Label>
+                <Label htmlFor="site">Work Site *</Label>
                 <div className="relative">
                   <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   {hasAssignedProperty ? (
@@ -1871,7 +1871,7 @@ const GuardDashboard = () => {
 
                {/* Issue Severity */}
               <div className="space-y-2">
-                <Label htmlFor="severity" className="flex items-center gap-2 text-guard-card-foreground">
+                <Label htmlFor="severity" className="flex items-center gap-2">
                   Type of Issue *
                   {!taskData.severity && (
                     <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Required</span>
@@ -1902,7 +1902,7 @@ const GuardDashboard = () => {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-guard-card-foreground">Description *</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   placeholder="Describe the task details, observations, or issues (optional - defaults to 'Security Patrol')..."
