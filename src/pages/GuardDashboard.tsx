@@ -1642,8 +1642,9 @@ const GuardDashboard = () => {
             Welcome {user?.user_metadata?.first_name || user?.email?.split('@')[0]}
           </h1>
           <Button 
-            variant="destructive" 
+            variant="outline" 
             onClick={handleSignOut}
+            className="bg-guard-foreground/10 border-guard-foreground/20 text-guard-foreground hover:bg-guard-foreground/20"
           >
             Sign Out
           </Button>
@@ -1652,7 +1653,7 @@ const GuardDashboard = () => {
 
       {/* Shift Management & Task Submission */}
       <div className="flex-1 p-6">
-        <Card className="max-w-6xl mx-auto text-white" style={{ backgroundColor: '#090c9b' }}>
+        <Card className="max-w-6xl mx-auto" style={{ backgroundColor: '#090c9b' }}>
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
@@ -1682,7 +1683,6 @@ const GuardDashboard = () => {
                   onClick={handleStartShift}
                   disabled={shiftLoading}
                   size="lg"
-                  variant="destructive"
                   className="flex items-center gap-2"
                 >
                   <Play className="h-4 w-4" />
@@ -1704,7 +1704,7 @@ const GuardDashboard = () => {
               {currentShift && (
                 <Button 
                   onClick={() => setShowCheckpointScanner(true)}
-                  variant="destructive"
+                  variant="outline"
                   size="lg"
                   className="flex items-center gap-2"
                 >
@@ -1722,7 +1722,7 @@ const GuardDashboard = () => {
                 <h3 className="text-lg font-semibold text-destructive mb-2">Missing Required Fields</h3>
                 <p className="text-destructive">Please fill in: {showMissingFieldsError.join(", ")}</p>
                 <Button 
-                  variant="destructive" 
+                  variant="outline" 
                   size="sm" 
                   className="mt-3" 
                   onClick={() => setShowMissingFieldsError([])}
@@ -1908,7 +1908,7 @@ const GuardDashboard = () => {
                 
                 <Button
                   type="button"
-                  variant="destructive"
+                  variant="outline"
                   onClick={handleCameraCapture}
                   className="w-full"
                 >
@@ -1929,7 +1929,6 @@ const GuardDashboard = () => {
               {/* Submit Button with enhanced feedback */}
               <Button 
                 type="submit" 
-                variant="destructive"
                 className="w-full" 
                 size="lg"
                 disabled={isLoading}
