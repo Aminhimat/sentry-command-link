@@ -356,7 +356,6 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
             ${location.battery_level ? `<p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Battery:</strong> ${location.battery_level}%</p>` : ''}
             ${location.accuracy ? `<p style="margin: 0; font-size: 12px;"><strong>Accuracy:</strong> ±${Math.round(location.accuracy)}m</p>` : ''}
           </div>
-          <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${location.location_lat.toFixed(6)}, ${location.location_lng.toFixed(6)}</p>
         </div>
       `;
 
