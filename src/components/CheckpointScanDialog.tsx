@@ -70,11 +70,26 @@ export function CheckpointScanDialog({
         }
       }
 
+      // Ensure company_id is available
+      let effectiveCompanyId: string | null = companyId || null;
+      if (!effectiveCompanyId) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', guardId)
+          .maybeSingle();
+        effectiveCompanyId = prof?.company_id ?? null;
+      }
+
+      if (!effectiveCompanyId) {
+        throw new Error('Cannot log scan: missing company context. Please try again.');
+      }
+
       // Log the checkpoint scan
       const { error } = await supabase.from('checkpoint_scans').insert({
         checkpoint_id: checkpoint.id,
         guard_id: guardId,
-        company_id: companyId,
+        company_id: effectiveCompanyId,
         shift_id: shiftId,
         property_id: propertyId,
         location_lat: location?.lat,
