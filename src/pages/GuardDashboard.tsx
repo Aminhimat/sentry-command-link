@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, Wifi, WifiOff, Download, Nfc } from "lucide-react";
+import { Shield, Camera, MapPin, ClipboardList, Clock, Play, Square, QrCode, Building, Wifi, WifiOff, Download } from "lucide-react";
 import QrScanner from 'qr-scanner';
 import jsQR from 'jsqr';
 import { Geolocation } from '@capacitor/geolocation';
@@ -24,7 +24,6 @@ import { useLocationMonitoring } from "@/hooks/useLocationMonitoring";
 import { useSingleSessionRealtime } from "@/hooks/useSingleSessionRealtime";
 import { QRScanner } from "@/components/QRScanner";
 import { CheckpointScanDialog } from "@/components/CheckpointScanDialog";
-import { NFCScanner } from "@/components/NFCScanner";
 
 const GuardDashboard = () => {
   const navigate = useNavigate();
@@ -55,7 +54,6 @@ const GuardDashboard = () => {
   const [pendingReports, setPendingReports] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCheckpointScanner, setShowCheckpointScanner] = useState(false);
-  const [showNFCScanner, setShowNFCScanner] = useState(false);
   const [scannedCheckpoint, setScannedCheckpoint] = useState<any>(null);
   const [showCheckpointDialog, setShowCheckpointDialog] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
@@ -1704,26 +1702,15 @@ const GuardDashboard = () => {
               )}
               
               {currentShift && (
-                <>
-                  <Button 
-                    onClick={() => setShowCheckpointScanner(true)}
-                    variant="outline"
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    Scan Checkpoint
-                  </Button>
-                  <Button 
-                    onClick={() => setShowNFCScanner(true)}
-                    variant="outline"
-                    size="lg"
-                    className="flex items-center gap-2"
-                  >
-                    <Nfc className="h-4 w-4" />
-                    Scan NFC Tag
-                  </Button>
-                </>
+                <Button 
+                  onClick={() => setShowCheckpointScanner(true)}
+                  variant="outline"
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <QrCode className="h-4 w-4" />
+                  Scan Checkpoint
+                </Button>
               )}
             </div>
           </CardContent>
@@ -1981,14 +1968,6 @@ const GuardDashboard = () => {
         <QRScanner
           onScan={handleCheckpointScan}
           onClose={() => setShowCheckpointScanner(false)}
-        />
-      )}
-
-      {/* NFC Scanner */}
-      {showNFCScanner && (
-        <NFCScanner
-          onScan={handleCheckpointScan}
-          onClose={() => setShowNFCScanner(false)}
         />
       )}
 

@@ -4,9 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, QrCode, Download, MapPin, ToggleLeft, ToggleRight, ArrowLeft, Nfc } from 'lucide-react';
+import { Plus, QrCode, Download, MapPin, ToggleLeft, ToggleRight, ArrowLeft } from 'lucide-react';
 import { CheckpointDialog } from '@/components/CheckpointDialog';
-import { NFCWriter } from '@/components/NFCWriter';
 import { Badge } from '@/components/ui/badge';
 import QRCodeLib from 'qrcode';
 
@@ -29,8 +28,6 @@ export default function CompanyCheckpoints() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCheckpoint, setEditingCheckpoint] = useState<Checkpoint | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const [nfcWriterOpen, setNfcWriterOpen] = useState(false);
-  const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -250,26 +247,15 @@ export default function CompanyCheckpoints() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    size="sm"
+                    className="flex-1"
                     onClick={() => handleDownloadQR(checkpoint)}
                   >
                     <Download className="mr-2 h-4 w-4" />
-                    QR Code
+                    Download
                   </Button>
                   <Button
                     variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCheckpoint(checkpoint);
-                      setNfcWriterOpen(true);
-                    }}
-                  >
-                    <Nfc className="mr-2 h-4 w-4" />
-                    Write NFC
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                    className="flex-1"
                     onClick={() => {
                       setEditingCheckpoint(checkpoint);
                       setDialogOpen(true);
@@ -290,18 +276,6 @@ export default function CompanyCheckpoints() {
         checkpoint={editingCheckpoint}
         companyId={companyId}
       />
-
-      {selectedCheckpoint && (
-        <NFCWriter
-          open={nfcWriterOpen}
-          onClose={() => {
-            setNfcWriterOpen(false);
-            setSelectedCheckpoint(null);
-          }}
-          checkpointData={selectedCheckpoint.qr_code_data}
-          checkpointName={selectedCheckpoint.name}
-        />
-      )}
     </div>
   );
 }
