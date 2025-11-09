@@ -1718,7 +1718,7 @@ const GuardDashboard = () => {
       </div>
 
       {/* Task Submission Form */}
-      <div className="flex-1 p-6 pt-4">
+      <div className="flex-1 p-6 pt-0">
         <Card className="max-w-2xl mx-auto border-4 border-primary shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
