@@ -1638,8 +1638,8 @@ const GuardDashboard = () => {
       {/* Header */}
       <div className="border-b border-primary/20">
         <div className="flex h-16 items-center px-6 justify-between">
-          <h1 className="text-xl font-semibold text-guard-foreground">
-            Welcome {user?.user_metadata?.first_name || user?.email?.split('@')[0]}
+          <h1 className="text-xl font-semibold text-white">
+            Welcome <span className="text-white">{user?.user_metadata?.first_name || user?.email?.split('@')[0]}</span>
           </h1>
           <Button 
             variant="outline" 
