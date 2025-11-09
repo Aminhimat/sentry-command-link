@@ -349,7 +349,7 @@ const GuardDashboard = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, is_active, role')
+        .select('id, is_active, role, company_id, assigned_property_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
