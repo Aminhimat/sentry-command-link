@@ -19,6 +19,7 @@ interface GuardLocation {
   accuracy: number | null;
   created_at: string;
   updated_at: string;
+  property_id?: string | null;
   guard?: {
     first_name: string;
     last_name: string;
@@ -26,6 +27,12 @@ interface GuardLocation {
   shift?: {
     check_in_time: string;
     check_out_time: string | null;
+    property?: {
+      name: string;
+    };
+  };
+  property?: {
+    name: string;
   };
 }
 
@@ -165,8 +172,9 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const { data: activeShifts, error: shiftsError } = await supabase
         .from('guard_shifts')
         .select(`
-          id, guard_id, check_in_time, check_out_time, location_lat, location_lng, location_address,
-          guard:profiles!guard_shifts_guard_id_fkey(id, first_name, last_name)
+          id, guard_id, check_in_time, check_out_time, location_lat, location_lng, location_address, property_id,
+          guard:profiles!guard_shifts_guard_id_fkey(id, first_name, last_name),
+          property:properties(name)
         `)
         .eq('company_id', companyId)
         .order('check_in_time', { ascending: false });
@@ -184,7 +192,10 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       // Get the latest location data from guard_locations table
       const { data: locationData, error: locationError } = await supabase
         .from('guard_locations')
-        .select('*')
+        .select(`
+          *,
+          property:properties(name)
+        `)
         .eq('company_id', companyId)
         .order('updated_at', { ascending: false });
 
@@ -220,11 +231,14 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
             accuracy: null,
             created_at: shift.check_in_time,
             updated_at: shift.check_in_time,
+            property_id: shift.property_id,
             guard: shift.guard,
             shift: {
               check_in_time: shift.check_in_time,
-              check_out_time: shift.check_out_time
+              check_out_time: shift.check_out_time,
+              property: shift.property
             },
+            property: shift.property,
             isFromShift: true
           });
         }
@@ -263,8 +277,10 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
               guard: profile,
               shift: matchingShift ? {
                 check_in_time: matchingShift.check_in_time,
-                check_out_time: matchingShift.check_out_time
+                check_out_time: matchingShift.check_out_time,
+                property: matchingShift.property
               } : null,
+              property: location.property || matchingShift?.property,
               isFromShift: false
             });
           }
@@ -324,9 +340,12 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const icon = createGuardIcon(guardName, isActiveShift);
       const marker = L.marker([location.location_lat, location.location_lng], { icon });
 
+      const propertyName = location.property?.name || location.shift?.property?.name;
+      
       const popupContent = `
         <div style="text-align: center; min-width: 200px;">
           <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #1f2937;">${guardName}</h3>
+          ${propertyName ? `<p style="margin: 0 0 6px 0; color: #10b981; font-size: 14px;"><strong>🏢 ${propertyName}</strong></p>` : ''}
           ${location.location_address ? `<p style="margin: 0 0 6px 0; color: #2563eb;"><strong>📍 ${location.location_address}</strong></p>` : ''}
           <div style="margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 6px;">
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Status:</strong> ${isActiveShift ? '🟢 Active' : '🔴 Off Duty'}</p>
