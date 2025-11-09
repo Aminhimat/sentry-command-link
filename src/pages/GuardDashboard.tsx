@@ -1637,10 +1637,17 @@ const GuardDashboard = () => {
       )}
       {/* Header */}
       <div className="border-b border-primary/20">
-        <div className="flex h-16 items-center px-6 justify-center">
+        <div className="flex h-16 items-center px-6 justify-between">
           <h1 className="text-xl font-semibold text-guard-foreground">
             Welcome {user?.user_metadata?.first_name || user?.email?.split('@')[0]}
           </h1>
+          <Button 
+            variant="outline" 
+            onClick={handleSignOut}
+            className="bg-guard-foreground/10 border-guard-foreground/20 text-guard-foreground hover:bg-guard-foreground/20"
+          >
+            Sign Out
+          </Button>
         </div>
       </div>
 
