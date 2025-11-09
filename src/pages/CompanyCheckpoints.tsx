@@ -174,15 +174,10 @@ export default function CompanyCheckpoints() {
             Create and manage QR code checkpoints for guard patrols
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/company/checkpoint-scans')}>
-            View Scan History
-          </Button>
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Checkpoint
-          </Button>
-        </div>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Checkpoint
+        </Button>
       </div>
 
       {checkpoints.length === 0 ? (

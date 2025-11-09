@@ -19,7 +19,6 @@ interface GuardLocation {
   accuracy: number | null;
   created_at: string;
   updated_at: string;
-  property_id?: string | null;
   guard?: {
     first_name: string;
     last_name: string;
@@ -27,12 +26,6 @@ interface GuardLocation {
   shift?: {
     check_in_time: string;
     check_out_time: string | null;
-    property?: {
-      name: string;
-    };
-  };
-  property?: {
-    name: string;
   };
 }
 
@@ -172,9 +165,8 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const { data: activeShifts, error: shiftsError } = await supabase
         .from('guard_shifts')
         .select(`
-          id, guard_id, check_in_time, check_out_time, location_lat, location_lng, location_address, property_id,
-          guard:profiles!guard_shifts_guard_id_fkey(id, first_name, last_name),
-          property:properties(name)
+          id, guard_id, check_in_time, check_out_time, location_lat, location_lng, location_address,
+          guard:profiles!guard_shifts_guard_id_fkey(id, first_name, last_name)
         `)
         .eq('company_id', companyId)
         .order('check_in_time', { ascending: false });
@@ -192,10 +184,7 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       // Get the latest location data from guard_locations table
       const { data: locationData, error: locationError } = await supabase
         .from('guard_locations')
-        .select(`
-          *,
-          property:properties(name)
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .order('updated_at', { ascending: false });
 
@@ -231,14 +220,11 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
             accuracy: null,
             created_at: shift.check_in_time,
             updated_at: shift.check_in_time,
-            property_id: shift.property_id,
             guard: shift.guard,
             shift: {
               check_in_time: shift.check_in_time,
-              check_out_time: shift.check_out_time,
-              property: shift.property
+              check_out_time: shift.check_out_time
             },
-            property: shift.property,
             isFromShift: true
           });
         }
@@ -277,10 +263,8 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
               guard: profile,
               shift: matchingShift ? {
                 check_in_time: matchingShift.check_in_time,
-                check_out_time: matchingShift.check_out_time,
-                property: matchingShift.property
+                check_out_time: matchingShift.check_out_time
               } : null,
-              property: location.property || matchingShift?.property,
               isFromShift: false
             });
           }
@@ -340,22 +324,17 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const icon = createGuardIcon(guardName, isActiveShift);
       const marker = L.marker([location.location_lat, location.location_lng], { icon });
 
-      const locationAddress = location.location_address && location.location_address !== 'Check-in Location' 
-        ? location.location_address 
-        : 'Location not available';
-      
       const popupContent = `
-        <div style="text-align: center; min-width: 220px;">
-          <h3 style="margin: 0 0 12px 0; font-weight: bold; color: #1f2937; font-size: 16px;">${guardName}</h3>
-          <div style="margin: 0 0 10px 0; padding: 12px; background: #dbeafe; border-radius: 8px; border-left: 4px solid #2563eb;">
-            <p style="margin: 0; color: #1e40af; font-size: 14px; font-weight: 600; line-height: 1.5;">📍 ${locationAddress}</p>
-          </div>
+        <div style="text-align: center; min-width: 200px;">
+          <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #1f2937;">${guardName}</h3>
+          ${location.location_address ? `<p style="margin: 0 0 6px 0; color: #2563eb;"><strong>📍 ${location.location_address}</strong></p>` : ''}
           <div style="margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 6px;">
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Status:</strong> ${isActiveShift ? '🟢 Active' : '🔴 Off Duty'}</p>
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Last Update:</strong> ${minutesSinceUpdate}m ago</p>
             ${location.battery_level ? `<p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Battery:</strong> ${location.battery_level}%</p>` : ''}
             ${location.accuracy ? `<p style="margin: 0; font-size: 12px;"><strong>Accuracy:</strong> ±${Math.round(location.accuracy)}m</p>` : ''}
           </div>
+          <p style="margin: 0; font-size: 10px; color: #6b7280;">${location.location_lat.toFixed(6)}, ${location.location_lng.toFixed(6)}</p>
         </div>
       `;
 

@@ -1621,7 +1621,7 @@ const GuardDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-guard relative border-8 border-primary shadow-2xl">
+    <div className="min-h-screen bg-guard relative border-4 border-primary">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
@@ -1651,13 +1651,13 @@ const GuardDashboard = () => {
         </div>
       </div>
 
-      {/* Combined Guard Dashboard Card */}
-      <div className="flex-1 p-6">
-        <Card className="max-w-6xl mx-auto border-8 border-primary shadow-2xl">
-          {/* Shift Management Section */}
+      {/* Shift Management */}
+      <div className="p-6 pb-0">
+        <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
+              Shift Management
             </CardTitle>
             <CardDescription>
               {currentShift 
@@ -1677,7 +1677,7 @@ const GuardDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 justify-center mb-8">
+            <div className="flex gap-4 justify-center">
               {!currentShift ? (
                 <Button 
                   onClick={handleStartShift}
@@ -1713,21 +1713,19 @@ const GuardDashboard = () => {
                 </Button>
               )}
             </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            {/* Separator */}
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" />
-                  Task Submission
-                </span>
-              </div>
-            </div>
-
-            {/* Task Submission Form Section */}
+      {/* Task Submission Form */}
+      <div className="flex-1 p-6 pt-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center gap-2 justify-center">
+              <ClipboardList className="h-6 w-6" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             {/* Missing Fields Error Display */}
             {showMissingFieldsError.length > 0 && (
               <div className="mb-6 p-4 border border-destructive bg-destructive/10 rounded-lg text-center">
