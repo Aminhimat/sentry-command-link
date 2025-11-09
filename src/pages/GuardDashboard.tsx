@@ -1621,7 +1621,7 @@ const GuardDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-guard relative border-4 border-primary">
+    <div className="min-h-screen bg-guard relative border-8 border-primary shadow-2xl">
       {/* Success Message Overlay */}
       {showSuccessMessage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
@@ -1653,7 +1653,7 @@ const GuardDashboard = () => {
 
       {/* Shift Management */}
       <div className="p-6 pb-0">
-        <Card className="max-w-2xl mx-auto border-4 border-primary shadow-lg">
+        <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
@@ -1719,7 +1719,7 @@ const GuardDashboard = () => {
 
       {/* Task Submission Form */}
       <div className="flex-1 p-6 pt-0">
-        <Card className="max-w-2xl mx-auto border-4 border-primary shadow-lg">
+        <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <ClipboardList className="h-6 w-6" />
