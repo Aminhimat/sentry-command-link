@@ -1653,7 +1653,7 @@ const GuardDashboard = () => {
 
       {/* Combined Guard Dashboard Card */}
       <div className="flex-1 p-6">
-        <Card className="max-w-4xl mx-auto border-8 border-primary shadow-2xl">
+        <Card className="max-w-6xl mx-auto border-8 border-primary shadow-2xl">
           {/* Shift Management Section */}
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
