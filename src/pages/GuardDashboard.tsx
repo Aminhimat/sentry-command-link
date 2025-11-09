@@ -1657,7 +1657,6 @@ const GuardDashboard = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
-              Shift Management & Task Submission
             </CardTitle>
             <CardDescription>
               {currentShift 
