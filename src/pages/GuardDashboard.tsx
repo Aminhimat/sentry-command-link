@@ -1653,7 +1653,7 @@ const GuardDashboard = () => {
 
       {/* Shift Management */}
       <div className="px-6 pt-6">
-        <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
+        <Card className="max-w-4xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
@@ -1718,7 +1718,7 @@ const GuardDashboard = () => {
 
       {/* Task Submission Form */}
       <div className="flex-1 px-6 pb-6">
-        <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
+        <Card className="max-w-4xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <ClipboardList className="h-6 w-6" />
