@@ -1653,7 +1653,7 @@ const GuardDashboard = () => {
 
       {/* Shift Management & Task Submission */}
       <div className="flex-1 p-6">
-        <Card className="max-w-6xl mx-auto" style={{ backgroundColor: '#090c9b' }}>
+        <Card className="max-w-6xl mx-auto">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
