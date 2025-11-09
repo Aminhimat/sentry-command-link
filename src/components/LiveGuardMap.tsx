@@ -341,19 +341,24 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const marker = L.marker([location.location_lat, location.location_lng], { icon });
 
       const propertyName = location.property?.name || location.shift?.property?.name;
+      const locationAddress = location.location_address && location.location_address !== 'Check-in Location' 
+        ? location.location_address 
+        : 'Location not available';
       
       const popupContent = `
-        <div style="text-align: center; min-width: 200px;">
+        <div style="text-align: center; min-width: 220px;">
           <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #1f2937;">${guardName}</h3>
-          ${propertyName ? `<p style="margin: 0 0 6px 0; color: #10b981; font-size: 14px;"><strong>🏢 ${propertyName}</strong></p>` : ''}
-          ${location.location_address ? `<p style="margin: 0 0 6px 0; color: #2563eb;"><strong>📍 ${location.location_address}</strong></p>` : ''}
+          ${propertyName ? `<p style="margin: 0 0 8px 0; color: #10b981; font-size: 15px; font-weight: 600;"><strong>🏢 ${propertyName}</strong></p>` : ''}
+          <div style="margin: 0 0 10px 0; padding: 10px; background: #dbeafe; border-radius: 6px; border-left: 3px solid #2563eb;">
+            <p style="margin: 0; color: #1e40af; font-size: 13px; font-weight: 500; line-height: 1.4;">📍 ${locationAddress}</p>
+          </div>
           <div style="margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 6px;">
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Status:</strong> ${isActiveShift ? '🟢 Active' : '🔴 Off Duty'}</p>
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Last Update:</strong> ${minutesSinceUpdate}m ago</p>
             ${location.battery_level ? `<p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Battery:</strong> ${location.battery_level}%</p>` : ''}
             ${location.accuracy ? `<p style="margin: 0; font-size: 12px;"><strong>Accuracy:</strong> ±${Math.round(location.accuracy)}m</p>` : ''}
           </div>
-          <p style="margin: 0; font-size: 10px; color: #6b7280;">${location.location_lat.toFixed(6)}, ${location.location_lng.toFixed(6)}</p>
+          <p style="margin: 4px 0 0 0; font-size: 10px; color: #6b7280;">${location.location_lat.toFixed(6)}, ${location.location_lng.toFixed(6)}</p>
         </div>
       `;
 
