@@ -1652,7 +1652,7 @@ const GuardDashboard = () => {
       </div>
 
       {/* Shift Management */}
-      <div className="p-6 pb-0">
+      <div className="px-6 pt-6">
         <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
@@ -1717,7 +1717,7 @@ const GuardDashboard = () => {
       </div>
 
       {/* Task Submission Form */}
-      <div className="flex-1 p-6 pt-0">
+      <div className="flex-1 px-6 pb-6">
         <Card className="max-w-2xl mx-auto border-8 border-primary shadow-2xl">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
