@@ -46,7 +46,7 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 100%;
 
     /* Guard App Colors */
-    --guard-background: 210 29% 24%;
+    --guard-background: 239 89% 32%;
     --guard-foreground: 210 17% 98%;
 
     --border: 215 25% 85%;
@@ -108,7 +108,7 @@ All colors MUST be HSL.
     --destructive-foreground: 210 40% 98%;
 
     /* Guard App Colors */
-    --guard-background: 210 29% 24%;
+    --guard-background: 239 89% 32%;
     --guard-foreground: 210 17% 98%;
 
     --border: 217.2 32.6% 17.5%;
