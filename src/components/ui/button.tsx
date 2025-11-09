@@ -23,7 +23,6 @@ const buttonVariants = cva(
         warning: "bg-warning text-warning-foreground hover:bg-warning/90",
         accent: "bg-gradient-accent text-accent-foreground hover:shadow-elevated hover:scale-105",
         "ghost-white": "border border-white/20 text-white hover:bg-white/10 bg-transparent",
-        black: "bg-black text-white hover:bg-black/90 shadow-card",
       },
       size: {
         default: "h-10 px-4 py-2 md:h-10",
