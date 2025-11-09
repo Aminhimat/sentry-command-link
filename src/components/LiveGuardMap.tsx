@@ -340,17 +340,15 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
       const icon = createGuardIcon(guardName, isActiveShift);
       const marker = L.marker([location.location_lat, location.location_lng], { icon });
 
-      const propertyName = location.property?.name || location.shift?.property?.name;
       const locationAddress = location.location_address && location.location_address !== 'Check-in Location' 
         ? location.location_address 
         : 'Location not available';
       
       const popupContent = `
         <div style="text-align: center; min-width: 220px;">
-          <h3 style="margin: 0 0 8px 0; font-weight: bold; color: #1f2937;">${guardName}</h3>
-          ${propertyName ? `<p style="margin: 0 0 8px 0; color: #10b981; font-size: 15px; font-weight: 600;"><strong>🏢 ${propertyName}</strong></p>` : ''}
-          <div style="margin: 0 0 10px 0; padding: 10px; background: #dbeafe; border-radius: 6px; border-left: 3px solid #2563eb;">
-            <p style="margin: 0; color: #1e40af; font-size: 13px; font-weight: 500; line-height: 1.4;">📍 ${locationAddress}</p>
+          <h3 style="margin: 0 0 12px 0; font-weight: bold; color: #1f2937; font-size: 16px;">${guardName}</h3>
+          <div style="margin: 0 0 10px 0; padding: 12px; background: #dbeafe; border-radius: 8px; border-left: 4px solid #2563eb;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px; font-weight: 600; line-height: 1.5;">📍 ${locationAddress}</p>
           </div>
           <div style="margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 6px;">
             <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Status:</strong> ${isActiveShift ? '🟢 Active' : '🔴 Off Duty'}</p>
