@@ -15,6 +15,7 @@ const AuthPage = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -58,6 +59,8 @@ const AuthPage = () => {
             metadata: session.user.user_metadata
           });
           
+          setIsRedirecting(true);
+          
           // Check if user needs to change password (database flag)
           setTimeout(() => {
             supabase
@@ -88,6 +91,8 @@ const AuthPage = () => {
                 validateGuardLoginAllowed(session.user!.id).then((allowed) => {
                   if (allowed) {
                     navigate('/guard');
+                  } else {
+                    setIsRedirecting(false);
                   }
                 });
               } else {
@@ -337,6 +342,20 @@ const AuthPage = () => {
       description: "Signed out successfully!",
     });
   };
+
+  if (user && isRedirecting) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="w-full max-w-md shadow-elevated">
+          <CardHeader className="text-center">
+            <Shield className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+            <CardTitle className="text-2xl">Redirecting...</CardTitle>
+            <CardDescription>Please wait</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (user) {
     return (
