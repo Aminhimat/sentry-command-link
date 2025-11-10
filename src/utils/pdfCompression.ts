@@ -44,13 +44,21 @@ export async function compressPDFBlob(
     const pdfDoc = await PDFDocument.load(arrayBuffer, {
       ignoreEncryption: true,
       updateMetadata: false,
+      throwOnInvalidObject: false,
     });
 
-    // Save with aggressive compression options
+    // Remove unnecessary metadata to reduce size
+    pdfDoc.setTitle('');
+    pdfDoc.setAuthor('');
+    pdfDoc.setSubject('');
+    pdfDoc.setProducer('');
+    pdfDoc.setCreator('');
+
+    // Save with maximum compression options
     const compressedBytes = await pdfDoc.save({
       useObjectStreams: true,
       addDefaultPage: false,
-      objectsPerTick: 100,
+      objectsPerTick: 200,
       updateFieldAppearances: false,
     });
 

@@ -452,7 +452,8 @@ export class PDFReportGenerator {
       // Use browser-image-compression for optimal size reduction
       const compressedImageData = await compressImageForPDF(imageUrl, targetMaxPx);
       
-      this.doc.addImage(compressedImageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+      // Use MEDIUM compression for better file size with maintained quality
+      this.doc.addImage(compressedImageData, 'JPEG', x, y, width, height, undefined, 'MEDIUM');
       
       console.log('Image added to PDF successfully');
     } catch (error) {
