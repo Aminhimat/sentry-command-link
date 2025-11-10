@@ -254,6 +254,15 @@ const GuardAuthPage = () => {
           }
         }
 
+        // Revoke other sessions server-side as a fallback
+        try {
+          await supabase.functions.invoke('enforce-single-session', {
+            body: { userId: authData.user.id },
+          });
+        } catch (fnErr) {
+          console.warn('Failed to enforce single session via function', fnErr);
+        }
+
         // Passed validation
         navigate('/guard');
       }
