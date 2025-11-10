@@ -1001,35 +1001,6 @@ const CompanyDashboard = () => {
     window.location.href = '/';
   };
 
-  const calculateGuardTotalHours = () => {
-    const guardHours: Record<string, { name: string; totalHours: number }> = {};
-
-    shifts.forEach((shift) => {
-      if (!shift.check_out_time) return;
-
-      const checkIn = new Date(shift.check_in_time);
-      const checkOut = new Date(shift.check_out_time);
-      const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
-
-      const guardName = `${shift.guard?.first_name || 'Unknown'} ${shift.guard?.last_name || ''}`.trim();
-
-      if (!guardHours[shift.guard_id]) {
-        guardHours[shift.guard_id] = {
-          name: guardName,
-          totalHours: 0
-        };
-      }
-
-      guardHours[shift.guard_id].totalHours += hours;
-    });
-
-    return Object.entries(guardHours).map(([guardId, data]) => ({
-      guardId,
-      name: data.name,
-      totalHours: data.totalHours.toFixed(2)
-    }));
-  };
-
 
   if (isLoading) {
     return (
@@ -1153,7 +1124,7 @@ const CompanyDashboard = () => {
       <div className="flex-1 p-6">
         {/* Dashboard Tabs */}
         <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-full sm:max-w-2xl touch-manipulation">
+          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm touch-manipulation">
             <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Dashboard
@@ -1161,10 +1132,6 @@ const CompanyDashboard = () => {
             <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
               Live Tracking
-            </TabsTrigger>
-            <TabsTrigger value="shifts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
-              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-              Shifts
             </TabsTrigger>
           </TabsList>
           
@@ -1179,44 +1146,6 @@ const CompanyDashboard = () => {
               {userProfile?.company_id && (
                 <LiveGuardMap companyId={userProfile.company_id} />
               )}
-            </SmoothSection>
-          </TabsContent>
-          
-          <TabsContent value="shifts">
-            <SmoothSection>
-              <Card className="shadow-elevated">
-                <CardHeader>
-                  <CardTitle className="text-xl sm:text-2xl">Guard Total Hours</CardTitle>
-                  <CardDescription>
-                    Total hours worked by each guard across all completed shifts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <div className="min-w-full">
-                      <div className="border rounded-lg">
-                        <div className="grid grid-cols-2 bg-muted p-4 font-medium">
-                          <div>Guard Name</div>
-                          <div className="text-right">Total Hours</div>
-                        </div>
-                        <div className="divide-y">
-                          {calculateGuardTotalHours().map((guard) => (
-                            <div key={guard.guardId} className="grid grid-cols-2 p-4 hover:bg-muted/50 transition-colors">
-                              <div className="font-medium">{guard.name}</div>
-                              <div className="text-right font-semibold text-primary">{guard.totalHours} hrs</div>
-                            </div>
-                          ))}
-                          {calculateGuardTotalHours().length === 0 && (
-                            <div className="p-8 text-center text-muted-foreground">
-                              No completed shifts found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </SmoothSection>
           </TabsContent>
         </Tabs>
