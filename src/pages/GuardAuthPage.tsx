@@ -7,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Session } from '@supabase/supabase-js';
+import { getDeviceInfo } from '@/utils/deviceFingerprint';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const GuardAuthPage = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -14,6 +17,7 @@ const GuardAuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [devicePendingApproval, setDevicePendingApproval] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,13 +66,11 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active, requires_admin_approval')
+          .select('id, role, company_id, is_active, requires_admin_approval, first_name, last_name')
           .eq('user_id', authData.user.id)
           .single();
 
         if (profile?.role === 'guard') {
-          // Admin approval disabled - skip approval check
-
           // Check if guard is active
           if (!profile.is_active) {
             await supabase.auth.signOut();
@@ -76,6 +78,62 @@ const GuardAuthPage = () => {
               variant: "destructive",
               title: "Account Inactive",
               description: "Your account has been deactivated. Please contact your administrator.",
+            });
+            return;
+          }
+
+          // Check device approval
+          const deviceInfo = getDeviceInfo();
+          console.log('Device Info:', deviceInfo);
+
+          // Check if this device is already registered and approved
+          const { data: existingDevice, error: deviceCheckError } = await supabase
+            .from('device_logins' as any)
+            .select('*')
+            .eq('guard_id', profile.id)
+            .eq('device_id', deviceInfo.deviceId)
+            .maybeSingle();
+
+          if (deviceCheckError) {
+            console.error('Error checking device:', deviceCheckError);
+          }
+
+          if (!existingDevice) {
+            // New device - register it
+            const guardName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || authData.user.email;
+            
+            const { error: insertError } = await supabase
+              .from('device_logins' as any)
+              .insert({
+                guard_id: profile.id,
+                guard_name: guardName,
+                device_id: deviceInfo.deviceId,
+                device_model: deviceInfo.deviceModel,
+                device_os: deviceInfo.deviceOs,
+                approved: false,
+              });
+
+            if (insertError) {
+              console.error('Error registering device:', insertError);
+            }
+
+            // Block access - device needs approval
+            await supabase.auth.signOut();
+            setDevicePendingApproval(true);
+            toast({
+              variant: "destructive",
+              title: "Device Approval Required",
+              description: "This is a new device. Please contact your administrator to approve this device.",
+            });
+            return;
+          } else if (!(existingDevice as any).approved) {
+            // Device exists but not approved
+            await supabase.auth.signOut();
+            setDevicePendingApproval(true);
+            toast({
+              variant: "destructive",
+              title: "Device Pending Approval",
+              description: "Your device is pending administrator approval. Please wait for approval.",
             });
             return;
           }
@@ -222,6 +280,20 @@ const GuardAuthPage = () => {
           <CardTitle className="text-2xl font-bold text-blue-600">GuardHQ Mobile</CardTitle>
           <CardDescription>Sign in to access your guard dashboard</CardDescription>
         </CardHeader>
+        
+        {devicePendingApproval && (
+          <CardContent>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Device Approval Required</AlertTitle>
+              <AlertDescription>
+                Your device needs to be approved by an administrator before you can access the system. 
+                Please contact your administrator and try again after approval.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        )}
+        
         <form onSubmit={handleSignIn}>
           <CardContent className="space-y-4">
             <div className="space-y-2">

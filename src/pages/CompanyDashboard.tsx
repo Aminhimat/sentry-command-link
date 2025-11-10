@@ -1104,6 +1104,11 @@ const CompanyDashboard = () => {
                 Checkpoints
               </Button>
             </Link>
+            <Link to="/company/devices">
+              <Button variant="ghost" size="sm" className="h-10">
+                Device Approvals
+              </Button>
+            </Link>
             
             <Button variant="ghost" size="sm" onClick={() => setShowGenerateReportForm(true)} className="h-10">
               <Download className="h-4 w-4 mr-2" />
