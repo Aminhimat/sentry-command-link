@@ -186,7 +186,7 @@ const GuardAuthPage = () => {
             return;
           }
 
-          // Store login location if geolocation is available
+          // Store login location if geolocation is available - CRITICAL: Must complete before navigation
           if ('geolocation' in navigator) {
             try {
               const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -197,19 +197,44 @@ const GuardAuthPage = () => {
                 });
               });
 
+              console.log('Updating login location to:', position.coords.latitude, position.coords.longitude);
+              
               const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
                 body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
               });
 
               if (setLocError) {
-                console.error('Failed to store login location via function:', setLocError);
-              } else {
-                console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
+                console.error('CRITICAL: Failed to store login location via function:', setLocError);
+                // Don't proceed if location update fails - this will cause immediate logout
+                await supabase.auth.signOut();
+                toast({
+                  variant: "destructive",
+                  title: "Location Update Failed",
+                  description: "Unable to update your login location. Please try again.",
+                });
+                return;
               }
+              
+              console.log('Login location successfully updated');
             } catch (geoError) {
               console.error('Failed to get login location:', geoError);
-              // Continue with login even if location storage fails
+              await supabase.auth.signOut();
+              toast({
+                variant: "destructive",
+                title: "Location Required",
+                description: "Location access is required for guard login. Please enable location services and try again.",
+              });
+              return;
             }
+          } else {
+            // Geolocation not available
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Location Not Supported",
+              description: "Your device does not support location services, which are required for guard access.",
+            });
+            return;
           }
 
           // Single session enforcement is handled by the realtime hook in GuardDashboard
