@@ -56,8 +56,8 @@ export class PDFReportGenerator {
       orientation: 'p',
       unit: 'mm',
       format: 'a4',
-      compress: true,
-      precision: 12 // Increased precision for crisper text rendering on mobile
+      compress: true, // Enable built-in compression
+      precision: 2    // Lower precision for smaller file size
     });
     this.pageWidth = this.doc.internal.pageSize.getWidth();
     this.pageHeight = this.doc.internal.pageSize.getHeight();
@@ -444,12 +444,17 @@ export class PDFReportGenerator {
 
   private async addImageToEntry(imageUrl: string, x: number, y: number, width: number, height: number, watermarkText?: string): Promise<void> {
     try {
-      // For multi-image reports (5 photos/page), use balanced size for better quality
-      const targetMaxPx = 640;
+      // For multi-image reports, use smaller size for faster downloads
+      const targetMaxPx = 800;
 
+      console.log('Compressing image on-the-fly:', imageUrl.substring(0, 50));
+      
       // Use browser-image-compression for optimal size reduction
       const compressedImageData = await compressImageForPDF(imageUrl, targetMaxPx);
+      
       this.doc.addImage(compressedImageData, 'JPEG', x, y, width, height, undefined, 'FAST');
+      
+      console.log('Image added to PDF successfully');
     } catch (error) {
       console.error('Error adding image to entry:', error);
     }

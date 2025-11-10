@@ -27,7 +27,7 @@ export function getPDFCompressionOptions() {
 }
 
 /**
- * Compress a PDF blob using pdf-lib
+ * Compress a PDF blob using pdf-lib with optimized settings
  * @param pdfBlob - The PDF blob to compress
  * @param quality - Compression quality setting
  * @returns Compressed PDF blob
@@ -37,27 +37,36 @@ export async function compressPDFBlob(
   quality: 'recommended' | 'high' | 'low' = 'recommended'
 ): Promise<Blob> {
   try {
+    console.log('Starting PDF-level compression...');
+    console.log('Original PDF size:', (pdfBlob.size / (1024 * 1024)).toFixed(2), 'MB');
+    
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const pdfDoc = await PDFDocument.load(arrayBuffer, {
       ignoreEncryption: true,
+      updateMetadata: false,
     });
 
-    // Save with compression options
+    // Save with aggressive compression options
     const compressedBytes = await pdfDoc.save({
       useObjectStreams: true,
       addDefaultPage: false,
-      objectsPerTick: 50,
+      objectsPerTick: 100,
+      updateFieldAppearances: false,
     });
 
-    console.log('PDF compressed:', {
-      originalSize: (pdfBlob.size / 1024).toFixed(2) + ' KB',
-      compressedSize: (compressedBytes.length / 1024).toFixed(2) + ' KB',
-      compressionRatio: ((1 - compressedBytes.length / pdfBlob.size) * 100).toFixed(1) + '%'
-    });
+    const compressionRatio = ((1 - compressedBytes.length / pdfBlob.size) * 100);
+    
+    console.log('PDF compression complete:');
+    console.log('- Original size:', (pdfBlob.size / (1024 * 1024)).toFixed(2), 'MB');
+    console.log('- Compressed size:', (compressedBytes.length / (1024 * 1024)).toFixed(2), 'MB');
+    console.log('- Compression ratio:', compressionRatio.toFixed(1) + '%');
 
-    return new Blob([compressedBytes as any], { type: 'application/pdf' });
+    // Create a new Uint8Array to ensure proper type
+    const uint8Array = new Uint8Array(compressedBytes);
+    return new Blob([uint8Array], { type: 'application/pdf' });
   } catch (error) {
     console.error('Error compressing PDF:', error);
+    console.log('Returning original PDF without compression');
     // Return original if compression fails
     return pdfBlob;
   }
