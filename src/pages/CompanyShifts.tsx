@@ -353,12 +353,13 @@ const CompanyShifts = () => {
                     <th className="text-left p-4 font-medium">Status</th>
                     <th className="text-left p-4 font-medium">Location</th>
                     <th className="text-left p-4 font-medium">Actions</th>
+                    <th className="text-left p-4 font-medium">Total Hours</th>
                   </tr>
                 </thead>
                 <tbody>
                   {shifts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center p-8 text-muted-foreground">
+                      <td colSpan={8} className="text-center p-8 text-muted-foreground">
                         <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium mb-2">No Shifts Recorded</p>
                         <p>Guard shifts will appear here when guards check in and out</p>
@@ -372,6 +373,8 @@ const CompanyShifts = () => {
                          ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
                          : null;
                        const isActive = !shift.check_out_time;
+                       
+                       const guardTotalHours = calculateGuardTotalHours().find(g => g.guardId === shift.guard_id);
                        
                        console.log('Shift data:', {
                          guard: `${shift.guard?.first_name} ${shift.guard?.last_name}`,
@@ -478,6 +481,11 @@ const CompanyShifts = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-sm font-semibold text-primary">
+                              {guardTotalHours?.totalHours || '0.00'} hrs
+                            </span>
                           </td>
                         </tr>
                       );
