@@ -68,6 +68,21 @@ interface Property {
   };
 }
 
+interface Shift {
+  id: string;
+  guard_id: string;
+  company_id: string;
+  check_in_time: string;
+  check_out_time: string | null;
+  guard?: {
+    first_name: string;
+    last_name: string;
+  };
+  companies?: {
+    name: string;
+  };
+}
+
 const AdminDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -76,6 +91,7 @@ const AdminDashboard = () => {
   const [guardsCount, setGuardsCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertiesWithPhotoActivity, setPropertiesWithPhotoActivity] = useState(0);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [newProperty, setNewProperty] = useState({
     name: "",
@@ -158,6 +174,7 @@ const AdminDashboard = () => {
       await fetchGuards();
       await fetchProperties();
       await fetchPropertiesWithPhotoActivity();
+      await fetchShifts();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -295,6 +312,78 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const fetchShifts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('guard_shifts')
+        .select(`
+          id,
+          guard_id,
+          company_id,
+          check_in_time,
+          check_out_time,
+          profiles!guard_shifts_guard_id_fkey (
+            first_name,
+            last_name
+          ),
+          companies (
+            name
+          )
+        `)
+        .order('check_in_time', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const shiftsWithGuard = data?.map((shift: any) => ({
+        ...shift,
+        guard: shift.profiles
+      })) || [];
+
+      setShifts(shiftsWithGuard);
+    } catch (error) {
+      console.error('Error fetching shifts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load shifts",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const calculateGuardTotalHours = () => {
+    const guardHours: Record<string, { name: string; company: string; totalHours: number }> = {};
+
+    shifts.forEach((shift) => {
+      if (!shift.check_out_time) return;
+
+      const checkIn = new Date(shift.check_in_time);
+      const checkOut = new Date(shift.check_out_time);
+      const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+
+      const guardName = `${shift.guard?.first_name || 'Unknown'} ${shift.guard?.last_name || ''}`.trim();
+      const companyName = shift.companies?.name || 'No Company';
+
+      if (!guardHours[shift.guard_id]) {
+        guardHours[shift.guard_id] = {
+          name: guardName,
+          company: companyName,
+          totalHours: 0
+        };
+      }
+
+      guardHours[shift.guard_id].totalHours += hours;
+    });
+
+    return Object.entries(guardHours).map(([guardId, data]) => ({
+      guardId,
+      name: data.name,
+      company: data.company,
+      totalHours: data.totalHours.toFixed(2)
+    }));
   };
 
 
@@ -802,9 +891,10 @@ const AdminDashboard = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 touch-manipulation">
+          <TabsList className="grid w-full grid-cols-3 touch-manipulation">
             <TabsTrigger value="analytics" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Analytics</TabsTrigger>
             <TabsTrigger value="companies" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Companies</TabsTrigger>
+            <TabsTrigger value="shifts" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Shifts</TabsTrigger>
           </TabsList>
           
           <TabsContent value="analytics" className="space-y-4 sm:space-y-6">
@@ -1194,7 +1284,47 @@ const AdminDashboard = () => {
             </SmoothSection>
           </TabsContent>
 
-
+          <TabsContent value="shifts" className="space-y-4 sm:space-y-6">
+            <SmoothSection>
+              <Card className="shadow-elevated">
+                <CardHeader>
+                  <CardTitle className="text-2xl sm:text-3xl">Guard Total Hours</CardTitle>
+                  <CardDescription>
+                    Total hours worked by each guard across all completed shifts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Guard Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead className="text-right">Total Hours</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {calculateGuardTotalHours().map((guard) => (
+                          <TableRow key={guard.guardId}>
+                            <TableCell className="font-medium">{guard.name}</TableCell>
+                            <TableCell>{guard.company}</TableCell>
+                            <TableCell className="text-right font-semibold">{guard.totalHours} hrs</TableCell>
+                          </TableRow>
+                        ))}
+                        {calculateGuardTotalHours().length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                              No completed shifts found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </SmoothSection>
+          </TabsContent>
 
         </Tabs>
 
