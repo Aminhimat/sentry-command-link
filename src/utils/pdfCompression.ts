@@ -10,9 +10,9 @@ export interface PDFCompressionSettings {
 }
 
 const QUALITY_SETTINGS = {
-  recommended: 0.3,  // Good balance
-  high: 0.15,        // Smaller size, more compression
-  low: 0.6,          // Better quality, larger size
+  recommended: 0.25,  // Aggressive compression, good balance
+  high: 0.12,         // Maximum compression
+  low: 0.5,           // Better quality, larger size
 };
 
 /**
