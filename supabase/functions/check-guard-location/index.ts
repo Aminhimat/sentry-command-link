@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     // Get guard profile with login location
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('id, role, login_location_lat, login_location_lng, requires_admin_approval')
+      .select('id, role, login_location_lat, login_location_lng, requires_admin_approval, company_id, first_name, last_name')
       .eq('user_id', user.id)
       .single();
 
@@ -126,6 +126,30 @@ Deno.serve(async (req) => {
     // If distance exceeds 1 mile, mark for approval and sign out
     if (distance > 1) {
       console.log(`Guard exceeded 1 mile limit. Logging out without admin approval requirement.`);
+
+      // Send notification to admin
+      if (profile.company_id) {
+        const guardName = profile.first_name && profile.last_name 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'Guard';
+        
+        const { error: notificationError } = await supabaseAdmin
+          .from('admin_notifications')
+          .insert({
+            company_id: profile.company_id,
+            guard_id: profile.id,
+            notification_type: 'location_violation',
+            title: 'Guard Left Site Location',
+            message: `${guardName} moved ${distance.toFixed(2)} miles away from their assigned location and was automatically logged out.`,
+            distance_miles: distance.toFixed(2),
+          });
+
+        if (notificationError) {
+          console.error('Error creating admin notification:', notificationError);
+        } else {
+          console.log('Admin notification created successfully');
+        }
+      }
 
       return new Response(
         JSON.stringify({ 

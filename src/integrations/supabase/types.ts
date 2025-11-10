@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          distance_miles: number | null
+          guard_id: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          distance_miles?: number | null
+          guard_id: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          distance_miles?: number | null
+          guard_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkpoint_scans: {
         Row: {
           checkpoint_id: string

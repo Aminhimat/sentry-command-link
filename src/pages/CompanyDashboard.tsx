@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
 import { SmoothSection } from "@/components/SmoothSection";
+import { AdminNotifications } from "@/components/AdminNotifications";
 
 interface Profile {
   id: string;
@@ -1143,6 +1144,9 @@ const CompanyDashboard = () => {
           <TabsContent value="dashboard">
             <SmoothSection>
               <StatsCards guards={guards} incidents={reports} />
+            </SmoothSection>
+            <SmoothSection>
+              <AdminNotifications />
             </SmoothSection>
           </TabsContent>
           
