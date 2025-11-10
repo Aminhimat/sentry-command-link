@@ -199,8 +199,12 @@ const GuardAuthPage = () => {
 
               console.log('Updating login location to:', position.coords.latitude, position.coords.longitude);
               
+              const { data: sessionData } = await supabase.auth.getSession();
+              const accessToken = sessionData.session?.access_token;
+              
               const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
-                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               });
 
               if (setLocError || !setLocData || setLocData.success !== true) {
@@ -217,7 +221,8 @@ const GuardAuthPage = () => {
               
               // Verify server now sees us within range before navigating
               const { data: verifyData, error: verifyError } = await supabase.functions.invoke('check-guard-location', {
-                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               });
               if (verifyError || !verifyData || verifyData.withinRange !== true) {
                 console.error('Location verification failed', verifyError, verifyData);

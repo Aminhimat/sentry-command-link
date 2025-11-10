@@ -190,8 +190,12 @@ const AuthPage = () => {
           });
 
           // Update baseline via edge function (service role)
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+
           const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
-            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
           });
           if (setLocError || !setLocData || setLocData.success !== true) {
             await supabase.auth.signOut();
@@ -205,7 +209,8 @@ const AuthPage = () => {
 
           // Verify server-side we are now within range before proceeding
           const { data: verifyData, error: verifyError } = await supabase.functions.invoke('check-guard-location', {
-            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
           });
           if (verifyError || !verifyData || verifyData.withinRange !== true) {
             await supabase.auth.signOut();
