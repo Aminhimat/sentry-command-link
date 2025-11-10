@@ -31,9 +31,14 @@ export const AdminNotifications = () => {
 
   const fetchNotifications = async () => {
     try {
+      // Calculate 24 hours ago
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
       const { data, error } = await supabase
         .from('admin_notifications')
         .select('*')
+        .gte('created_at', twentyFourHoursAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(50);
 
