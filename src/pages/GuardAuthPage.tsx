@@ -203,8 +203,8 @@ const GuardAuthPage = () => {
                 body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
               });
 
-              if (setLocError) {
-                console.error('CRITICAL: Failed to store login location via function:', setLocError);
+              if (setLocError || !setLocData || setLocData.success !== true) {
+                console.error('CRITICAL: Failed to store login location via function:', setLocError || setLocData);
                 // Don't proceed if location update fails - this will cause immediate logout
                 await supabase.auth.signOut();
                 toast({
@@ -215,7 +215,22 @@ const GuardAuthPage = () => {
                 return;
               }
               
-              console.log('Login location successfully updated');
+              // Verify server now sees us within range before navigating
+              const { data: verifyData, error: verifyError } = await supabase.functions.invoke('check-guard-location', {
+                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+              });
+              if (verifyError || !verifyData || verifyData.withinRange !== true) {
+                console.error('Location verification failed', verifyError, verifyData);
+                await supabase.auth.signOut();
+                toast({
+                  variant: "destructive",
+                  title: "Location Verification Failed",
+                  description: "We couldn't verify your location. Please try again from your login spot or contact admin to reset.",
+                });
+                return;
+              }
+              
+              console.log('Login location successfully updated and verified');
             } catch (geoError) {
               console.error('Failed to get login location:', geoError);
               await supabase.auth.signOut();
