@@ -1,6 +1,7 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { imageOptimizer } from '@/utils/imageOptimization';
 import { compressImageForPDF, preloadAndCompressImages } from '@/utils/pdfImageCompression';
+import { saveCompressedPDF } from '@/utils/pdfCompression';
 
 interface Report {
   id: string;
@@ -636,16 +637,13 @@ export class PDFReportGenerator {
     
     const filename = `security_report_${dateStr}.pdf`;
 
-    // Optimized download with proper cleanup and size logging
-    const pdfBlob = this.doc.output('blob');
-    console.log(`PDF generated. Size: ${(pdfBlob.size / (1024 * 1024)).toFixed(2)} MB for ${reports.length} reports`);
+    // Save with advanced compression for faster downloads
+    console.log(`Generating compressed PDF: ${filename}`);
+    console.log(`Total reports: ${reports.length}, Total pages: ${totalPages}`);
     
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url); // Clean up memory
+    await saveCompressedPDF(this.doc, filename);
+    
+    console.log(`PDF generated and compressed successfully`);
   }
 }
 
