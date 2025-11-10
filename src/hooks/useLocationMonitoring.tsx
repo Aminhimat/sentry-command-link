@@ -72,6 +72,19 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
         return;
       }
 
+      // If no baseline is stored yet, set it now to avoid immediate logout loop
+      if (data?.message && typeof data.message === 'string' && data.message.includes('No login location stored')) {
+        const { error: setLocError } = await supabase.functions.invoke('set-login-location', {
+          body: { currentLat, currentLng }
+        });
+        if (setLocError) {
+          console.error('Failed to set baseline login location:', setLocError);
+        } else {
+          console.log('Baseline login location set from monitoring hook.');
+        }
+        return;
+      }
+
       if (data && !data.withinRange) {
         // Guard moved too far, they've been logged out by policy
         toast({

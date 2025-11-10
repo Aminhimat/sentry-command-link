@@ -197,15 +197,15 @@ const GuardAuthPage = () => {
                 });
               });
 
-              await supabase
-                .from('profiles')
-                .update({
-                  login_location_lat: position.coords.latitude,
-                  login_location_lng: position.coords.longitude
-                })
-                .eq('id', profile.id);
+              const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
+                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude }
+              });
 
-              console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
+              if (setLocError) {
+                console.error('Failed to store login location via function:', setLocError);
+              } else {
+                console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
+              }
             } catch (geoError) {
               console.error('Failed to get login location:', geoError);
               // Continue with login even if location storage fails
