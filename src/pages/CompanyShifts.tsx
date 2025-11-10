@@ -286,45 +286,6 @@ const CompanyShifts = () => {
 
       {/* Main Content */}
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* Guard Total Hours Summary */}
-        <Card className="shadow-lg border-primary/10">
-          <CardHeader className="bg-gradient-to-r from-primary/5 to-primary-glow/5 border-b">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Clock className="h-5 w-5 text-primary" />
-              Guard Total Hours
-            </CardTitle>
-            <CardDescription>
-              Total hours worked by each guard across all completed shifts
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="overflow-x-auto">
-              <div className="min-w-full">
-                <div className="border rounded-lg">
-                  <div className="grid grid-cols-2 bg-muted p-4 font-medium text-sm">
-                    <div>Guard Name</div>
-                    <div className="text-right">Total Hours</div>
-                  </div>
-                  <div className="divide-y">
-                    {calculateGuardTotalHours().map((guard) => (
-                      <div key={guard.guardId} className="grid grid-cols-2 p-4 hover:bg-muted/50 transition-colors">
-                        <div className="font-medium">{guard.name}</div>
-                        <div className="text-right font-semibold text-primary">{guard.totalHours} hrs</div>
-                      </div>
-                    ))}
-                    {calculateGuardTotalHours().length === 0 && (
-                      <div className="p-8 text-center text-muted-foreground">
-                        <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No completed shifts found</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Scheduled Shifts Section - Temporarily disabled */}
         {/* <ScheduledShiftsForm 
           companyId={userProfile?.company_id || ''} 
