@@ -98,10 +98,46 @@ const GuardAuthPage = () => {
             console.error('Error checking device:', deviceCheckError);
           }
 
+          // Check for other active approved devices
+          const { data: otherDevices } = await supabase
+            .from('device_logins' as any)
+            .select('*')
+            .eq('guard_id', profile.id)
+            .eq('approved', true)
+            .neq('device_id', deviceInfo.deviceId);
+
           if (!existingDevice) {
-            // New device - register it
+            // New device - check if concurrent login is allowed
             const guardName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || authData.user.email;
             
+            if (otherDevices && otherDevices.length > 0) {
+              // Check if any other device allows concurrent login
+              const hasConcurrentDevice = otherDevices.some((d: any) => d.allow_concurrent_login);
+              
+              if (!hasConcurrentDevice) {
+                // Register device as pending and block access
+                await supabase.from('device_logins' as any).insert({
+                  guard_id: profile.id,
+                  guard_name: guardName,
+                  device_id: deviceInfo.deviceId,
+                  device_model: deviceInfo.deviceModel,
+                  device_os: deviceInfo.deviceOs,
+                  approved: false,
+                  allow_concurrent_login: false,
+                });
+
+                await supabase.auth.signOut();
+                setDevicePendingApproval(true);
+                toast({
+                  variant: "destructive",
+                  title: "Multiple Device Login Blocked",
+                  description: "You are already logged in on another device. Admin approval required for concurrent access.",
+                });
+                return;
+              }
+            }
+
+            // Register new device
             const { error: insertError } = await supabase
               .from('device_logins' as any)
               .insert({
@@ -111,6 +147,7 @@ const GuardAuthPage = () => {
                 device_model: deviceInfo.deviceModel,
                 device_os: deviceInfo.deviceOs,
                 approved: false,
+                allow_concurrent_login: false,
               });
 
             if (insertError) {
@@ -134,6 +171,17 @@ const GuardAuthPage = () => {
               variant: "destructive",
               title: "Device Pending Approval",
               description: "Your device is pending administrator approval. Please wait for approval.",
+            });
+            return;
+          }
+
+          // Device is approved - check concurrent login permission
+          if (otherDevices && otherDevices.length > 0 && !(existingDevice as any).allow_concurrent_login) {
+            await supabase.auth.signOut();
+            toast({
+              variant: "destructive",
+              title: "Concurrent Login Not Allowed",
+              description: "You are already logged in on another device. Please sign out from other devices or contact admin.",
             });
             return;
           }
