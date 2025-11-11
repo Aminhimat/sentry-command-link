@@ -42,6 +42,11 @@ interface Guard {
   };
   requires_admin_approval?: boolean;
   approval_reason?: string;
+  active_shift?: {
+    id: string;
+    check_in_time: string;
+    check_out_time: string | null;
+  } | null;
 }
 
 interface Property {
@@ -198,12 +203,23 @@ const CompanyGuards = () => {
         return;
       }
 
-      const guardsWithData = (guardProfiles || []).map(guard => ({
-        ...guard,
-        email: guard.username ? `${guard.username}@company.local` : `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-        assigned_property: guard.properties,
-        assigned_property_id: guard.assigned_property_id
-      }));
+      // Fetch active shifts for all guards
+      const { data: activeShifts } = await supabase
+        .from('guard_shifts')
+        .select('id, guard_id, check_in_time, check_out_time')
+        .eq('company_id', companyId)
+        .is('check_out_time', null);
+
+      const guardsWithData = (guardProfiles || []).map(guard => {
+        const activeShift = activeShifts?.find(shift => shift.guard_id === guard.id);
+        return {
+          ...guard,
+          email: guard.username ? `${guard.username}@company.local` : `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+          assigned_property: guard.properties,
+          assigned_property_id: guard.assigned_property_id,
+          active_shift: activeShift || null
+        };
+      });
 
       setGuards(guardsWithData);
     } catch (error) {
@@ -781,14 +797,30 @@ const CompanyGuards = () => {
                         <TableCell className="text-sm">{guard.phone || 'Not provided'}</TableCell>
                         <TableCell className="text-sm">{guard.assigned_property?.name || 'None'}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Badge variant={guard.is_active ? "default" : "secondary"}>
-                              {guard.is_active ? 'Active' : 'Inactive'}
-                            </Badge>
-                            {guard.requires_admin_approval && (
-                              <Badge variant="destructive">
-                                Needs Approval
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <Badge variant={guard.is_active ? "default" : "secondary"}>
+                                {guard.is_active ? 'Enabled' : 'Disabled'}
                               </Badge>
+                              {guard.active_shift ? (
+                                <Badge variant="default" className="bg-green-600">
+                                  Signed In
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">
+                                  Signed Out
+                                </Badge>
+                              )}
+                              {guard.requires_admin_approval && (
+                                <Badge variant="destructive">
+                                  Needs Approval
+                                </Badge>
+                              )}
+                            </div>
+                            {guard.active_shift && (
+                              <span className="text-xs text-muted-foreground">
+                                Since: {new Date(guard.active_shift.check_in_time).toLocaleString()}
+                              </span>
                             )}
                           </div>
                         </TableCell>
