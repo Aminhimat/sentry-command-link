@@ -234,6 +234,12 @@ const GuardDashboard = () => {
     console.log('🌍 Starting location tracking for shift:', shiftId);
     setLocationTracking(true);
 
+    // Inform user that location tracking is now active
+    toast({
+      title: "📍 Location Tracking Active",
+      description: "Your location is being tracked for security purposes during your shift.",
+      duration: 4000,
+    });
 
     // Function to update location
     const updateLocation = async () => {

@@ -21,7 +21,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LiveGuardMap from "@/components/LiveGuardMap";
 import { SmoothSection } from "@/components/SmoothSection";
-import { AdminNotifications } from "@/components/AdminNotifications";
 
 interface Profile {
   id: string;
@@ -1130,7 +1129,7 @@ const CompanyDashboard = () => {
       <div className="flex-1 p-6">
         {/* Dashboard Tabs */}
         <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-full sm:max-w-2xl touch-manipulation">
+          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm touch-manipulation">
             <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Dashboard
@@ -1138,10 +1137,6 @@ const CompanyDashboard = () => {
             <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
               Live Tracking
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
-              Notifications
             </TabsTrigger>
           </TabsList>
           
@@ -1156,12 +1151,6 @@ const CompanyDashboard = () => {
               {userProfile?.company_id && (
                 <LiveGuardMap companyId={userProfile.company_id} />
               )}
-            </SmoothSection>
-          </TabsContent>
-          
-          <TabsContent value="notifications">
-            <SmoothSection>
-              <AdminNotifications />
             </SmoothSection>
           </TabsContent>
         </Tabs>

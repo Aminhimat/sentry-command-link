@@ -178,7 +178,7 @@ const AuthPage = () => {
       // Admin approval disabled - ignore requires_admin_approval flag and proceed
 
 
-      // For guards, require location and set baseline securely before allowing access
+      // For guards, save their current login location
       if (profile.role === 'guard') {
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -189,49 +189,19 @@ const AuthPage = () => {
             });
           });
 
-          // Update baseline via edge function (service role)
-          const { data: sessionData } = await supabase.auth.getSession();
-          const accessToken = sessionData.session?.access_token;
+          // Save login location to profile
+          await supabase
+            .from('profiles')
+            .update({
+              login_location_lat: position.coords.latitude,
+              login_location_lng: position.coords.longitude
+            })
+            .eq('id', profile.id);
 
-          const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
-            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
-            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-          });
-          if (setLocError || !setLocData || setLocData.success !== true) {
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Location Update Failed",
-              description: "Unable to update your login location. Please try again.",
-            });
-            return false;
-          }
-
-          // Verify server-side we are now within range before proceeding
-          const { data: verifyData, error: verifyError } = await supabase.functions.invoke('check-guard-location', {
-            body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
-            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-          });
-          if (verifyError || !verifyData || verifyData.withinRange !== true) {
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Location Verification Failed",
-              description: "We couldn't verify your location. Please try again from your login spot or contact admin to reset.",
-            });
-            return false;
-          }
-
-          console.log('Saved guard login location (via function):', position.coords.latitude, position.coords.longitude);
+          console.log('Saved guard login location:', position.coords.latitude, position.coords.longitude);
         } catch (locationError) {
           console.error('Failed to get location:', locationError);
-          await supabase.auth.signOut();
-          toast({
-            variant: "destructive",
-            title: "Location Required",
-            description: "Location access is required for guard login. Please enable location services and try again.",
-          });
-          return false;
+          // Allow login even if location fails - they can enable it later
         }
       }
 

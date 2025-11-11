@@ -48,49 +48,6 @@ const GuardAuthPage = () => {
     setIsLoading(true);
 
     try {
-      // Request location permission FIRST before attempting sign-in
-      if ('geolocation' in navigator) {
-        try {
-          toast({
-            title: "Requesting Location Permission",
-            description: "Please allow location access to continue...",
-            duration: 3000,
-          });
-
-          await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 0
-            });
-          });
-
-          toast({
-            title: "Location Permission Granted",
-            description: "Proceeding with sign-in...",
-            duration: 2000,
-          });
-        } catch (geoError) {
-          console.error('Location permission denied:', geoError);
-          toast({
-            variant: "destructive",
-            title: "Location Permission Required",
-            description: "Please enable location access in your device settings and try again. This is required for guard duty.",
-            duration: 6000,
-          });
-          setIsLoading(false);
-          return;
-        }
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Location Not Supported",
-          description: "Your device does not support location services, which are required for guard access.",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -141,46 +98,10 @@ const GuardAuthPage = () => {
             console.error('Error checking device:', deviceCheckError);
           }
 
-          // Check for other active approved devices
-          const { data: otherDevices } = await supabase
-            .from('device_logins' as any)
-            .select('*')
-            .eq('guard_id', profile.id)
-            .eq('approved', true)
-            .neq('device_id', deviceInfo.deviceId);
-
           if (!existingDevice) {
-            // New device - check if concurrent login is allowed
+            // New device - register it
             const guardName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || authData.user.email;
             
-            if (otherDevices && otherDevices.length > 0) {
-              // Check if any other device allows concurrent login
-              const hasConcurrentDevice = otherDevices.some((d: any) => d.allow_concurrent_login);
-              
-              if (!hasConcurrentDevice) {
-                // Register device as pending and block access
-                await supabase.from('device_logins' as any).insert({
-                  guard_id: profile.id,
-                  guard_name: guardName,
-                  device_id: deviceInfo.deviceId,
-                  device_model: deviceInfo.deviceModel,
-                  device_os: deviceInfo.deviceOs,
-                  approved: false,
-                  allow_concurrent_login: false,
-                });
-
-                await supabase.auth.signOut();
-                setDevicePendingApproval(true);
-                toast({
-                  variant: "destructive",
-                  title: "Multiple Device Login Blocked",
-                  description: "You are already logged in on another device. Admin approval required for concurrent access.",
-                });
-                return;
-              }
-            }
-
-            // Register new device
             const { error: insertError } = await supabase
               .from('device_logins' as any)
               .insert({
@@ -190,7 +111,6 @@ const GuardAuthPage = () => {
                 device_model: deviceInfo.deviceModel,
                 device_os: deviceInfo.deviceOs,
                 approved: false,
-                allow_concurrent_login: false,
               });
 
             if (insertError) {
@@ -218,18 +138,7 @@ const GuardAuthPage = () => {
             return;
           }
 
-          // Device is approved - check concurrent login permission
-          if (otherDevices && otherDevices.length > 0 && !(existingDevice as any).allow_concurrent_login) {
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Concurrent Login Not Allowed",
-              description: "You are already logged in on another device. Please sign out from other devices or contact admin.",
-            });
-            return;
-          }
-
-          // Store login location if geolocation is available - CRITICAL: Must complete before navigation
+          // Store login location if geolocation is available
           if ('geolocation' in navigator) {
             try {
               const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -240,64 +149,19 @@ const GuardAuthPage = () => {
                 });
               });
 
-              console.log('Updating login location to:', position.coords.latitude, position.coords.longitude);
-              
-              const { data: sessionData } = await supabase.auth.getSession();
-              const accessToken = sessionData.session?.access_token;
-              
-              const { data: setLocData, error: setLocError } = await supabase.functions.invoke('set-login-location', {
-                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
-                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-              });
+              await supabase
+                .from('profiles')
+                .update({
+                  login_location_lat: position.coords.latitude,
+                  login_location_lng: position.coords.longitude
+                })
+                .eq('id', profile.id);
 
-              if (setLocError || !setLocData || setLocData.success !== true) {
-                console.error('CRITICAL: Failed to store login location via function:', setLocError || setLocData);
-                // Don't proceed if location update fails - this will cause immediate logout
-                await supabase.auth.signOut();
-                toast({
-                  variant: "destructive",
-                  title: "Location Update Failed",
-                  description: "Unable to update your login location. Please try again.",
-                });
-                return;
-              }
-              
-              // Verify server now sees us within range before navigating
-              const { data: verifyData, error: verifyError } = await supabase.functions.invoke('check-guard-location', {
-                body: { currentLat: position.coords.latitude, currentLng: position.coords.longitude },
-                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-              });
-              if (verifyError || !verifyData || verifyData.withinRange !== true) {
-                console.error('Location verification failed', verifyError, verifyData);
-                await supabase.auth.signOut();
-                toast({
-                  variant: "destructive",
-                  title: "Location Verification Failed",
-                  description: "We couldn't verify your location. Please try again from your login spot or contact admin to reset.",
-                });
-                return;
-              }
-              
-              console.log('Login location successfully updated and verified');
+              console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
             } catch (geoError) {
               console.error('Failed to get login location:', geoError);
-              await supabase.auth.signOut();
-              toast({
-                variant: "destructive",
-                title: "Location Required",
-                description: "Location access is required for guard login. Please enable location services and try again.",
-              });
-              return;
+              // Continue with login even if location storage fails
             }
-          } else {
-            // Geolocation not available
-            await supabase.auth.signOut();
-            toast({
-              variant: "destructive",
-              title: "Location Not Supported",
-              description: "Your device does not support location services, which are required for guard access.",
-            });
-            return;
           }
 
           // Single session enforcement is handled by the realtime hook in GuardDashboard
@@ -340,15 +204,6 @@ const GuardAuthPage = () => {
               return;
             }
           }
-        }
-
-        // Revoke other sessions server-side as a fallback
-        try {
-          await supabase.functions.invoke('enforce-single-session', {
-            body: { userId: authData.user.id },
-          });
-        } catch (fnErr) {
-          console.warn('Failed to enforce single session via function', fnErr);
         }
 
         // Passed validation

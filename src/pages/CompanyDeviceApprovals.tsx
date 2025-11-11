@@ -27,7 +27,6 @@ interface DeviceLogin {
   device_model: string;
   device_os: string;
   approved: boolean;
-  allow_concurrent_login: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -49,7 +48,6 @@ const CompanyDeviceApprovals = () => {
   const [selectedDevice, setSelectedDevice] = useState<DeviceLogin | null>(null);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [showConcurrentDialog, setShowConcurrentDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -199,35 +197,6 @@ const CompanyDeviceApprovals = () => {
     }
   };
 
-  const handleToggleConcurrentLogin = async () => {
-    if (!selectedDevice || !userProfile) return;
-
-    try {
-      const { error } = await supabase
-        .from('device_logins' as any)
-        .update({ allow_concurrent_login: !selectedDevice.allow_concurrent_login })
-        .eq('id', selectedDevice.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Permission Updated",
-        description: `Concurrent login ${!selectedDevice.allow_concurrent_login ? 'enabled' : 'disabled'} for ${selectedDevice.guard_name}`,
-      });
-
-      await fetchDevices(userProfile.company_id);
-      setShowConcurrentDialog(false);
-      setSelectedDevice(null);
-    } catch (error) {
-      console.error('Error updating concurrent login:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update concurrent login permission",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -285,7 +254,6 @@ const CompanyDeviceApprovals = () => {
                     <TableHead>Guard Name</TableHead>
                     <TableHead>Device Model</TableHead>
                     <TableHead>Operating System</TableHead>
-                    <TableHead>Concurrent Login</TableHead>
                     <TableHead>Request Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -296,11 +264,6 @@ const CompanyDeviceApprovals = () => {
                       <TableCell className="font-medium">{device.guard_name}</TableCell>
                       <TableCell>{device.device_model}</TableCell>
                       <TableCell>{device.device_os}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {device.allow_concurrent_login ? "Allowed" : "Not Allowed"}
-                        </Badge>
-                      </TableCell>
                       <TableCell>{new Date(device.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -361,9 +324,8 @@ const CompanyDeviceApprovals = () => {
                     <TableHead>Guard Name</TableHead>
                     <TableHead>Device Model</TableHead>
                     <TableHead>Operating System</TableHead>
-                    <TableHead>Concurrent Login</TableHead>
                     <TableHead>Approved Date</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -372,23 +334,12 @@ const CompanyDeviceApprovals = () => {
                       <TableCell className="font-medium">{device.guard_name}</TableCell>
                       <TableCell>{device.device_model}</TableCell>
                       <TableCell>{device.device_os}</TableCell>
-                      <TableCell>
-                        <Badge variant={device.allow_concurrent_login ? "default" : "outline"}>
-                          {device.allow_concurrent_login ? "Allowed" : "Not Allowed"}
-                        </Badge>
-                      </TableCell>
                       <TableCell>{new Date(device.updated_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant={device.allow_concurrent_login ? "destructive" : "default"}
-                          onClick={() => {
-                            setSelectedDevice(device);
-                            setShowConcurrentDialog(true);
-                          }}
-                        >
-                          {device.allow_concurrent_login ? "Disable" : "Enable"} Concurrent
-                        </Button>
+                        <Badge variant="default" className="bg-green-500">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Approved
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -432,29 +383,6 @@ const CompanyDeviceApprovals = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleRejectDevice} className="bg-destructive text-destructive-foreground">
               Reject
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Concurrent Login Dialog */}
-      <AlertDialog open={showConcurrentDialog} onOpenChange={setShowConcurrentDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {selectedDevice?.allow_concurrent_login ? "Disable" : "Enable"} Concurrent Login
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedDevice?.allow_concurrent_login
-                ? `Disabling concurrent login will prevent ${selectedDevice.guard_name} from logging in on multiple devices simultaneously.`
-                : `Enabling concurrent login will allow ${selectedDevice?.guard_name} to be logged in on multiple devices at the same time.`
-              }
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleToggleConcurrentLogin}>
-              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

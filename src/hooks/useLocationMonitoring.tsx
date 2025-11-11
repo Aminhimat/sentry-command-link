@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,6 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
   const navigate = useNavigate();
   const watchIdRef = useRef<number | null>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [locationEnabled, setLocationEnabled] = useState(false);
 
   useEffect(() => {
     if (!isGuard || !isActive || !('geolocation' in navigator)) {
@@ -16,47 +15,6 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
     }
 
     console.log('Starting location monitoring for guard');
-
-    // Request location permission and start monitoring
-    const enableLocationTracking = async () => {
-      try {
-        // First, request permission by getting current position
-        await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          });
-        });
-
-        // Permission granted, show success toast
-        if (!locationEnabled) {
-          setLocationEnabled(true);
-          toast({
-            title: "Location Tracking Enabled",
-            description: "Your location is being monitored for security.",
-            duration: 3000,
-          });
-        }
-      } catch (error: any) {
-        console.error('Location permission error:', error);
-        toast({
-          variant: "destructive",
-          title: "Location Permission Required",
-          description: "Please enable location access to continue. This is required for guard duty.",
-          duration: 5000,
-        });
-        
-        // Sign out if location permission is denied
-        setTimeout(async () => {
-          await supabase.auth.signOut();
-          navigate('/auth?mode=guard');
-        }, 5000);
-        return;
-      }
-    };
-
-    enableLocationTracking();
 
     // Watch position continuously
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -105,30 +63,12 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
 
   const checkLocationDistance = async (currentLat: number, currentLng: number) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-
       const { data, error } = await supabase.functions.invoke('check-guard-location', {
-        body: { currentLat, currentLng },
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: { currentLat, currentLng }
       });
 
       if (error) {
         console.error('Error checking location:', error);
-        return;
-      }
-
-      // If no baseline is stored yet, set it now to avoid immediate logout loop
-      if (data?.message && typeof data.message === 'string' && data.message.includes('No login location stored')) {
-        const { error: setLocError } = await supabase.functions.invoke('set-login-location', {
-          body: { currentLat, currentLng },
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-        });
-        if (setLocError) {
-          console.error('Failed to set baseline login location:', setLocError);
-        } else {
-          console.log('Baseline login location set from monitoring hook.');
-        }
         return;
       }
 
