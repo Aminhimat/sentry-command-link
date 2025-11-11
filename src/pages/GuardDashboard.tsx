@@ -1656,9 +1656,22 @@ const GuardDashboard = () => {
         <Card className="max-w-6xl mx-auto border-4 border-border">
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
-              <Shield className="h-6 w-6" />
+              <Clock className="h-6 w-6" />
               Security Report
             </CardTitle>
+            {currentShift && (
+              <CardDescription>
+                <div className="space-y-2">
+                  <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
+                  {locationTracking && (
+                    <div className="flex items-center justify-center gap-2 text-green-600">
+                      <MapPin className="h-4 w-4 animate-pulse" />
+                      <span className="text-sm font-medium">Live location tracking active</span>
+                    </div>
+                  )}
+                </div>
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="space-y-8">
             {/* Checkpoint Scanner */}
