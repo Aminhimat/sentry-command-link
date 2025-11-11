@@ -163,20 +163,30 @@ const GuardAuthPage = () => {
               .eq('guard_id', profile.id)
               .is('check_out_time', null);
 
-            // Get current location for shift start
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-              });
-            });
+            // Try to get current location, but do not block shift creation
+            let latitude: number | null = null;
+            let longitude: number | null = null;
+            let locationAddress: string | null = null;
 
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-            const locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            if ('geolocation' in navigator) {
+              try {
+                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                  navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 0
+                  });
+                });
 
-            // Create new shift automatically
+                latitude = position.coords.latitude;
+                longitude = position.coords.longitude;
+                locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+              } catch (geoErr) {
+                console.warn('Geolocation unavailable, starting shift without location', geoErr);
+              }
+            }
+
+            // Create new shift automatically (even if no location)
             const { error: shiftError } = await supabase
               .from('guard_shifts')
               .insert({
@@ -187,6 +197,7 @@ const GuardAuthPage = () => {
                 location_lng: longitude,
                 location_address: locationAddress
               });
+
 
             if (shiftError) {
               console.error('Failed to start shift:', shiftError);
