@@ -156,6 +156,13 @@ const GuardAuthPage = () => {
         // Passed validation - auto-start shift
         if (profile?.role === 'guard') {
           try {
+            // First, close any existing active shifts for this guard
+            await supabase
+              .from('guard_shifts')
+              .update({ check_out_time: new Date().toISOString() })
+              .eq('guard_id', profile.id)
+              .is('check_out_time', null);
+
             // Get current location for shift start
             const position = await new Promise<GeolocationPosition>((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject, {
