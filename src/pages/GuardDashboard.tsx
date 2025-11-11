@@ -307,6 +307,16 @@ const GuardDashboard = () => {
 
       if (!profile) return;
 
+      // First, close any shifts older than 12 hours that are still active
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from('guard_shifts')
+        .update({ check_out_time: new Date().toISOString() })
+        .eq('guard_id', profile.id)
+        .is('check_out_time', null)
+        .lt('check_in_time', twelveHoursAgo);
+
+      // Then fetch the most recent active shift
       const { data: activeShift } = await supabase
         .from('guard_shifts')
         .select('*')
