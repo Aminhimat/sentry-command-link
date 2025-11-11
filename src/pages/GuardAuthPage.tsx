@@ -48,6 +48,49 @@ const GuardAuthPage = () => {
     setIsLoading(true);
 
     try {
+      // Request location permission FIRST before attempting sign-in
+      if ('geolocation' in navigator) {
+        try {
+          toast({
+            title: "Requesting Location Permission",
+            description: "Please allow location access to continue...",
+            duration: 3000,
+          });
+
+          await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+
+          toast({
+            title: "Location Permission Granted",
+            description: "Proceeding with sign-in...",
+            duration: 2000,
+          });
+        } catch (geoError) {
+          console.error('Location permission denied:', geoError);
+          toast({
+            variant: "destructive",
+            title: "Location Permission Required",
+            description: "Please enable location access in your device settings and try again. This is required for guard duty.",
+            duration: 6000,
+          });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Location Not Supported",
+          description: "Your device does not support location services, which are required for guard access.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
