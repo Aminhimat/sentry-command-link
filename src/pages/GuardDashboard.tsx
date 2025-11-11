@@ -1678,28 +1678,6 @@ const GuardDashboard = () => {
           <CardContent className="space-y-8">
             {/* Shift Controls */}
             <div className="flex gap-4 justify-center pb-6 border-b">
-              {!currentShift ? (
-                <Button 
-                  onClick={handleStartShift}
-                  disabled={shiftLoading}
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  {shiftLoading ? "Starting..." : "Start Shift"}
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleEndShift}
-                  disabled={shiftLoading}
-                  variant="destructive"
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Square className="h-4 w-4" />
-                  {shiftLoading ? "Ending..." : "End Shift"}
-                </Button>
-              )}
               
               {currentShift && (
                 <Button 

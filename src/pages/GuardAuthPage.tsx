@@ -62,7 +62,7 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active, requires_admin_approval, login_location_lat, login_location_lng')
+          .select('id, role, company_id, is_active, requires_admin_approval, login_location_lat, login_location_lng, assigned_property_id')
           .eq('user_id', authData.user.id)
           .single();
 
@@ -153,7 +153,43 @@ const GuardAuthPage = () => {
           }
         }
 
-        // Passed validation
+        // Passed validation - auto-start shift
+        if (profile?.role === 'guard') {
+          try {
+            // Get current location for shift start
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+              });
+            });
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+            // Create new shift automatically
+            const { error: shiftError } = await supabase
+              .from('guard_shifts')
+              .insert({
+                guard_id: profile.id,
+                company_id: profile.company_id,
+                property_id: profile.assigned_property_id,
+                location_lat: latitude,
+                location_lng: longitude,
+                location_address: locationAddress
+              });
+
+            if (shiftError) {
+              console.error('Failed to start shift:', shiftError);
+            }
+          } catch (shiftStartError) {
+            console.error('Failed to auto-start shift:', shiftStartError);
+            // Continue with login even if shift creation fails
+          }
+        }
+
         navigate('/guard');
       }
       // Remove success toast for faster login - navigation will happen immediately
@@ -170,6 +206,42 @@ const GuardAuthPage = () => {
 
   const handleSignOut = async () => {
     try {
+      // End active shift before signing out
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profile) {
+          // Find active shift
+          const { data: activeShift } = await supabase
+            .from('guard_shifts')
+            .select('id')
+            .eq('guard_id', profile.id)
+            .is('check_out_time', null)
+            .order('check_in_time', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (activeShift) {
+            // End the shift
+            await supabase
+              .from('guard_shifts')
+              .update({ check_out_time: new Date().toISOString() })
+              .eq('id', activeShift.id);
+
+            // Clear guard's location data
+            await supabase
+              .from('guard_locations')
+              .delete()
+              .eq('guard_id', profile.id)
+              .eq('shift_id', activeShift.id);
+          }
+        }
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast({
