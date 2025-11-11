@@ -62,7 +62,7 @@ const GuardAuthPage = () => {
         // Check if user is a guard and validate login constraints
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, company_id, is_active, requires_admin_approval')
+          .select('id, role, company_id, is_active, requires_admin_approval, login_location_lat, login_location_lng')
           .eq('user_id', authData.user.id)
           .single();
 
@@ -80,26 +80,31 @@ const GuardAuthPage = () => {
             return;
           }
 
-          // Store login location if geolocation is available
+          // Store login location ONLY on first login (if not already set)
           if ('geolocation' in navigator) {
             try {
-              const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                  enableHighAccuracy: true,
-                  timeout: 10000,
-                  maximumAge: 0
+              // Check if login location is already stored
+              if (!profile.login_location_lat || !profile.login_location_lng) {
+                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                  navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                  });
                 });
-              });
 
-              await supabase
-                .from('profiles')
-                .update({
-                  login_location_lat: position.coords.latitude,
-                  login_location_lng: position.coords.longitude
-                })
-                .eq('id', profile.id);
+                await supabase
+                  .from('profiles')
+                  .update({
+                    login_location_lat: position.coords.latitude,
+                    login_location_lng: position.coords.longitude
+                  })
+                  .eq('id', profile.id);
 
-              console.log('Login location stored:', position.coords.latitude, position.coords.longitude);
+                console.log('First login location stored:', position.coords.latitude, position.coords.longitude);
+              } else {
+                console.log('Using existing login location for validation');
+              }
             } catch (geoError) {
               console.error('Failed to get login location:', geoError);
               // Continue with login even if location storage fails
