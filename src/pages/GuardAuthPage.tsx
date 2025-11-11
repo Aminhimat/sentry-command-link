@@ -186,12 +186,40 @@ const GuardAuthPage = () => {
               }
             }
 
+            // Resolve company_id to ensure visibility in admin dashboard
+            let companyIdToUse: string | null = profile.company_id;
+            try {
+              const anySb = supabase as any;
+              if (!companyIdToUse) {
+                const { data: mapping } = await anySb
+                  .from('user_companies')
+                  .select('company_id')
+                  .eq('user_id', authData.user.id)
+                  .maybeSingle();
+                companyIdToUse = mapping?.company_id ?? null;
+              }
+              if (!companyIdToUse && profile.assigned_property_id) {
+                const { data: prop } = await anySb
+                  .from('properties')
+                  .select('company_id')
+                  .eq('id', profile.assigned_property_id)
+                  .maybeSingle();
+                companyIdToUse = prop?.company_id ?? null;
+              }
+            } catch (resolveErr) {
+              console.warn('Could not resolve company_id for shift insert', resolveErr);
+            }
+
+            if (!companyIdToUse) {
+              console.warn('No company_id resolved for guard. Inserting shift with null company_id (will not appear for admins).');
+            }
+
             // Create new shift automatically (even if no location)
             const { error: shiftError } = await supabase
               .from('guard_shifts')
               .insert({
                 guard_id: profile.id,
-                company_id: profile.company_id,
+                company_id: companyIdToUse,
                 property_id: profile.assigned_property_id,
                 location_lat: latitude,
                 location_lng: longitude,
