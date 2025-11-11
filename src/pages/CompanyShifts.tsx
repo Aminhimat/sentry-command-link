@@ -330,27 +330,21 @@ const CompanyShifts = () => {
                      shifts.map((shift) => {
                        const checkInTime = new Date(shift.check_in_time);
                        const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
+                       const duration = checkOutTime 
+                         ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
+                         : null;
+                       const isActive = !shift.check_out_time;
                        
-                       // Calculate duration in hours and minutes
-                       let durationText = null;
-                       if (checkOutTime) {
-                         const durationMs = checkOutTime.getTime() - checkInTime.getTime();
-                         const hours = Math.floor(durationMs / (1000 * 60 * 60));
-                         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-                         durationText = `${hours}h ${minutes}m`;
-                       }
+                       const guardTotalHours = calculateGuardTotalHours().find(g => g.guardId === shift.guard_id);
                        
-                        const isActive = !shift.check_out_time;
-                        
-                        // Calculate hours for this specific shift only
-                        let shiftHours = "0.00";
-                        if (checkOutTime) {
-                          const durationMs = checkOutTime.getTime() - checkInTime.getTime();
-                          const hours = durationMs / (1000 * 60 * 60);
-                          shiftHours = hours.toFixed(2);
-                        }
-                        
-                        return (
+                       console.log('Shift data:', {
+                         guard: `${shift.guard?.first_name} ${shift.guard?.last_name}`,
+                         check_out_time: shift.check_out_time,
+                         isActive,
+                         checkOutTime
+                       });
+                       
+                       return (
                         <tr 
                           key={shift.id} 
                           className="border-b border-border/50 hover:bg-muted/50 cursor-pointer"
@@ -395,8 +389,8 @@ const CompanyShifts = () => {
                             )}
                           </td>
                           <td className="p-4">
-                            {durationText ? (
-                              <span className="text-sm font-medium">{durationText}</span>
+                            {duration ? (
+                              <span className="text-sm font-medium">{duration}h</span>
                             ) : (
                               <Badge variant="outline" className="text-green-600 border-green-600">
                                 Active
@@ -451,7 +445,7 @@ const CompanyShifts = () => {
                           </td>
                           <td className="p-4">
                             <span className="text-sm font-semibold text-primary">
-                              {isActive ? 'Active' : `${shiftHours} hrs`}
+                              {guardTotalHours?.totalHours || '0.00'} hrs
                             </span>
                           </td>
                         </tr>

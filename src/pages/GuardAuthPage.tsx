@@ -156,76 +156,30 @@ const GuardAuthPage = () => {
         // Passed validation - auto-start shift
         if (profile?.role === 'guard') {
           try {
-            // First, close any existing active shifts for this guard
-            await supabase
-              .from('guard_shifts')
-              .update({ check_out_time: new Date().toISOString() })
-              .eq('guard_id', profile.id)
-              .is('check_out_time', null);
+            // Get current location for shift start
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+              });
+            });
 
-            // Try to get current location, but do not block shift creation
-            let latitude: number | null = null;
-            let longitude: number | null = null;
-            let locationAddress: string | null = null;
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
 
-            if ('geolocation' in navigator) {
-              try {
-                const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-                  navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: true,
-                    timeout: 8000,
-                    maximumAge: 0
-                  });
-                });
-
-                latitude = position.coords.latitude;
-                longitude = position.coords.longitude;
-                locationAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-              } catch (geoErr) {
-                console.warn('Geolocation unavailable, starting shift without location', geoErr);
-              }
-            }
-
-            // Resolve company_id to ensure visibility in admin dashboard
-            let companyIdToUse: string | null = profile.company_id;
-            try {
-              const anySb = supabase as any;
-              if (!companyIdToUse) {
-                const { data: mapping } = await anySb
-                  .from('user_companies')
-                  .select('company_id')
-                  .eq('user_id', authData.user.id)
-                  .maybeSingle();
-                companyIdToUse = mapping?.company_id ?? null;
-              }
-              if (!companyIdToUse && profile.assigned_property_id) {
-                const { data: prop } = await anySb
-                  .from('properties')
-                  .select('company_id')
-                  .eq('id', profile.assigned_property_id)
-                  .maybeSingle();
-                companyIdToUse = prop?.company_id ?? null;
-              }
-            } catch (resolveErr) {
-              console.warn('Could not resolve company_id for shift insert', resolveErr);
-            }
-
-            if (!companyIdToUse) {
-              console.warn('No company_id resolved for guard. Inserting shift with null company_id (will not appear for admins).');
-            }
-
-            // Create new shift automatically (even if no location)
+            // Create new shift automatically
             const { error: shiftError } = await supabase
               .from('guard_shifts')
               .insert({
                 guard_id: profile.id,
-                company_id: companyIdToUse,
+                company_id: profile.company_id,
                 property_id: profile.assigned_property_id,
                 location_lat: latitude,
                 location_lng: longitude,
                 location_address: locationAddress
               });
-
 
             if (shiftError) {
               console.error('Failed to start shift:', shiftError);
