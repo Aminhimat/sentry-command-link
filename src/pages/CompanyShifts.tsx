@@ -340,11 +340,17 @@ const CompanyShifts = () => {
                          durationText = `${hours}h ${minutes}m`;
                        }
                        
-                       const isActive = !shift.check_out_time;
-                       
-                       const guardTotalHours = calculateGuardTotalHours().find(g => g.guardId === shift.guard_id);
-                       
-                       return (
+                        const isActive = !shift.check_out_time;
+                        
+                        // Calculate hours for this specific shift only
+                        let shiftHours = "0.00";
+                        if (checkOutTime) {
+                          const durationMs = checkOutTime.getTime() - checkInTime.getTime();
+                          const hours = durationMs / (1000 * 60 * 60);
+                          shiftHours = hours.toFixed(2);
+                        }
+                        
+                        return (
                         <tr 
                           key={shift.id} 
                           className="border-b border-border/50 hover:bg-muted/50 cursor-pointer"
@@ -445,7 +451,7 @@ const CompanyShifts = () => {
                           </td>
                           <td className="p-4">
                             <span className="text-sm font-semibold text-primary">
-                              {guardTotalHours?.totalHours || '0.00'} hrs
+                              {isActive ? 'Active' : `${shiftHours} hrs`}
                             </span>
                           </td>
                         </tr>
