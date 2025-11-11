@@ -330,19 +330,19 @@ const CompanyShifts = () => {
                      shifts.map((shift) => {
                        const checkInTime = new Date(shift.check_in_time);
                        const checkOutTime = shift.check_out_time ? new Date(shift.check_out_time) : null;
-                       const duration = checkOutTime 
-                         ? Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60 * 100)) / 100
-                         : null;
+                       
+                       // Calculate duration in hours and minutes
+                       let durationText = null;
+                       if (checkOutTime) {
+                         const durationMs = checkOutTime.getTime() - checkInTime.getTime();
+                         const hours = Math.floor(durationMs / (1000 * 60 * 60));
+                         const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                         durationText = `${hours}h ${minutes}m`;
+                       }
+                       
                        const isActive = !shift.check_out_time;
                        
                        const guardTotalHours = calculateGuardTotalHours().find(g => g.guardId === shift.guard_id);
-                       
-                       console.log('Shift data:', {
-                         guard: `${shift.guard?.first_name} ${shift.guard?.last_name}`,
-                         check_out_time: shift.check_out_time,
-                         isActive,
-                         checkOutTime
-                       });
                        
                        return (
                         <tr 
@@ -389,8 +389,8 @@ const CompanyShifts = () => {
                             )}
                           </td>
                           <td className="p-4">
-                            {duration ? (
-                              <span className="text-sm font-medium">{duration}h</span>
+                            {durationText ? (
+                              <span className="text-sm font-medium">{durationText}</span>
                             ) : (
                               <Badge variant="outline" className="text-green-600 border-green-600">
                                 Active
