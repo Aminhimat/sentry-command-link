@@ -1657,39 +1657,34 @@ const GuardDashboard = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center gap-2 justify-center">
               <Clock className="h-6 w-6" />
+              Security Report
             </CardTitle>
-            <CardDescription>
-              {currentShift 
-                ? (
-                  <div className="space-y-2">
-                    <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
-                    {locationTracking && (
-                      <div className="flex items-center justify-center gap-2 text-green-600">
-                        <MapPin className="h-4 w-4 animate-pulse" />
-                        <span className="text-sm font-medium">Live location tracking active</span>
-                      </div>
-                    )}
-                  </div>
-                )
-                : "Start your shift to begin location tracking and work hours"
-              }
-            </CardDescription>
+            {currentShift && (
+              <CardDescription>
+                <div className="space-y-2">
+                  <div>Shift started at {new Date(currentShift.check_in_time).toLocaleString()}</div>
+                  {locationTracking && (
+                    <div className="flex items-center justify-center gap-2 text-green-600">
+                      <MapPin className="h-4 w-4 animate-pulse" />
+                      <span className="text-sm font-medium">Live location tracking active</span>
+                    </div>
+                  )}
+                </div>
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="space-y-8">
-            {/* Shift Controls */}
+            {/* Checkpoint Scanner */}
             <div className="flex gap-4 justify-center pb-6 border-b">
-              
-              {currentShift && (
-                <Button 
-                  onClick={() => setShowCheckpointScanner(true)}
-                  variant="outline"
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <QrCode className="h-4 w-4" />
-                  Scan Checkpoint
-                </Button>
-              )}
+              <Button 
+                onClick={() => setShowCheckpointScanner(true)}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <QrCode className="h-4 w-4" />
+                Scan Checkpoint
+              </Button>
             </div>
 
             {/* Task Submission Form */}
