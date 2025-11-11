@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
+const ENFORCE_LOCATION_RESTRICTIONS = false;
+
 export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -10,7 +12,7 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!isGuard || !isActive || !('geolocation' in navigator)) {
+    if (!ENFORCE_LOCATION_RESTRICTIONS || !isGuard || !isActive || !('geolocation' in navigator)) {
       return;
     }
 
@@ -62,6 +64,7 @@ export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true
   }, [isGuard, isActive]);
 
   const checkLocationDistance = async (currentLat: number, currentLng: number) => {
+    if (!ENFORCE_LOCATION_RESTRICTIONS) return;
     try {
       const { data, error } = await supabase.functions.invoke('check-guard-location', {
         body: { currentLat, currentLng }
