@@ -158,11 +158,19 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
       }));
 
       // Use edge function for reliable upload
-      const { error } = await supabase.functions.invoke('upload-guard-image', {
-        body: formData
-      });
-
+      const { data, error } = await (async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const options: any = { body: formData };
+        if (token) options.headers = { Authorization: `Bearer ${token}` };
+        return supabase.functions.invoke('upload-guard-image', options);
+      })();
+ 
       if (error) {
+        try {
+          const ctxText = await (error as any).context?.text?.();
+          if (ctxText) console.error('Edge function error context:', ctxText);
+        } catch {}
         console.error('Edge function error:', error);
         return false;
       }

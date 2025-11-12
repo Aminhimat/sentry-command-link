@@ -137,6 +137,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Prepare normalized fields from reportData (supporting multiple client shapes)
+    const locationLat = reportData.location_lat ?? reportData.location?.latitude ?? reportData.location?.lat ?? null;
+    const locationLng = reportData.location_lng ?? reportData.location?.longitude ?? reportData.location?.lng ?? null;
+    const locationAddress = reportData.location_address ?? (siteName ? siteName : (locationLat && locationLng ? `${Number(locationLat).toFixed(6)}, ${Number(locationLng).toFixed(6)}` : null));
+    const textFromLegacy = (reportData.taskType || reportData.severity || reportData.description)
+      ? `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${reportData.taskType ?? ''}\nSite: ${siteName ?? ''}\nSeverity: ${reportData.severity ?? ''}\nDescription: ${reportData.description ?? ''}`
+      : undefined;
+
     // Submit report immediately with image URL (optimistic update)
     const { error: reportError } = await supabaseClient
       .from('guard_reports')
@@ -144,12 +152,12 @@ Deno.serve(async (req) => {
         guard_id: reportData.guard_id || profile.id,
         company_id: reportData.company_id || profile.company_id,
         property_id: propertyId,
-        shift_id: reportData.shift_id,
-        report_text: reportData.report_text || `Guard: ${profile.first_name} ${profile.last_name}\nSite: ${siteName ?? ''}`,
+        shift_id: reportData.shift_id ?? null,
+        report_text: reportData.report_text || textFromLegacy || null,
         image_url: imageUrl,
-        location_address: reportData.location_address || siteName,
-        location_lat: reportData.location_lat,
-        location_lng: reportData.location_lng
+        location_address: locationAddress,
+        location_lat: locationLat,
+        location_lng: locationLng
       })
 
     if (reportError) {

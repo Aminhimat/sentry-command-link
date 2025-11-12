@@ -768,9 +768,13 @@ const GuardDashboard = () => {
 
         console.log('📤 Invoking upload-guard-image function...');
         const startTime = Date.now();
-        const { data, error } = await supabase.functions.invoke('upload-guard-image', {
-          body: formData
-        });
+        const { data, error } = await (async () => {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+          const options: any = { body: formData };
+          if (token) options.headers = { Authorization: `Bearer ${token}` };
+          return supabase.functions.invoke('upload-guard-image', options);
+        })();
         const uploadTime = Date.now() - startTime;
 
         if (error) {

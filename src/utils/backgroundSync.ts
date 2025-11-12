@@ -172,9 +172,13 @@ class BackgroundSyncService {
       }));
 
       // Upload using edge function
-      const { error } = await supabase.functions.invoke('upload-guard-image', {
-        body: formData
-      });
+      const { error } = await (async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const options: any = { body: formData };
+        if (token) options.headers = { Authorization: `Bearer ${token}` };
+        return supabase.functions.invoke('upload-guard-image', options);
+      })();
 
       if (error) {
         throw new Error(error.message);
