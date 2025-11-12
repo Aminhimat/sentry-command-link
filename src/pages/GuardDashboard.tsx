@@ -778,6 +778,10 @@ const GuardDashboard = () => {
         const uploadTime = Date.now() - startTime;
 
         if (error) {
+          try {
+            const ctxText = await (error as any).context?.text?.();
+            if (ctxText) console.error('❌ Edge function error context:', ctxText);
+          } catch {}
           console.error('❌ Edge function error:', error);
           throw new Error(error.message || 'Failed to submit report');
         }

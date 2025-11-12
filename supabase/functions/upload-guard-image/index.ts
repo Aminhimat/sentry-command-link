@@ -70,6 +70,12 @@ Deno.serve(async (req) => {
     
     const reportData = JSON.parse(reportDataString)
 
+    console.log('upload-guard-image: user', user.id)
+    try {
+      console.log('upload-guard-image: reportData keys', Object.keys(reportData || {}))
+    } catch {}
+
+
     if (!file) {
       return new Response(
         JSON.stringify({ error: 'No image file provided' }),
