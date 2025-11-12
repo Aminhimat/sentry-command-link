@@ -56,7 +56,19 @@ Deno.serve(async (req) => {
 
     const formData = await req.formData()
     const file = formData.get('image') as File
-    const reportData = JSON.parse(formData.get('reportData') as string)
+    const reportDataString = formData.get('reportData') as string
+    
+    if (!reportDataString) {
+      return new Response(
+        JSON.stringify({ error: 'No report data provided' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+    
+    const reportData = JSON.parse(reportDataString)
 
     if (!file) {
       return new Response(
@@ -129,14 +141,15 @@ Deno.serve(async (req) => {
     const { error: reportError } = await supabaseClient
       .from('guard_reports')
       .insert({
-        guard_id: profile.id,
-        company_id: profile.company_id,
+        guard_id: reportData.guard_id || profile.id,
+        company_id: reportData.company_id || profile.company_id,
         property_id: propertyId,
-        report_text: `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${reportData.taskType}\nSite: ${siteName ?? ''}\nSeverity: ${reportData.severity}\nDescription: ${reportData.description}`,
+        shift_id: reportData.shift_id,
+        report_text: reportData.report_text || `Guard: ${profile.first_name} ${profile.last_name}\nSite: ${siteName ?? ''}`,
         image_url: imageUrl,
-        location_address: siteName,
-        location_lat: reportData.location?.latitude,
-        location_lng: reportData.location?.longitude
+        location_address: reportData.location_address || siteName,
+        location_lat: reportData.location_lat,
+        location_lng: reportData.location_lng
       })
 
     if (reportError) {
