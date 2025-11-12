@@ -779,10 +779,26 @@ const GuardDashboard = () => {
 
         if (error) {
           try {
+            // Try to parse JSON error from edge function
+            const ctxJson = await (error as any).context?.json?.();
+            if (ctxJson?.error) {
+              console.error('❌ Edge function error JSON:', ctxJson);
+              toast({
+                variant: 'destructive',
+                title: 'Upload failed',
+                description: ctxJson.error + (ctxJson.details ? ` — ${ctxJson.details}` : ''),
+              });
+              throw new Error(ctxJson.error);
+            }
             const ctxText = await (error as any).context?.text?.();
             if (ctxText) console.error('❌ Edge function error context:', ctxText);
           } catch {}
           console.error('❌ Edge function error:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Upload failed',
+            description: error.message || 'Failed to submit report',
+          });
           throw new Error(error.message || 'Failed to submit report');
         }
 

@@ -168,10 +168,25 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
  
       if (error) {
         try {
+          const ctxJson = await (error as any).context?.json?.();
+          if (ctxJson?.error) {
+            console.error('Edge function error JSON:', ctxJson);
+            toast({
+              variant: 'destructive',
+              title: 'Upload failed',
+              description: ctxJson.error + (ctxJson.details ? ` — ${ctxJson.details}` : ''),
+            });
+            return false;
+          }
           const ctxText = await (error as any).context?.text?.();
           if (ctxText) console.error('Edge function error context:', ctxText);
         } catch {}
         console.error('Edge function error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Upload failed',
+          description: (error as any).message || 'Failed to submit report',
+        });
         return false;
       }
 
