@@ -145,12 +145,33 @@ Deno.serve(async (req) => {
       ? `Guard: ${profile.first_name} ${profile.last_name}\nTask: ${reportData.taskType ?? ''}\nSite: ${siteName ?? ''}\nSeverity: ${reportData.severity ?? ''}\nDescription: ${reportData.description ?? ''}`
       : undefined;
 
+    // Resolve company_id robustly
+    const companyIdFromRequest = reportData.company_id ?? null;
+    let resolvedCompanyId: string | null = companyIdFromRequest ?? profile.company_id ?? null;
+    if (!resolvedCompanyId) {
+      const { data: uc } = await supabaseClient
+        .from('user_companies')
+        .select('company_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (uc?.company_id) resolvedCompanyId = uc.company_id as string;
+    }
+    if (!resolvedCompanyId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing company_id for report' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     // Submit report immediately with image URL (optimistic update)
     const { error: reportError } = await supabaseClient
       .from('guard_reports')
       .insert({
         guard_id: reportData.guard_id || profile.id,
-        company_id: reportData.company_id || profile.company_id,
+        company_id: resolvedCompanyId,
         property_id: propertyId,
         shift_id: reportData.shift_id ?? null,
         report_text: reportData.report_text || textFromLegacy || null,
