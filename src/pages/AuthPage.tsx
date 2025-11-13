@@ -180,6 +180,20 @@ const AuthPage = () => {
 
       // For guards, save their current login location
       if (profile.role === 'guard') {
+        // Enforce single session by revoking all other refresh tokens
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            await supabase.functions.invoke('enforce-single-session', {
+              body: { userId },
+              headers: { Authorization: `Bearer ${session.access_token}` }
+            });
+            console.log('Single session enforced - all other sessions logged out');
+          }
+        } catch (sessionError) {
+          console.error('Failed to enforce single session:', sessionError);
+        }
+
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
