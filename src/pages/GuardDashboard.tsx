@@ -524,6 +524,11 @@ const GuardDashboard = () => {
               
               setTaskData(prev => ({ ...prev, image: compressedFile }));
               
+              // Dismiss loading toast on success
+              if (loadingToast?.dismiss) {
+                loadingToast.dismiss();
+              }
+              
               return; // Success, exit retry loop
             }
           } catch (error: any) {
@@ -595,7 +600,17 @@ const GuardDashboard = () => {
           });
           
           setTaskData(prev => ({ ...prev, image: compressedFile }));
+          
+          // Dismiss loading toast on success
+          if (loadingToast?.dismiss) {
+            loadingToast.dismiss();
+          }
         } else {
+          // Dismiss loading toast on cancellation
+          if (loadingToast?.dismiss) {
+            loadingToast.dismiss();
+          }
+          
           toast({
             title: "📸 Camera Cancelled",
             description: "Photo selection was cancelled",
@@ -604,6 +619,11 @@ const GuardDashboard = () => {
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
+      
+      // Dismiss loading toast on error
+      if (loadingToast?.dismiss) {
+        loadingToast.dismiss();
+      }
       
       let errorMessage = "Could not access camera. Please try again.";
       
