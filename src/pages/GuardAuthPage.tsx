@@ -67,19 +67,7 @@ const GuardAuthPage = () => {
           .single();
 
         if (profile?.role === 'guard') {
-          // Enforce single session by revoking all other refresh tokens
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.access_token) {
-              await supabase.functions.invoke('enforce-single-session', {
-                body: { userId: authData.user.id },
-                headers: { Authorization: `Bearer ${session.access_token}` }
-              });
-              console.log('Single session enforced - all other sessions logged out');
-            }
-          } catch (sessionError) {
-            console.error('Failed to enforce single session:', sessionError);
-          }
+          // Single session enforcement is handled by useSingleSessionRealtime hook in GuardDashboard
           // Admin approval disabled - skip approval check
 
           // Check if guard is active
