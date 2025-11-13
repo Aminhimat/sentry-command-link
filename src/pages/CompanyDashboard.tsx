@@ -564,10 +564,6 @@ const CompanyDashboard = () => {
         .from('checkpoint_scans')
         .select(`
           *,
-          profiles!inner (
-            first_name,
-            last_name
-          ),
           checkpoints (
             name,
             description
@@ -581,15 +577,25 @@ const CompanyDashboard = () => {
         return;
       }
 
-      // Map the profiles data to guard property
-      const scansWithGuard = (data || []).map((scan: any) => ({
-        ...scan,
-        guard: scan.profiles
-      }));
+      // Fetch guard names separately to avoid foreign key issues
+      const scansWithGuardNames = await Promise.all(
+        (data || []).map(async (scan: any) => {
+          const { data: guardProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', scan.guard_id)
+            .maybeSingle();
+          
+          return {
+            ...scan,
+            guard: guardProfile
+          };
+        })
+      );
 
-      console.log(`✅ Loaded ${scansWithGuard.length} checkpoint scans for company ${companyId}`);
-      console.log('Latest scan:', scansWithGuard[0]);
-      setCheckpointScans(scansWithGuard);
+      console.log(`✅ Loaded ${scansWithGuardNames.length} checkpoint scans for company ${companyId}`);
+      console.log('Latest scan:', scansWithGuardNames[0]);
+      setCheckpointScans(scansWithGuardNames);
     } catch (error) {
       console.error('Error fetching checkpoint scans:', error);
     }
