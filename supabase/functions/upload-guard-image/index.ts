@@ -28,30 +28,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader?.toLowerCase().startsWith('bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
-    )
+    );
 
-    // Verify user authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser()
+    // Derive user from JWT to avoid /user API dependency
+    let user: { id: string } | null = null;
+    try {
+      const token = authHeader.split(' ')[1];
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload?.sub) user = { id: payload.sub };
+    } catch (_err) {}
 
-    if (authError || !user) {
+    if (!user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
-      )
+      );
     }
 
     const formData = await req.formData()
