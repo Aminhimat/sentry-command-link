@@ -587,7 +587,8 @@ const CompanyDashboard = () => {
         guard: scan.profiles
       }));
 
-      console.log('Setting checkpoint scans:', scansWithGuard);
+      console.log(`✅ Loaded ${scansWithGuard.length} checkpoint scans for company ${companyId}`);
+      console.log('Latest scan:', scansWithGuard[0]);
       setCheckpointScans(scansWithGuard);
     } catch (error) {
       console.error('Error fetching checkpoint scans:', error);
