@@ -19,6 +19,7 @@ import { generatePDFReport } from "@/components/PDFReportGenerator";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import LiveGuardMap from "@/components/LiveGuardMap";
 import { SmoothSection } from "@/components/SmoothSection";
 
@@ -94,6 +95,30 @@ interface Shift {
   };
 }
 
+interface CheckpointScan {
+  id: string;
+  checkpoint_id: string;
+  guard_id: string;
+  company_id: string;
+  shift_id: string | null;
+  property_id: string | null;
+  scan_time: string;
+  location_lat: number | null;
+  location_lng: number | null;
+  location_address: string | null;
+  notes: string | null;
+  image_url: string | null;
+  created_at: string;
+  guard?: {
+    first_name: string;
+    last_name: string;
+  };
+  checkpoints?: {
+    name: string;
+    description: string | null;
+  };
+}
+
 interface Company {
   id: string;
   name: string;
@@ -114,6 +139,7 @@ const CompanyDashboard = () => {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [checkpointScans, setCheckpointScans] = useState<CheckpointScan[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -219,11 +245,36 @@ const CompanyDashboard = () => {
       )
       .subscribe();
 
+    // Realtime for checkpoint_scans
+    let checkpointScansTimeout: NodeJS.Timeout;
+    const throttledCheckpointScansUpdate = () => {
+      clearTimeout(checkpointScansTimeout);
+      checkpointScansTimeout = setTimeout(() => {
+        fetchCheckpointScansForCompany(userProfile.company_id);
+      }, 1000);
+    };
+
+    const checkpointScansChannel = supabase
+      .channel('checkpoint-scans-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'checkpoint_scans',
+          filter: `company_id=eq.${userProfile.company_id}`
+        },
+        throttledCheckpointScansUpdate
+      )
+      .subscribe();
+
     return () => {
       clearTimeout(reportsTimeout);
       clearTimeout(shiftsTimeout);
+      clearTimeout(checkpointScansTimeout);
       supabase.removeChannel(reportsChannel);
       supabase.removeChannel(shiftsChannel);
+      supabase.removeChannel(checkpointScansChannel);
     };
   }, [userProfile?.company_id]);
 
@@ -272,6 +323,7 @@ const CompanyDashboard = () => {
       await fetchGuardsForCompany(profile.company_id);
       await fetchReportsForCompany(profile.company_id);
       await fetchShiftsForCompany(profile.company_id);
+      await fetchCheckpointScansForCompany(profile.company_id);
       await fetchPropertiesForCompany(profile.company_id);
     } catch (error) {
       console.error('Error checking user:', error);
@@ -503,6 +555,43 @@ const CompanyDashboard = () => {
   const fetchShifts = async () => {
     if (!userProfile?.company_id) return;
     await fetchShiftsForCompany(userProfile.company_id);
+  };
+
+  const fetchCheckpointScansForCompany = async (companyId: string) => {
+    console.log('Fetching checkpoint scans for company:', companyId);
+    try {
+      const { data, error } = await supabase
+        .from('checkpoint_scans')
+        .select(`
+          *,
+          profiles!inner (
+            first_name,
+            last_name
+          ),
+          checkpoints (
+            name,
+            description
+          )
+        `)
+        .eq('company_id', companyId)
+        .order('scan_time', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching checkpoint scans:', error);
+        return;
+      }
+
+      // Map the profiles data to guard property
+      const scansWithGuard = (data || []).map((scan: any) => ({
+        ...scan,
+        guard: scan.profiles
+      }));
+
+      console.log('Setting checkpoint scans:', scansWithGuard);
+      setCheckpointScans(scansWithGuard);
+    } catch (error) {
+      console.error('Error fetching checkpoint scans:', error);
+    }
   };
 
   const fetchPropertiesForCompany = async (companyId: string) => {
@@ -1124,20 +1213,83 @@ const CompanyDashboard = () => {
       <div className="flex-1 p-6">
         {/* Dashboard Tabs */}
         <Tabs defaultValue="dashboard" className="mb-4 sm:mb-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-full sm:max-w-sm touch-manipulation">
+          <TabsList className="grid w-full grid-cols-3 max-w-full sm:max-w-2xl touch-manipulation">
             <TabsTrigger value="dashboard" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="checkpoints" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              Scans
+            </TabsTrigger>
             <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm touch-manipulation transition-colors duration-100 active:scale-95">
               <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
-              Live Tracking
+              Tracking
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard">
             <SmoothSection>
               <StatsCards guards={guards} incidents={reports} />
+            </SmoothSection>
+          </TabsContent>
+
+          <TabsContent value="checkpoints">
+            <SmoothSection>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Checkpoint Scans
+                  </CardTitle>
+                  <CardDescription>Recent checkpoint scans by guards</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {checkpointScans.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No checkpoint scans yet</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Guard</TableHead>
+                            <TableHead>Checkpoint</TableHead>
+                            <TableHead>Scan Time</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Notes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {checkpointScans.map((scan) => (
+                            <TableRow key={scan.id}>
+                              <TableCell className="font-medium">
+                                {scan.guard?.first_name} {scan.guard?.last_name}
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{scan.checkpoints?.name || 'Unknown'}</div>
+                                  {scan.checkpoints?.description && (
+                                    <div className="text-sm text-muted-foreground">{scan.checkpoints.description}</div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(scan.scan_time).toLocaleString()}
+                              </TableCell>
+                              <TableCell className="max-w-[200px] truncate">
+                                {scan.location_address || 'No address'}
+                              </TableCell>
+                              <TableCell className="max-w-[200px] truncate">
+                                {scan.notes || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </SmoothSection>
           </TabsContent>
           
