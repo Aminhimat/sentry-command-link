@@ -282,7 +282,7 @@ const AdminDashboard = () => {
       
       const { data: reports, error } = await supabase
         .from('guard_reports')
-        .select('guard_id, created_at, image_url, company_id')
+        .select('guard_id, created_at, image_url, company_id, property_id')
         .not('image_url', 'is', null)
         .gte('created_at', today.toISOString());
 
@@ -290,9 +290,10 @@ const AdminDashboard = () => {
         throw error;
       }
 
-      // Get unique guard IDs and company IDs
+      // Get unique guard IDs, company IDs, and property IDs
       const guardIds = [...new Set(reports?.map(r => r.guard_id).filter(Boolean))];
       const companyIds = [...new Set(reports?.map(r => r.company_id).filter(Boolean))];
+      const propertyIds = [...new Set(reports?.map(r => r.property_id).filter(Boolean))];
 
       // Fetch guard profiles
       const { data: guardProfiles } = await supabase
@@ -306,9 +307,16 @@ const AdminDashboard = () => {
         .select('id, name')
         .in('id', companyIds);
 
+      // Fetch properties
+      const { data: propertiesData } = await supabase
+        .from('properties')
+        .select('id, name')
+        .in('id', propertyIds);
+
       // Create lookup maps
       const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
       const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
+      const propertyMap = new Map(propertiesData?.map(p => [p.id, p]) || []);
 
       // Group reports by guard_id
       const guardStatsMap = new Map();
@@ -316,17 +324,22 @@ const AdminDashboard = () => {
         const guardId = report.guard_id;
         const guard = guardMap.get(guardId);
         const company = companyMap.get(report.company_id);
+        const property = propertyMap.get(report.property_id);
         
         if (guardStatsMap.has(guardId)) {
-          guardStatsMap.get(guardId).reportCount++;
-          guardStatsMap.get(guardId).latestReport = new Date(report.created_at) > new Date(guardStatsMap.get(guardId).latestReport) 
-            ? report.created_at 
-            : guardStatsMap.get(guardId).latestReport;
+          const existing = guardStatsMap.get(guardId);
+          existing.reportCount++;
+          // Update to latest report info
+          if (new Date(report.created_at) > new Date(existing.latestReport)) {
+            existing.latestReport = report.created_at;
+            existing.propertyName = property?.name || 'N/A';
+          }
         } else {
           guardStatsMap.set(guardId, {
             guardId,
             guardName: guard ? `${guard.first_name || ''} ${guard.last_name || ''}`.trim() : 'Unknown',
             companyName: company?.name || 'N/A',
+            propertyName: property?.name || 'N/A',
             reportCount: 1,
             latestReport: report.created_at
           });
@@ -1445,6 +1458,7 @@ const AdminDashboard = () => {
                         <TableRow>
                           <TableHead>Guard Name</TableHead>
                           <TableHead>Company</TableHead>
+                          <TableHead>Site/Property</TableHead>
                           <TableHead>Reports with Photos</TableHead>
                           <TableHead>Latest Report</TableHead>
                         </TableRow>
@@ -1456,6 +1470,7 @@ const AdminDashboard = () => {
                               {guard.guardName || 'N/A'}
                             </TableCell>
                             <TableCell>{guard.companyName}</TableCell>
+                            <TableCell>{guard.propertyName}</TableCell>
                             <TableCell>
                               <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
                                 {guard.reportCount} {guard.reportCount === 1 ? 'report' : 'reports'}
@@ -1466,7 +1481,7 @@ const AdminDashboard = () => {
                         ))}
                         {activeGuardsToday.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                               No guards submitted reports with photos today
                             </TableCell>
                           </TableRow>
