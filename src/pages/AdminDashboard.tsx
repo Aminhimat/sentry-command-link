@@ -414,31 +414,40 @@ const AdminDashboard = () => {
 
   const fetchShifts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: shiftsData, error } = await supabase
         .from('guard_shifts')
-        .select(`
-          id,
-          guard_id,
-          company_id,
-          check_in_time,
-          check_out_time,
-          profiles!guard_shifts_guard_id_fkey (
-            first_name,
-            last_name
-          ),
-          companies (
-            name
-          )
-        `)
+        .select('id, guard_id, company_id, check_in_time, check_out_time')
         .order('check_in_time', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      const shiftsWithGuard = data?.map((shift: any) => ({
+      // Get unique guard IDs and company IDs
+      const guardIds = [...new Set(shiftsData?.map(s => s.guard_id).filter(Boolean))];
+      const companyIds = [...new Set(shiftsData?.map(s => s.company_id).filter(Boolean))];
+
+      // Fetch guard profiles
+      const { data: guardProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', guardIds);
+
+      // Fetch companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+
+      // Create lookup maps
+      const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
+      const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
+
+      // Combine data
+      const shiftsWithGuard = shiftsData?.map((shift: any) => ({
         ...shift,
-        guard: shift.profiles
+        guard: guardMap.get(shift.guard_id),
+        companies: companyMap.get(shift.company_id)
       })) || [];
 
       setShifts(shiftsWithGuard);
