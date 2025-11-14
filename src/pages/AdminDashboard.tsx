@@ -1325,6 +1325,60 @@ const AdminDashboard = () => {
 
           <TabsContent value="shifts" className="space-y-4 sm:space-y-6">
             <SmoothSection>
+              <Card className="shadow-elevated mb-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl sm:text-3xl">Currently Logged In Guards</CardTitle>
+                  <CardDescription>
+                    Guards who are currently on active shifts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Guard Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Check-In Time</TableHead>
+                          <TableHead>Duration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {shifts
+                          .filter((shift) => !shift.check_out_time)
+                          .map((shift) => {
+                            const checkInTime = new Date(shift.check_in_time);
+                            const duration = Math.floor((Date.now() - checkInTime.getTime()) / (1000 * 60 * 60));
+                            const minutes = Math.floor(((Date.now() - checkInTime.getTime()) / (1000 * 60)) % 60);
+                            
+                            return (
+                              <TableRow key={shift.id}>
+                                <TableCell className="font-medium">
+                                  {shift.guard?.first_name} {shift.guard?.last_name}
+                                </TableCell>
+                                <TableCell>{shift.companies?.name || 'N/A'}</TableCell>
+                                <TableCell>{format(checkInTime, 'MMM dd, yyyy HH:mm')}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="bg-success/10 text-success border-success">
+                                    {duration}h {minutes}m
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        {shifts.filter((shift) => !shift.check_out_time).length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                              No guards currently logged in
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="shadow-elevated">
                 <CardHeader>
                   <CardTitle className="text-2xl sm:text-3xl">Guard Total Hours</CardTitle>
