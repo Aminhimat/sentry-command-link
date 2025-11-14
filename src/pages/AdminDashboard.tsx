@@ -93,6 +93,7 @@ const AdminDashboard = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertiesWithPhotoActivity, setPropertiesWithPhotoActivity] = useState(0);
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [activeGuardsToday, setActiveGuardsToday] = useState<any[]>([]);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [newProperty, setNewProperty] = useState({
     name: "",
@@ -174,6 +175,7 @@ const AdminDashboard = () => {
       await fetchCompanies();
       await fetchGuards();
       await fetchActiveGuards();
+      await fetchActiveGuardsToday();
       await fetchProperties();
       await fetchPropertiesWithPhotoActivity();
       await fetchShifts();
@@ -268,6 +270,64 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load active guards count",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchActiveGuardsToday = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('guard_reports')
+        .select(`
+          guard_id,
+          created_at,
+          image_url,
+          guard:profiles!guard_reports_guard_id_fkey(
+            id,
+            first_name,
+            last_name
+          ),
+          company:companies!guard_reports_company_id_fkey(
+            name
+          )
+        `)
+        .not('image_url', 'is', null)
+        .gte('created_at', today.toISOString());
+
+      if (error) {
+        throw error;
+      }
+
+      // Group by guard_id and count reports
+      const guardMap = new Map();
+      data?.forEach((report: any) => {
+        const guardId = report.guard_id;
+        if (guardMap.has(guardId)) {
+          guardMap.get(guardId).reportCount++;
+          guardMap.get(guardId).latestReport = new Date(report.created_at) > new Date(guardMap.get(guardId).latestReport) 
+            ? report.created_at 
+            : guardMap.get(guardId).latestReport;
+        } else {
+          guardMap.set(guardId, {
+            guardId,
+            guardName: `${report.guard?.first_name || ''} ${report.guard?.last_name || ''}`.trim(),
+            companyName: report.company?.name || 'N/A',
+            reportCount: 1,
+            latestReport: report.created_at
+          });
+        }
+      });
+
+      setActiveGuardsToday(Array.from(guardMap.values()));
+    } catch (error) {
+      console.error('Error fetching active guards today:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load active guards with photos",
         variant: "destructive",
       });
     }
@@ -1325,6 +1385,52 @@ const AdminDashboard = () => {
 
           <TabsContent value="shifts" className="space-y-4 sm:space-y-6">
             <SmoothSection>
+              <Card className="shadow-elevated mb-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl sm:text-3xl">Active Guards Today (With Photos)</CardTitle>
+                  <CardDescription>
+                    Guards who submitted reports with images today
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Guard Name</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Reports with Photos</TableHead>
+                          <TableHead>Latest Report</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activeGuardsToday.map((guard) => (
+                          <TableRow key={guard.guardId}>
+                            <TableCell className="font-medium">
+                              {guard.guardName || 'N/A'}
+                            </TableCell>
+                            <TableCell>{guard.companyName}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
+                                {guard.reportCount} {guard.reportCount === 1 ? 'report' : 'reports'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{format(new Date(guard.latestReport), 'HH:mm')}</TableCell>
+                          </TableRow>
+                        ))}
+                        {activeGuardsToday.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                              No guards submitted reports with photos today
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="shadow-elevated mb-6">
                 <CardHeader>
                   <CardTitle className="text-2xl sm:text-3xl">Currently Logged In Guards</CardTitle>
