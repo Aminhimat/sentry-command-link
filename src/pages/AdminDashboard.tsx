@@ -89,6 +89,7 @@ const AdminDashboard = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [guards, setGuards] = useState<Guard[]>([]);
   const [guardsCount, setGuardsCount] = useState(0);
+  const [activeGuardsCount, setActiveGuardsCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertiesWithPhotoActivity, setPropertiesWithPhotoActivity] = useState(0);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -172,6 +173,7 @@ const AdminDashboard = () => {
       setUserProfile(profile);
       await fetchCompanies();
       await fetchGuards();
+      await fetchActiveGuards();
       await fetchProperties();
       await fetchPropertiesWithPhotoActivity();
       await fetchShifts();
@@ -241,6 +243,31 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load guards",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchActiveGuards = async () => {
+    try {
+      // Count guards with active shifts (check_out_time is null)
+      const { data, error } = await supabase
+        .from('guard_shifts')
+        .select('guard_id')
+        .is('check_out_time', null);
+
+      if (error) {
+        throw error;
+      }
+
+      // Count unique guard_ids with active shifts
+      const uniqueActiveGuards = new Set(data?.map(shift => shift.guard_id) || []);
+      setActiveGuardsCount(uniqueActiveGuards.size);
+    } catch (error) {
+      console.error('Error fetching active guards:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load active guards count",
         variant: "destructive",
       });
     }
@@ -822,7 +849,7 @@ const AdminDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Stats Cards */}
         <SmoothSection>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <Card className="shadow-card">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
@@ -870,6 +897,18 @@ const AdminDashboard = () => {
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Guards</p>
                   <p className="text-xl sm:text-2xl font-bold">{guardsCount}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-chart-1" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Guards Logged In</p>
+                  <p className="text-xl sm:text-2xl font-bold">{activeGuardsCount}</p>
                 </div>
               </div>
             </CardContent>
