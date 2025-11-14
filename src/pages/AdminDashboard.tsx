@@ -280,21 +280,9 @@ const AdminDashboard = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      const { data, error } = await supabase
+      const { data: reports, error } = await supabase
         .from('guard_reports')
-        .select(`
-          guard_id,
-          created_at,
-          image_url,
-          guard:profiles!guard_reports_guard_id_fkey(
-            id,
-            first_name,
-            last_name
-          ),
-          company:companies!guard_reports_company_id_fkey(
-            name
-          )
-        `)
+        .select('guard_id, created_at, image_url, company_id')
         .not('image_url', 'is', null)
         .gte('created_at', today.toISOString());
 
@@ -302,27 +290,50 @@ const AdminDashboard = () => {
         throw error;
       }
 
-      // Group by guard_id and count reports
-      const guardMap = new Map();
-      data?.forEach((report: any) => {
+      // Get unique guard IDs and company IDs
+      const guardIds = [...new Set(reports?.map(r => r.guard_id).filter(Boolean))];
+      const companyIds = [...new Set(reports?.map(r => r.company_id).filter(Boolean))];
+
+      // Fetch guard profiles
+      const { data: guardProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', guardIds);
+
+      // Fetch companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+
+      // Create lookup maps
+      const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
+      const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
+
+      // Group reports by guard_id
+      const guardStatsMap = new Map();
+      reports?.forEach((report: any) => {
         const guardId = report.guard_id;
-        if (guardMap.has(guardId)) {
-          guardMap.get(guardId).reportCount++;
-          guardMap.get(guardId).latestReport = new Date(report.created_at) > new Date(guardMap.get(guardId).latestReport) 
+        const guard = guardMap.get(guardId);
+        const company = companyMap.get(report.company_id);
+        
+        if (guardStatsMap.has(guardId)) {
+          guardStatsMap.get(guardId).reportCount++;
+          guardStatsMap.get(guardId).latestReport = new Date(report.created_at) > new Date(guardStatsMap.get(guardId).latestReport) 
             ? report.created_at 
-            : guardMap.get(guardId).latestReport;
+            : guardStatsMap.get(guardId).latestReport;
         } else {
-          guardMap.set(guardId, {
+          guardStatsMap.set(guardId, {
             guardId,
-            guardName: `${report.guard?.first_name || ''} ${report.guard?.last_name || ''}`.trim(),
-            companyName: report.company?.name || 'N/A',
+            guardName: guard ? `${guard.first_name || ''} ${guard.last_name || ''}`.trim() : 'Unknown',
+            companyName: company?.name || 'N/A',
             reportCount: 1,
             latestReport: report.created_at
           });
         }
       });
 
-      setActiveGuardsToday(Array.from(guardMap.values()));
+      setActiveGuardsToday(Array.from(guardStatsMap.values()));
     } catch (error) {
       console.error('Error fetching active guards today:', error);
       toast({
