@@ -1430,7 +1430,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="shifts" className="space-y-4 sm:space-y-6">
-            <SmoothSection>
+            <div>
               <Card className="shadow-elevated mb-6">
                 <CardHeader>
                   <CardTitle className="text-2xl sm:text-3xl">Active Guards Today (With Photos)</CardTitle>
@@ -1568,7 +1568,7 @@ const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            </SmoothSection>
+            </div>
           </TabsContent>
 
         </Tabs>
