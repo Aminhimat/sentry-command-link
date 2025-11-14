@@ -347,23 +347,30 @@ const AdminDashboard = () => {
 
   const fetchProperties = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: propertiesData, error } = await supabase
         .from('properties')
-        .select(`
-          *,
-          companies (
-            name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      const propertiesWithCompany = data?.map((property: any) => ({
+      // Get unique company IDs
+      const companyIds = [...new Set(propertiesData?.map(p => p.company_id).filter(Boolean))];
+
+      // Fetch companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+
+      // Create lookup map
+      const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
+
+      const propertiesWithCompany = propertiesData?.map((property: any) => ({
         ...property,
-        company: property.companies
+        company: companyMap.get(property.company_id)
       })) || [];
 
       setProperties(propertiesWithCompany);
@@ -414,30 +421,48 @@ const AdminDashboard = () => {
 
   const fetchShifts = async () => {
     try {
+      console.log('Fetching shifts...');
       const { data: shiftsData, error } = await supabase
         .from('guard_shifts')
         .select('id, guard_id, company_id, check_in_time, check_out_time')
         .order('check_in_time', { ascending: false });
 
       if (error) {
+        console.error('Shifts fetch error:', error);
         throw error;
       }
+
+      console.log('Shifts data received:', shiftsData?.length);
 
       // Get unique guard IDs and company IDs
       const guardIds = [...new Set(shiftsData?.map(s => s.guard_id).filter(Boolean))];
       const companyIds = [...new Set(shiftsData?.map(s => s.company_id).filter(Boolean))];
 
+      console.log('Fetching guard profiles for:', guardIds.length, 'guards');
+      console.log('Fetching companies for:', companyIds.length, 'companies');
+
       // Fetch guard profiles
-      const { data: guardProfiles } = await supabase
+      const { data: guardProfiles, error: guardsError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
         .in('id', guardIds);
 
+      if (guardsError) {
+        console.error('Guards fetch error:', guardsError);
+      }
+
       // Fetch companies
-      const { data: companies } = await supabase
+      const { data: companies, error: companiesError } = await supabase
         .from('companies')
         .select('id, name')
         .in('id', companyIds);
+
+      if (companiesError) {
+        console.error('Companies fetch error:', companiesError);
+      }
+
+      console.log('Guard profiles received:', guardProfiles?.length);
+      console.log('Companies received:', companies?.length);
 
       // Create lookup maps
       const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
@@ -450,6 +475,7 @@ const AdminDashboard = () => {
         companies: companyMap.get(shift.company_id)
       })) || [];
 
+      console.log('Final shifts with guard data:', shiftsWithGuard.length);
       setShifts(shiftsWithGuard);
     } catch (error) {
       console.error('Error fetching shifts:', error);
