@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          distance_miles: number | null
+          guard_id: string
+          id: string
+          is_read: boolean
+          message: string
+          notification_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          distance_miles?: number | null
+          guard_id: string
+          id?: string
+          is_read?: boolean
+          message: string
+          notification_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          distance_miles?: number | null
+          guard_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          notification_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checkpoint_scans: {
         Row: {
           checkpoint_id: string
@@ -172,6 +211,45 @@ export type Database = {
           name?: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      device_logins: {
+        Row: {
+          allow_concurrent_login: boolean
+          approved: boolean
+          created_at: string
+          device_id: string
+          device_model: string | null
+          device_os: string | null
+          guard_id: string
+          guard_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          allow_concurrent_login?: boolean
+          approved?: boolean
+          created_at?: string
+          device_id: string
+          device_model?: string | null
+          device_os?: string | null
+          guard_id: string
+          guard_name: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_concurrent_login?: boolean
+          approved?: boolean
+          created_at?: string
+          device_id?: string
+          device_model?: string | null
+          device_os?: string | null
+          guard_id?: string
+          guard_name?: string
+          id?: string
           updated_at?: string
         }
         Relationships: []
@@ -683,19 +761,75 @@ export type Database = {
         }
         Relationships: []
       }
+      user_companies: {
+        Row: {
+          company_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_primary_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_platform_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      app_role: "platform_admin" | "company_admin" | "guard"
       company_status: "active" | "inactive" | "suspended"
       user_role: "platform_admin" | "company_admin" | "guard"
     }
@@ -825,6 +959,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["platform_admin", "company_admin", "guard"],
       company_status: ["active", "inactive", "suspended"],
       user_role: ["platform_admin", "company_admin", "guard"],
     },
