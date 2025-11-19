@@ -401,65 +401,30 @@ const AdminDashboard = () => {
 
   const fetchLoggedInUsers = async () => {
     try {
-      // Fetch guards who are currently logged in (have active shifts)
       const { data: activeShifts, error } = await supabase
         .from('guard_shifts')
         .select(`
           id,
-          guard_id,
-          company_id,
           check_in_time,
-          property_id
+          profiles!guard_shifts_guard_id_fkey(id, first_name, last_name, phone),
+          companies!guard_shifts_company_id_fkey(id, name),
+          properties!guard_shifts_property_id_fkey(id, name)
         `)
         .is('check_out_time', null)
-        .order('check_in_time', { ascending: false });
+        .order('check_in_time', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
 
-      // Get unique guard IDs, company IDs, and property IDs
-      const guardIds = [...new Set(activeShifts?.map(s => s.guard_id).filter(Boolean))];
-      const companyIds = [...new Set(activeShifts?.map(s => s.company_id).filter(Boolean))];
-      const propertyIds = [...new Set(activeShifts?.map(s => s.property_id).filter(Boolean))];
-
-      // Fetch guard profiles
-      const { data: guardProfiles } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, phone')
-        .in('id', guardIds);
-
-      // Fetch companies
-      const { data: companies } = await supabase
-        .from('companies')
-        .select('id, name')
-        .in('id', companyIds);
-
-      // Fetch properties
-      const { data: properties } = await supabase
-        .from('properties')
-        .select('id, name')
-        .in('id', propertyIds);
-
-      // Create lookup maps
-      const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
-      const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
-      const propertyMap = new Map(properties?.map(p => [p.id, p]) || []);
-
-      // Map shifts with guard, company, and property info
-      const loggedIn = activeShifts?.map(shift => {
-        const guard = guardMap.get(shift.guard_id);
-        const company = companyMap.get(shift.company_id);
-        const property = propertyMap.get(shift.property_id);
-
-        return {
-          shiftId: shift.id,
-          guardId: shift.guard_id,
-          guardName: guard ? `${guard.first_name || ''} ${guard.last_name || ''}`.trim() : 'Unknown',
-          guardPhone: guard?.phone || 'N/A',
-          companyName: company?.name || 'N/A',
-          propertyName: property?.name || 'Not assigned',
-          checkInTime: shift.check_in_time
-        };
-      }) || [];
+      const loggedIn = activeShifts?.map((shift: any) => ({
+        shiftId: shift.id,
+        guardId: shift.profiles?.id,
+        guardName: shift.profiles ? `${shift.profiles.first_name || ''} ${shift.profiles.last_name || ''}`.trim() : 'Unknown',
+        guardPhone: shift.profiles?.phone || 'N/A',
+        companyName: shift.companies?.name || 'N/A',
+        propertyName: shift.properties?.name || 'Not assigned',
+        checkInTime: shift.check_in_time
+      })) || [];
 
       setLoggedInUsers(loggedIn);
     } catch (error) {
