@@ -157,30 +157,37 @@ serve(async (req) => {
         }
       }
 
-      // Delete reports from database
+      // Delete reports from database in smaller batches (to avoid request size limits)
       const reportIds = reportsToDelete.map(report => report.id);
-      const { error: deleteError } = await supabaseAdmin
-        .from('guard_reports')
-        .delete()
-        .in('id', reportIds);
+      const dbBatchSize = 500;
+      
+      for (let i = 0; i < reportIds.length; i += dbBatchSize) {
+        const batch = reportIds.slice(i, i + dbBatchSize);
+        
+        const { error: deleteError } = await supabaseAdmin
+          .from('guard_reports')
+          .delete()
+          .in('id', batch);
 
-      if (deleteError) {
-        console.error('Error deleting reports:', deleteError);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Failed to delete reports from database',
-            partiallyDeleted: totalDeletedReports,
-            details: deleteError.message
-          }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        if (deleteError) {
+          console.error('Error deleting reports:', deleteError);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Failed to delete reports from database',
+              partiallyDeleted: totalDeletedReports,
+              details: deleteError.message
+            }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+        
+        totalDeletedReports += batch.length;
       }
-
-      totalDeletedReports += reportIds.length;
-      console.log(`Deleted ${reportIds.length} reports in this batch (total: ${totalDeletedReports})`);
+      
+      console.log(`Deleted ${reportIds.length} reports in this iteration (total: ${totalDeletedReports})`);
 
       // If we got less than fetchBatchSize, we've deleted all matching reports
       if (reportsToDelete.length < fetchBatchSize) {
