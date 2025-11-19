@@ -85,37 +85,113 @@ serve(async (req) => {
 
     console.log(`Starting bulk delete for company: ${companyId}`);
 
-    // Build query for reports to delete - fetch ALL matching reports (no limit)
-    let query = supabaseAdmin
-      .from('guard_reports')
-      .select('id, image_url')
-      .eq('company_id', companyId);
+    // Track total deletions across all batches
+    let totalDeletedReports = 0;
+    let totalDeletedImages = 0;
+    let hasMoreReports = true;
+    const fetchBatchSize = 1000; // Fetch in batches of 1000
+    
+    // Keep deleting until no more reports match the criteria
+    while (hasMoreReports) {
+      // Build query for reports to delete - fetch in batches
+      let query = supabaseAdmin
+        .from('guard_reports')
+        .select('id, image_url')
+        .eq('company_id', companyId)
+        .limit(fetchBatchSize);
 
-    // If deleteOlderThanDays is specified, add date filter
-    if (deleteOlderThanDays && deleteOlderThanDays > 0) {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - deleteOlderThanDays);
-      query = query.lt('created_at', cutoffDate.toISOString());
-    }
+      // If deleteOlderThanDays is specified, add date filter
+      if (deleteOlderThanDays && deleteOlderThanDays > 0) {
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - deleteOlderThanDays);
+        query = query.lt('created_at', cutoffDate.toISOString());
+      }
 
-    // Remove the default row limit to fetch ALL reports
-    query = query.limit(100000);
+      // Get batch of reports to delete
+      const { data: reportsToDelete, error: fetchError } = await query;
 
-    // Get all reports that will be deleted
-    const { data: reportsToDelete, error: fetchError } = await query;
+      if (fetchError) {
+        console.error('Error fetching reports:', fetchError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to fetch reports for deletion',
+            partiallyDeleted: totalDeletedReports 
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
 
-    if (fetchError) {
-      console.error('Error fetching reports:', fetchError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch reports for deletion' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // If no reports found, we're done
+      if (!reportsToDelete || reportsToDelete.length === 0) {
+        hasMoreReports = false;
+        break;
+      }
+
+      console.log(`Found ${reportsToDelete.length} reports in this batch (total so far: ${totalDeletedReports})`);
+
+      // Extract image URLs for deletion
+      const imageUrls = reportsToDelete
+        .filter(report => report.image_url)
+        .map(report => {
+          const url = report.image_url;
+          const pathMatch = url.match(/\/guard-reports\/(.+)$/);
+          return pathMatch ? pathMatch[1] : null;
+        })
+        .filter(Boolean);
+
+      // Delete images from storage (in batches of 100)
+      if (imageUrls.length > 0) {
+        const imageBatchSize = 100;
+        for (let i = 0; i < imageUrls.length; i += imageBatchSize) {
+          const batch = imageUrls.slice(i, i + imageBatchSize);
+          const { data: storageResult, error: storageError } = await supabaseAdmin.storage
+            .from('guard-reports')
+            .remove(batch);
+
+          if (!storageError) {
+            totalDeletedImages += storageResult?.length || 0;
+          }
         }
-      );
+      }
+
+      // Delete reports from database
+      const reportIds = reportsToDelete.map(report => report.id);
+      const { error: deleteError } = await supabaseAdmin
+        .from('guard_reports')
+        .delete()
+        .in('id', reportIds);
+
+      if (deleteError) {
+        console.error('Error deleting reports:', deleteError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to delete reports from database',
+            partiallyDeleted: totalDeletedReports,
+            details: deleteError.message
+          }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      totalDeletedReports += reportIds.length;
+      console.log(`Deleted ${reportIds.length} reports in this batch (total: ${totalDeletedReports})`);
+
+      // If we got less than fetchBatchSize, we've deleted all matching reports
+      if (reportsToDelete.length < fetchBatchSize) {
+        hasMoreReports = false;
+      }
     }
 
-    if (!reportsToDelete || reportsToDelete.length === 0) {
+    console.log(`Bulk delete complete: ${totalDeletedReports} reports and ${totalDeletedImages} images deleted`);
+
+    // Handle case where no reports were found at all
+    if (totalDeletedReports === 0) {
       return new Response(
         JSON.stringify({ 
           message: 'No reports found to delete',
@@ -129,88 +205,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${reportsToDelete.length} reports to delete`);
-
-    // Extract image URLs for deletion
-    const imageUrls = reportsToDelete
-      .filter(report => report.image_url)
-      .map(report => {
-        // Extract the file path from the full URL
-        // URL format: https://dzxkvzdwapaoeewqiyyq.supabase.co/storage/v1/object/public/guard-reports/filename.jpg
-        const url = report.image_url;
-        const pathMatch = url.match(/\/guard-reports\/(.+)$/);
-        return pathMatch ? pathMatch[1] : null;
-      })
-      .filter(Boolean);
-
-    console.log(`Found ${imageUrls.length} images to delete`);
-
-    // Delete images from storage first (in batches of 100)
-    let deletedImagesCount = 0;
-    if (imageUrls.length > 0) {
-      console.log('Deleting images from storage in batches...');
-      const batchSize = 100;
-      
-      for (let i = 0; i < imageUrls.length; i += batchSize) {
-        const batch = imageUrls.slice(i, i + batchSize);
-        const { data: storageResult, error: storageError } = await supabaseAdmin.storage
-          .from('guard-reports')
-          .remove(batch);
-
-        if (storageError) {
-          console.error(`Error deleting image batch ${i / batchSize + 1}:`, storageError);
-          // Continue with next batch even if one fails
-        } else {
-          const batchCount = storageResult?.length || 0;
-          deletedImagesCount += batchCount;
-          console.log(`Deleted ${batchCount} images in batch ${i / batchSize + 1}`);
-        }
-      }
-      
-      console.log(`Total images deleted: ${deletedImagesCount}`);
-    }
-
-    // Delete reports from database in batches of 500
-    const reportIds = reportsToDelete.map(report => report.id);
-    const batchSize = 500;
-    let deletedReportsCount = 0;
-    
-    console.log(`Deleting ${reportIds.length} reports from database in batches of ${batchSize}...`);
-    
-    for (let i = 0; i < reportIds.length; i += batchSize) {
-      const batch = reportIds.slice(i, i + batchSize);
-      
-      const { error: deleteError } = await supabaseAdmin
-        .from('guard_reports')
-        .delete()
-        .in('id', batch);
-
-      if (deleteError) {
-        console.error(`Error deleting report batch ${i / batchSize + 1}:`, deleteError);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Failed to delete reports from database',
-            partiallyDeleted: deletedReportsCount,
-            details: deleteError.message
-          }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
-      }
-      
-      deletedReportsCount += batch.length;
-      console.log(`Deleted batch ${i / batchSize + 1}: ${batch.length} reports (total: ${deletedReportsCount})`);
-    }
-
-    console.log(`Successfully deleted ${deletedReportsCount} reports`);
-
     return new Response(
       JSON.stringify({
         message: 'Reports deleted successfully',
-        deletedCount: reportsToDelete.length,
-        deletedImagesCount,
+        deletedCount: totalDeletedReports,
+        deletedImagesCount: totalDeletedImages,
         companyId,
         ...(deleteOlderThanDays && { deleteOlderThanDays })
       }),
