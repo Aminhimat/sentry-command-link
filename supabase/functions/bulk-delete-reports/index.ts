@@ -85,7 +85,7 @@ serve(async (req) => {
 
     console.log(`Starting bulk delete for company: ${companyId}`);
 
-    // Build query for reports to delete
+    // Build query for reports to delete - fetch ALL matching reports (no limit)
     let query = supabaseAdmin
       .from('guard_reports')
       .select('id, image_url')
@@ -97,6 +97,9 @@ serve(async (req) => {
       cutoffDate.setDate(cutoffDate.getDate() - deleteOlderThanDays);
       query = query.lt('created_at', cutoffDate.toISOString());
     }
+
+    // Remove the default row limit to fetch ALL reports
+    query = query.limit(100000);
 
     // Get all reports that will be deleted
     const { data: reportsToDelete, error: fetchError } = await query;
