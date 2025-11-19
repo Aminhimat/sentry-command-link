@@ -111,6 +111,7 @@ const AdminDashboard = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedCompanyForDelete, setSelectedCompanyForDelete] = useState<{ id: string; name: string } | null>(null);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [loggedInUsers, setLoggedInUsers] = useState<any[]>([]);
   const [resetPasswordEmail, setResetPasswordEmail] = useState("");
   const [tempPassword, setTempPassword] = useState("");
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -179,6 +180,7 @@ const AdminDashboard = () => {
       await fetchProperties();
       await fetchPropertiesWithPhotoActivity();
       await fetchShifts();
+      await fetchLoggedInUsers();
     } catch (error) {
       console.error('Error checking user:', error);
       window.location.href = '/auth';
@@ -392,6 +394,79 @@ const AdminDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to load properties",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchLoggedInUsers = async () => {
+    try {
+      // Fetch guards who are currently logged in (have active shifts)
+      const { data: activeShifts, error } = await supabase
+        .from('guard_shifts')
+        .select(`
+          id,
+          guard_id,
+          company_id,
+          check_in_time,
+          property_id
+        `)
+        .is('check_out_time', null)
+        .order('check_in_time', { ascending: false });
+
+      if (error) throw error;
+
+      // Get unique guard IDs, company IDs, and property IDs
+      const guardIds = [...new Set(activeShifts?.map(s => s.guard_id).filter(Boolean))];
+      const companyIds = [...new Set(activeShifts?.map(s => s.company_id).filter(Boolean))];
+      const propertyIds = [...new Set(activeShifts?.map(s => s.property_id).filter(Boolean))];
+
+      // Fetch guard profiles
+      const { data: guardProfiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, phone')
+        .in('id', guardIds);
+
+      // Fetch companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+
+      // Fetch properties
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('id, name')
+        .in('id', propertyIds);
+
+      // Create lookup maps
+      const guardMap = new Map(guardProfiles?.map(g => [g.id, g]) || []);
+      const companyMap = new Map(companies?.map(c => [c.id, c]) || []);
+      const propertyMap = new Map(properties?.map(p => [p.id, p]) || []);
+
+      // Map shifts with guard, company, and property info
+      const loggedIn = activeShifts?.map(shift => {
+        const guard = guardMap.get(shift.guard_id);
+        const company = companyMap.get(shift.company_id);
+        const property = propertyMap.get(shift.property_id);
+
+        return {
+          shiftId: shift.id,
+          guardId: shift.guard_id,
+          guardName: guard ? `${guard.first_name || ''} ${guard.last_name || ''}`.trim() : 'Unknown',
+          guardPhone: guard?.phone || 'N/A',
+          companyName: company?.name || 'N/A',
+          propertyName: property?.name || 'Not assigned',
+          checkInTime: shift.check_in_time
+        };
+      }) || [];
+
+      setLoggedInUsers(loggedIn);
+    } catch (error) {
+      console.error('Error fetching logged in users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load logged in users",
         variant: "destructive",
       });
     }
@@ -1049,9 +1124,10 @@ const AdminDashboard = () => {
 
         {/* Main Content with Tabs */}
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 touch-manipulation">
+          <TabsList className="grid w-full grid-cols-4 touch-manipulation">
             <TabsTrigger value="analytics" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Analytics</TabsTrigger>
             <TabsTrigger value="companies" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Companies</TabsTrigger>
+            <TabsTrigger value="logged-in" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Logged In</TabsTrigger>
             <TabsTrigger value="shifts" className="text-sm sm:text-base touch-manipulation transition-colors duration-100 active:scale-95">Shifts</TabsTrigger>
           </TabsList>
           
@@ -1439,6 +1515,66 @@ const AdminDashboard = () => {
                 </Card>
               )}
             </div>
+            </SmoothSection>
+          </TabsContent>
+
+          <TabsContent value="logged-in" className="space-y-4 sm:space-y-6">
+            <SmoothSection>
+              <Card className="shadow-elevated">
+                <CardHeader>
+                  <CardTitle className="text-2xl sm:text-3xl">Currently Logged In Users</CardTitle>
+                  <CardDescription>
+                    Guards who are currently logged in with active shifts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Guard Name</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Property</TableHead>
+                          <TableHead>Check-In Time</TableHead>
+                          <TableHead>Duration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {loggedInUsers.map((user) => {
+                          const checkInTime = new Date(user.checkInTime);
+                          const now = new Date();
+                          const diffMs = now.getTime() - checkInTime.getTime();
+                          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                          
+                          return (
+                            <TableRow key={user.shiftId}>
+                              <TableCell className="font-medium">{user.guardName}</TableCell>
+                              <TableCell>{user.guardPhone}</TableCell>
+                              <TableCell>{user.companyName}</TableCell>
+                              <TableCell>{user.propertyName}</TableCell>
+                              <TableCell>{format(checkInTime, 'MMM dd, yyyy HH:mm')}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="bg-success/10 text-success border-success">
+                                  {hours}h {minutes}m
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {loggedInUsers.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                              No users currently logged in
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
             </SmoothSection>
           </TabsContent>
 
