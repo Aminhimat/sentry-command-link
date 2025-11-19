@@ -123,9 +123,9 @@ Deno.serve(async (req) => {
 
     console.log(`Guard distance from login location: ${distance.toFixed(2)} miles`);
 
-    // If distance exceeds 1 mile, mark for approval and sign out
-    if (distance > 1) {
-      console.log(`Guard exceeded 1 mile limit. Logging out without admin approval requirement.`);
+    // If distance exceeds 2 miles, mark for approval and sign out
+    if (distance > 2) {
+      console.log(`Guard exceeded 2 mile limit. Logging out without admin approval requirement.`);
 
       return new Response(
         JSON.stringify({ 
