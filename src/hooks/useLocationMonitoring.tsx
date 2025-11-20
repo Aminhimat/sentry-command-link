@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
-const ENFORCE_LOCATION_RESTRICTIONS = true;
+const ENFORCE_LOCATION_RESTRICTIONS = false;
 
 export const useLocationMonitoring = (isGuard: boolean, isActive: boolean = true) => {
   const { toast } = useToast();
