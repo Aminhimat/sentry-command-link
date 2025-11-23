@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          company_id: string
+          created_at: string
+          guard_id: string | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          guard_id?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          guard_id?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      checkpoint_scans: {
+        Row: {
+          checkpoint_id: string
+          company_id: string
+          created_at: string
+          guard_id: string
+          id: string
+          location_lat: number | null
+          location_lng: number | null
+          notes: string | null
+          property_id: string | null
+          scanned_at: string
+          shift_id: string | null
+        }
+        Insert: {
+          checkpoint_id: string
+          company_id: string
+          created_at?: string
+          guard_id: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          property_id?: string | null
+          scanned_at?: string
+          shift_id?: string | null
+        }
+        Update: {
+          checkpoint_id?: string
+          company_id?: string
+          created_at?: string
+          guard_id?: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          notes?: string | null
+          property_id?: string | null
+          scanned_at?: string
+          shift_id?: string | null
+        }
+        Relationships: []
+      }
+      checkpoints: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          name: string
+          property_id: string
+          qr_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          name: string
+          property_id: string
+          qr_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          name?: string
+          property_id?: string
+          qr_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -46,6 +160,114 @@ export type Database = {
           name?: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      guard_locations: {
+        Row: {
+          created_at: string
+          guard_id: string
+          id: string
+          location_address: string | null
+          location_lat: number
+          location_lng: number
+          recorded_at: string
+        }
+        Insert: {
+          created_at?: string
+          guard_id: string
+          id?: string
+          location_address?: string | null
+          location_lat: number
+          location_lng: number
+          recorded_at?: string
+        }
+        Update: {
+          created_at?: string
+          guard_id?: string
+          id?: string
+          location_address?: string | null
+          location_lat?: number
+          location_lng?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
+      guard_login_constraints: {
+        Row: {
+          created_at: string
+          guard_id: string
+          id: string
+          login_location_lat: number | null
+          login_location_lng: number | null
+          max_distance_miles: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guard_id: string
+          id?: string
+          login_location_lat?: number | null
+          login_location_lng?: number | null
+          max_distance_miles?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guard_id?: string
+          id?: string
+          login_location_lat?: number | null
+          login_location_lng?: number | null
+          max_distance_miles?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      guard_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          guard_id: string
+          id: string
+          images: string[] | null
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
+          property_id: string | null
+          report_type: string | null
+          shift_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          guard_id: string
+          id?: string
+          images?: string[] | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          property_id?: string | null
+          report_type?: string | null
+          shift_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          guard_id?: string
+          id?: string
+          images?: string[] | null
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          property_id?: string | null
+          report_type?: string | null
+          shift_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -213,6 +435,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      properties: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          id: string
+          location_lat: number | null
+          location_lng: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scheduled_shifts: {
+        Row: {
+          company_id: string
+          created_at: string
+          days_of_week: string[]
+          end_date: string
+          end_time: string
+          guard_id: string
+          id: string
+          is_active: boolean
+          property_id: string
+          shift_name: string
+          start_date: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          days_of_week: string[]
+          end_date: string
+          end_time: string
+          guard_id: string
+          id?: string
+          is_active?: boolean
+          property_id: string
+          shift_name: string
+          start_date: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          days_of_week?: string[]
+          end_date?: string
+          end_time?: string
+          guard_id?: string
+          id?: string
+          is_active?: boolean
+          property_id?: string
+          shift_name?: string
+          start_date?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
