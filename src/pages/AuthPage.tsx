@@ -69,7 +69,15 @@ const AuthPage = () => {
               .select('requires_password_change, role')
               .eq('user_id', session.user!.id)
               .single()
-              .then(({ data: profile }) => {
+              .then(({ data: profile, error }) => {
+                if (error) {
+                  console.error('AuthPage: Error fetching profile:', error);
+                  setIsRedirecting(false);
+                  return;
+                }
+                
+                console.log('AuthPage: Profile fetched:', profile);
+                
                 if (profile?.requires_password_change) {
                   navigate('/change-password');
                   return;
@@ -126,7 +134,14 @@ const AuthPage = () => {
           .select('requires_password_change, role')
           .eq('user_id', session.user.id)
           .single()
-          .then(({ data: profile }) => {
+          .then(({ data: profile, error }) => {
+            if (error) {
+              console.error('AuthPage: Error fetching profile on load:', error);
+              return;
+            }
+            
+            console.log('AuthPage: Profile fetched on load:', profile);
+            
             if (profile?.requires_password_change) {
               navigate('/change-password');
               return;
