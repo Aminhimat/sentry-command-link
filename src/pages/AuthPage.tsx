@@ -62,11 +62,11 @@ const AuthPage = () => {
           
           setIsRedirecting(true);
           
-          // Check if user needs to change password (database flag)
+          // Check if user needs to change password and get role from profiles
           setTimeout(() => {
             supabase
               .from('profiles')
-              .select('requires_password_change')
+              .select('requires_password_change, role')
               .eq('user_id', session.user!.id)
               .single()
               .then(({ data: profile }) => {
@@ -80,8 +80,8 @@ const AuthPage = () => {
                   console.log('AuthPage: Redirecting to change-password');
                   navigate('/change-password');
                 } else {
-                  // Redirect based on role
-                  const role = session.user!.user_metadata?.role;
+                  // Redirect based on role from profiles table
+                  const role = profile?.role || session.user!.user_metadata?.role;
                   console.log('AuthPage: Redirecting based on role:', role);
                   if (role === 'platform_admin') {
                     navigate('/admin');
@@ -120,10 +120,10 @@ const AuthPage = () => {
           metadata: session.user.user_metadata
         });
         
-        // Check if user needs to change password (database flag)
+        // Check if user needs to change password and get role from profiles
         supabase
           .from('profiles')
-          .select('requires_password_change')
+          .select('requires_password_change, role')
           .eq('user_id', session.user.id)
           .single()
           .then(({ data: profile }) => {
@@ -137,8 +137,8 @@ const AuthPage = () => {
               console.log('AuthPage: Redirecting to change-password');
               navigate('/change-password');
             } else {
-              // Redirect based on role
-              const role = session.user!.user_metadata?.role;
+              // Redirect based on role from profiles table
+              const role = profile?.role || session.user!.user_metadata?.role;
               console.log('AuthPage: Redirecting based on role:', role);
               if (role === 'platform_admin') {
                 navigate('/admin');
