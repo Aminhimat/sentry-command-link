@@ -94,36 +94,42 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_active: boolean | null
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
           name: string
           property_id: string
           qr_code: string | null
+          qr_code_data: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean | null
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           name: string
           property_id: string
           qr_code?: string | null
+          qr_code_data?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          is_active?: boolean | null
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           name?: string
           property_id?: string
           qr_code?: string | null
+          qr_code_data?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -135,6 +141,7 @@ export type Database = {
           email: string | null
           id: string
           license_limit: number
+          logo_url: string | null
           name: string
           phone: string | null
           status: Database["public"]["Enums"]["company_status"]
@@ -146,6 +153,7 @@ export type Database = {
           email?: string | null
           id?: string
           license_limit?: number
+          logo_url?: string | null
           name: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
@@ -157,6 +165,7 @@ export type Database = {
           email?: string | null
           id?: string
           license_limit?: number
+          logo_url?: string | null
           name?: string
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
@@ -173,6 +182,7 @@ export type Database = {
           location_lat: number
           location_lng: number
           recorded_at: string
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
@@ -182,6 +192,7 @@ export type Database = {
           location_lat: number
           location_lng: number
           recorded_at?: string
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
@@ -191,6 +202,7 @@ export type Database = {
           location_lat?: number
           location_lng?: number
           recorded_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -231,6 +243,7 @@ export type Database = {
           description: string | null
           guard_id: string
           id: string
+          image_url: string | null
           images: string[] | null
           location_address: string | null
           location_lat: number | null
@@ -246,6 +259,7 @@ export type Database = {
           description?: string | null
           guard_id: string
           id?: string
+          image_url?: string | null
           images?: string[] | null
           location_address?: string | null
           location_lat?: number | null
@@ -261,6 +275,7 @@ export type Database = {
           description?: string | null
           guard_id?: string
           id?: string
+          image_url?: string | null
           images?: string[] | null
           location_address?: string | null
           location_lat?: number | null
@@ -279,11 +294,13 @@ export type Database = {
           company_id: string
           created_at: string
           guard_id: string
+          hourly_report: string | null
           id: string
           location_address: string | null
           location_lat: number | null
           location_lng: number | null
           notes: string | null
+          property_id: string | null
           updated_at: string
         }
         Insert: {
@@ -292,11 +309,13 @@ export type Database = {
           company_id: string
           created_at?: string
           guard_id: string
+          hourly_report?: string | null
           id?: string
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -305,11 +324,13 @@ export type Database = {
           company_id?: string
           created_at?: string
           guard_id?: string
+          hourly_report?: string | null
           id?: string
           location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           notes?: string | null
+          property_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -391,37 +412,55 @@ export type Database = {
       }
       profiles: {
         Row: {
+          assigned_property_id: string | null
+          avatar_url: string | null
           company_id: string | null
           created_at: string
           first_name: string | null
           id: string
           is_active: boolean
           last_name: string | null
+          login_location_lat: number | null
+          login_location_lng: number | null
           phone: string | null
+          requires_admin_approval: boolean | null
+          requires_password_change: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          assigned_property_id?: string | null
+          avatar_url?: string | null
           company_id?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
           is_active?: boolean
           last_name?: string | null
+          login_location_lat?: number | null
+          login_location_lng?: number | null
           phone?: string | null
+          requires_admin_approval?: boolean | null
+          requires_password_change?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          assigned_property_id?: string | null
+          avatar_url?: string | null
           company_id?: string | null
           created_at?: string
           first_name?: string | null
           id?: string
           is_active?: boolean
           last_name?: string | null
+          login_location_lat?: number | null
+          login_location_lng?: number | null
           phone?: string | null
+          requires_admin_approval?: boolean | null
+          requires_password_change?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
@@ -440,7 +479,11 @@ export type Database = {
         Row: {
           address: string | null
           company_id: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
+          description: string | null
           id: string
           location_lat: number | null
           location_lng: number | null
@@ -450,7 +493,11 @@ export type Database = {
         Insert: {
           address?: string | null
           company_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           location_lat?: number | null
           location_lng?: number | null
@@ -460,7 +507,11 @@ export type Database = {
         Update: {
           address?: string | null
           company_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           location_lat?: number | null
           location_lng?: number | null
