@@ -494,6 +494,7 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean | null
+          location_address: string | null
           location_lat: number | null
           location_lng: number | null
           name: string
@@ -511,6 +512,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           name: string
@@ -528,6 +530,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          location_address?: string | null
           location_lat?: number | null
           location_lng?: number | null
           name?: string
