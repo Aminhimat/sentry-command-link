@@ -467,6 +467,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_assigned_property"
+            columns: ["assigned_property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
@@ -484,10 +491,13 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           description: string | null
+          email: string | null
           id: string
+          is_active: boolean | null
           location_lat: number | null
           location_lng: number | null
           name: string
+          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -498,10 +508,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
+          is_active?: boolean | null
           location_lat?: number | null
           location_lng?: number | null
           name: string
+          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -512,10 +525,13 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
+          is_active?: boolean | null
           location_lat?: number | null
           location_lng?: number | null
           name?: string
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
