@@ -87,7 +87,15 @@ export type Database = {
           scanned_at?: string
           shift_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checkpoint_scans_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "checkpoints"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checkpoints: {
         Row: {
@@ -132,7 +140,15 @@ export type Database = {
           qr_code_data?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checkpoints_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       companies: {
         Row: {
@@ -285,7 +301,15 @@ export type Database = {
           shift_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "guard_reports_guard_id_fkey"
+            columns: ["guard_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       guard_shifts: {
         Row: {

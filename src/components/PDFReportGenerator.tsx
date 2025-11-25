@@ -7,7 +7,9 @@ interface Report {
   id: string;
   guard_id: string;
   company_id: string;
-  report_text: string;
+  description: string | null;
+  report_type?: string | null;
+  images?: string[] | null;
   image_url: string | null;
   location_address: string | null;
   location_lat: number | null;
@@ -175,10 +177,10 @@ export class PDFReportGenerator {
     const reportDate = new Date(report.created_at);
     const guardName = this.sanitizeText(report.guard ? `${report.guard.first_name} ${report.guard.last_name}` : 'Unknown Guard');
     
-    // Extract severity level from report text to determine header color
+    // Extract severity level from report description to determine header color
     let severityLevel = 'none';
-    if (report.report_text) {
-      const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
+    if (report.description) {
+      const lines = report.description.split('\n').filter(line => line.trim() !== '');
       const severityLine = lines.find(line => line.startsWith('Severity:'));
       if (severityLine) {
         severityLevel = severityLine.replace('Severity:', '').trim().toLowerCase();
@@ -277,13 +279,13 @@ export class PDFReportGenerator {
     }
     
     // Report Content - Display Task in middle column and other fields at bottom
-    if (report.report_text) {
+    if (report.description) {
       this.doc.setFontSize(7);
       this.doc.setFont('helvetica', 'normal');
       this.doc.setTextColor(0, 0, 0);
       
-      // Split report text into separate lines
-      const lines = report.report_text.split('\n').filter(line => line.trim() !== '');
+      // Split report description into separate lines
+      const lines = report.description.split('\n').filter(line => line.trim() !== '');
       
       // Display Description in middle column with rectangle box
       const descriptionLine = lines.find(line => line.startsWith('Description:'));
@@ -292,9 +294,9 @@ export class PDFReportGenerator {
       if (descriptionLine) {
         const descriptionValue = descriptionLine.replace('Description:', '').trim();
         displayText = this.sanitizeText(descriptionValue);
-      } else if (report.report_text) {
-        // If no formatted description, use the entire report text as description
-        displayText = this.sanitizeText(report.report_text.trim());
+      } else if (report.description) {
+        // If no formatted description, use the entire report description
+        displayText = this.sanitizeText(report.description.trim());
       }
       
       // Use default if still empty

@@ -63,14 +63,33 @@ export default function CompanyCheckpoints() {
 
   const fetchCheckpoints = async (companyId: string) => {
     try {
-      const { data, error } = await supabase
+      // First get properties for this company
+      const { data: properties } = await supabase
+        .from('properties')
+        .select('id, name')
+        .eq('company_id', companyId);
+
+      const propertyIds = properties?.map(p => p.id) || [];
+
+      // Then get checkpoints for those properties
+      const { data: checkpointsData, error } = await supabase
         .from('checkpoints')
-        .select('*, properties(name)')
-        .eq('company_id', companyId)
+        .select('*')
+        .in('property_id', propertyIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCheckpoints(data || []);
+
+      // Manually attach property names
+      const checkpointsWithProps = (checkpointsData || []).map(checkpoint => {
+        const property = properties?.find(p => p.id === checkpoint.property_id);
+        return {
+          ...checkpoint,
+          properties: property ? { name: property.name } : null
+        };
+      });
+
+      setCheckpoints(checkpointsWithProps);
     } catch (error: any) {
       toast({
         variant: 'destructive',

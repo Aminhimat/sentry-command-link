@@ -50,7 +50,9 @@ interface Report {
   id: string;
   guard_id: string;
   company_id: string;
-  report_text: string;
+  description: string | null;
+  report_type: string | null;
+  images: string[] | null;
   image_url: string | null;
   location_address: string | null;
   location_lat: number | null;

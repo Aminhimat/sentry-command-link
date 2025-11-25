@@ -222,6 +222,7 @@ const AuthPage = () => {
         }
       }
 
+      // @ts-ignore - Complex Supabase type
       const { data: constraints } = await supabase
         .from('guard_login_constraints')
         .select('*')

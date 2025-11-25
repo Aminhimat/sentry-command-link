@@ -368,6 +368,7 @@ const GuardDashboard = () => {
           navigate('/auth');
           return;
         }
+        // @ts-ignore - Complex Supabase type
         const { data: constraints } = await supabase
           .from('guard_login_constraints')
           .select('*')
@@ -1630,6 +1631,7 @@ const GuardDashboard = () => {
       stopLocationTracking();
       
       // Clear guard's location data so admin can't see their location after shift ends
+      // @ts-ignore - Complex Supabase type
       const { error: locationError } = await supabase
         .from('guard_locations')
         .delete()
