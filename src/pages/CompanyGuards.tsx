@@ -175,13 +175,7 @@ const CompanyGuards = () => {
     try {
       const { data: guardProfiles, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          properties (
-            id,
-            name
-          )
-        `)
+        .select('*')
         .eq('company_id', companyId)
         .eq('role', 'guard')
         .order('created_at', { ascending: false });
@@ -198,14 +192,29 @@ const CompanyGuards = () => {
         return;
       }
 
-      const guardsWithData = (guardProfiles || []).map(guard => ({
-        ...guard,
-        email: guard.username ? `${guard.username}@company.local` : `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
-        assigned_property: guard.properties,
-        assigned_property_id: guard.assigned_property_id
-      }));
+      // Fetch property details for guards with assigned properties
+      const guardsWithProperties = await Promise.all(
+        (guardProfiles || []).map(async (guard) => {
+          let assigned_property = null;
+          if (guard.assigned_property_id) {
+            const { data: property } = await supabase
+              .from('properties')
+              .select('id, name')
+              .eq('id', guard.assigned_property_id)
+              .single();
+            assigned_property = property;
+          }
+          
+          return {
+            ...guard,
+            email: guard.username ? `${guard.username}@company.local` : `${guard.first_name?.toLowerCase() || 'unknown'}.${guard.last_name?.toLowerCase() || 'user'}@company.local`,
+            assigned_property,
+            assigned_property_id: guard.assigned_property_id
+          };
+        })
+      );
 
-      setGuards(guardsWithData);
+      setGuards(guardsWithProperties);
     } catch (error) {
       console.error('Error fetching guards:', error);
     }
