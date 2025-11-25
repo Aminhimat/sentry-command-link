@@ -23,9 +23,7 @@ const scheduledShiftSchema = z.object({
   end_date: z.string().min(1, 'End date is required'),
   start_time: z.string().min(1, 'Start time is required'),
   end_time: z.string().min(1, 'End time is required'),
-  duration_hours: z.number().min(0.5, 'Duration must be at least 0.5 hours'),
-  recurring_days: z.array(z.number()).optional(),
-  notes: z.string().optional(),
+  days_of_week: z.array(z.string()).optional(),
 });
 
 type ScheduledShiftFormData = z.infer<typeof scheduledShiftSchema>;
@@ -44,17 +42,17 @@ interface Property {
 interface ScheduledShift {
   id: string;
   shift_name: string;
-  guard_id: string | null;
-  property_id: string | null;
+  company_id: string;
+  guard_id: string;
+  property_id: string;
   start_date: string;
   end_date: string;
   start_time: string;
   end_time: string;
-  duration_hours: number;
-  status: string;
-  recurring_days: number[] | null;
-  notes: string | null;
+  days_of_week: string[];
+  is_active: boolean;
   created_at: string;
+  updated_at: string;
   guard?: {
     first_name: string;
     last_name: string;
@@ -95,9 +93,7 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
       end_date: '',
       start_time: '08:00',
       end_time: '16:00',
-      duration_hours: 8,
-      recurring_days: [],
-      notes: '',
+      days_of_week: [],
     },
   });
 
@@ -197,22 +193,18 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
   const onSubmit = async (data: ScheduledShiftFormData) => {
     setIsLoading(true);
     try {
-      const duration = calculateDuration(data.start_time, data.end_time);
-      
       const { error } = await supabase
         .from('scheduled_shifts')
         .insert({
           company_id: companyId,
           shift_name: data.shift_name,
-          guard_id: data.guard_id || null,
-          property_id: data.property_id || null,
+          guard_id: data.guard_id || '',
+          property_id: data.property_id || '',
           start_date: data.start_date,
           end_date: data.end_date,
           start_time: data.start_time,
           end_time: data.end_time,
-          duration_hours: duration,
-          recurring_days: data.recurring_days?.length ? data.recurring_days : null,
-          notes: data.notes || null,
+          days_of_week: data.days_of_week || [],
         });
 
       if (error) throw error;
@@ -431,7 +423,7 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
 
                     <FormField
                       control={form.control}
-                      name="recurring_days"
+                      name="days_of_week"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Recurring Days (Optional)</FormLabel>
@@ -440,13 +432,13 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
                               <div key={day.value} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={`day-${day.value}`}
-                                  checked={field.value?.includes(day.value) || false}
+                                  checked={field.value?.includes(String(day.value)) || false}
                                   onCheckedChange={(checked) => {
                                     const currentDays = field.value || [];
                                     if (checked) {
-                                      field.onChange([...currentDays, day.value]);
+                                      field.onChange([...currentDays, String(day.value)]);
                                     } else {
-                                      field.onChange(currentDays.filter(d => d !== day.value));
+                                      field.onChange(currentDays.filter(d => d !== String(day.value)));
                                     }
                                   }}
                                 />
@@ -459,23 +451,6 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
                               </div>
                             ))}
                           </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Notes (Optional)</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Additional shift requirements or notes..."
-                              {...field}
-                            />
-                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -523,77 +498,65 @@ export const ScheduledShiftForm = ({ companyId, onShiftCreated }: ScheduledShift
                       <p>Create your first scheduled shift to get started</p>
                     </td>
                   </tr>
-                ) : (
-                  scheduledShifts.map((shift) => (
-                    <tr key={shift.id} className="border-b border-border/50 hover:bg-muted/50">
-                      <td className="p-4">
-                        <div>
+                  ) : (
+                    scheduledShifts.map((shift) => (
+                      <tr key={shift.id} className="border-b border-border/50 hover:bg-muted/50">
+                        <td className="p-4">
                           <span className="font-medium">{shift.shift_name}</span>
-                          {shift.notes && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {shift.notes}
-                            </p>
+                        </td>
+                        <td className="p-4">
+                          {shift.guard ? (
+                            <span className="text-sm">
+                              {shift.guard.first_name} {shift.guard.last_name}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Unassigned</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        {shift.guard ? (
-                          <span className="text-sm">
-                            {shift.guard.first_name} {shift.guard.last_name}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Unassigned</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {shift.property ? (
-                          <span className="text-sm">{shift.property.name}</span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Any property</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm">
-                          <div>{new Date(shift.start_date).toLocaleDateString()}</div>
-                          <div className="text-muted-foreground">
-                            to {new Date(shift.end_date).toLocaleDateString()}
+                        </td>
+                        <td className="p-4">
+                          {shift.property ? (
+                            <span className="text-sm">{shift.property.name}</span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Any property</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm">
+                            <div>{new Date(shift.start_date).toLocaleDateString()}</div>
+                            <div className="text-muted-foreground">
+                              to {new Date(shift.end_date).toLocaleDateString()}
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm">
-                          <div>{shift.start_time} - {shift.end_time}</div>
-                          <div className="text-muted-foreground">
-                            {shift.duration_hours}h duration
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm">
+                            {shift.start_time} - {shift.end_time}
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        {shift.recurring_days?.length ? (
-                          <div className="flex flex-wrap gap-1">
-                            {shift.recurring_days.map(day => (
-                              <Badge key={day} variant="secondary" className="text-xs">
-                                {weekDays.find(d => d.value === day)?.label.slice(0, 3)}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">No recurrence</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <Badge 
-                          variant={shift.status === 'active' ? 'default' : 'secondary'}
-                        >
-                          {shift.status}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteScheduledShift(shift.id)}
-                        >
+                        </td>
+                        <td className="p-4">
+                          {shift.days_of_week?.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {shift.days_of_week.map(day => (
+                                <Badge key={day} variant="secondary" className="text-xs">
+                                  {weekDays.find(d => String(d.value) === day)?.label.slice(0, 3) || day}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No recurrence</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={shift.is_active ? 'default' : 'secondary'}>
+                            {shift.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteScheduledShift(shift.id)}
+                          >
                           Delete
                         </Button>
                       </td>

@@ -116,6 +116,7 @@ const GuardAuthPage = () => {
           // The hook will automatically log out other devices when this user opens the dashboard
           
           // Get ALL active login constraints for this guard
+          // @ts-ignore - Complex Supabase type
           const { data: constraints, error: cErr } = await supabase
             .from('guard_login_constraints')
             .select('*')
@@ -234,6 +235,7 @@ const GuardAuthPage = () => {
               .eq('id', activeShift.id);
 
             // Clear guard's location data
+            // @ts-ignore - Complex Supabase type
             await supabase
               .from('guard_locations')
               .delete()

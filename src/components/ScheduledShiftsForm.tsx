@@ -26,16 +26,17 @@ interface Property {
 interface ScheduledShift {
   id: string;
   shift_name: string;
+  company_id: string;
+  guard_id: string;
+  property_id: string;
   start_date: string;
   end_date: string;
   start_time: string;
   end_time: string;
-  duration_hours: number;
-  status: string;
-  recurring_days: number[] | null;
-  notes: string | null;
-  guard_id: string | null;
-  property_id: string | null;
+  days_of_week: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
   guard?: {
     first_name: string;
     last_name: string;
@@ -161,19 +162,17 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
 
       const { error } = await supabase
         .from('scheduled_shifts')
-        .insert({
+        .insert([{
           company_id: companyId,
           shift_name: formData.shift_name,
           start_date: formData.start_date,
           end_date: formData.end_date,
           start_time: formData.start_time,
           end_time: formData.end_time,
-          duration_hours: duration,
-          guard_id: formData.guard_id || null,
-          property_id: formData.property_id || null,
-          recurring_days: formData.recurring_days.length > 0 ? formData.recurring_days : null,
-          notes: formData.notes || null
-        });
+          guard_id: formData.guard_id || '',
+          property_id: formData.property_id || '',
+          days_of_week: formData.recurring_days || [],
+        }] as any);
 
       if (error) throw error;
 
@@ -428,13 +427,13 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        {shift.start_time} - {shift.end_time} ({shift.duration_hours}h)
+                        {shift.start_time} - {shift.end_time}
                       </span>
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={shift.status === 'active' ? 'default' : 'secondary'}>
-                      {shift.status}
+                    <Badge variant={shift.is_active ? 'default' : 'secondary'}>
+                      {shift.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                     <Button 
                       variant="ghost" 
@@ -455,18 +454,13 @@ export const ScheduledShiftsForm = ({ companyId, onSuccess }: ScheduledShiftsFor
                     <strong>Property:</strong> {shift.property?.name || 'Any'}
                   </div>
                   <div>
-                    <strong>Recurring:</strong> {
-                      shift.recurring_days && shift.recurring_days.length > 0
-                        ? shift.recurring_days.map(day => WEEKDAYS.find(w => w.id === day)?.short).join(', ')
-                        : 'No'
+                    <strong>Days:</strong> {
+                      shift.days_of_week && shift.days_of_week.length > 0
+                        ? shift.days_of_week.join(', ')
+                        : 'All days'
                     }
                   </div>
                 </div>
-                {shift.notes && (
-                  <div className="mt-3 p-2 bg-muted rounded text-sm">
-                    <strong>Notes:</strong> {shift.notes}
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))

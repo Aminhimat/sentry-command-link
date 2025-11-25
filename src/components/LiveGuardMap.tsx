@@ -181,7 +181,8 @@ const LiveGuardMap: React.FC<LiveGuardMapProps> = ({ companyId }) => {
         return;
       }
 
-      // Get the latest location data from guard_locations table
+      // Get the latest location data from guard_locations table  
+      // @ts-ignore - Complex Supabase type
       const { data: locationData, error: locationError } = await supabase
         .from('guard_locations')
         .select('*')
