@@ -656,6 +656,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_company_admin_for_profile: {
+        Args: { profile_company_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       company_status: "active" | "inactive" | "suspended"
