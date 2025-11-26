@@ -160,14 +160,18 @@ const GuardDashboard = () => {
         .eq('user_id', user.id)
         .single();
 
+      console.log('🏢 Fetching properties - Profile:', profile);
+
       if (!profile?.company_id) {
-        console.log('User has no company assigned');
+        console.log('❌ User has no company assigned');
         setProperties([]);
         return;
       }
 
       // If guard has an assigned property, only show that one
       if (profile.assigned_property_id) {
+        console.log('✅ Guard has assigned property:', profile.assigned_property_id);
+        
         const { data, error } = await supabase
           .from('properties')
           .select(`
@@ -179,15 +183,20 @@ const GuardDashboard = () => {
           .eq('is_active', true)
           .single();
 
+        console.log('🏢 Fetched assigned property:', data, error);
+
         if (error) {
-          console.error('Error fetching assigned property:', error);
+          console.error('❌ Error fetching assigned property:', error);
           setProperties([]);
         } else if (data) {
+          console.log('✅ Setting assigned property:', data.name);
           setProperties([data]);
           setSelectedPropertyId(data.id);
           // Auto-select the assigned property immediately
           setTaskData(prev => ({ ...prev, site: data.name }));
-          console.log('Auto-selected assigned property:', data.name);
+          console.log('✅ Auto-selected assigned property:', data.name);
+        } else {
+          console.log('⚠️ No property data returned');
         }
       } else {
         // If no specific property assigned, show all company properties (fallback)
