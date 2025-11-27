@@ -20,6 +20,8 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
   const [reportText, setReportText] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [compressedSize, setCompressedSize] = useState<string>("");
   const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const { toast } = useToast();
 
@@ -141,8 +143,29 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
   const uploadImageWithEdgeFunction = async (file: File): Promise<boolean> => {
     try {
       // Optimize image based on connection speed
+      setUploadProgress(10);
       const connectionSpeed = getConnectionSpeed();
+      
+      // Show optimization message
+      const speedMessages = {
+        slow: '📶 Slow connection detected - applying maximum compression',
+        medium: '📶 Medium connection - applying balanced compression',
+        fast: '📶 Fast connection - applying light compression'
+      };
+      
+      toast({
+        title: speedMessages[connectionSpeed],
+        description: "Preparing optimized image...",
+        duration: 2000,
+      });
+      
       const optimizedImage = await imageOptimizer.optimizeForConnection(file, connectionSpeed);
+      
+      // Show compression results
+      const reduction = ((1 - optimizedImage.size / file.size) * 100).toFixed(0);
+      const sizeKB = (optimizedImage.size / 1024).toFixed(0);
+      setCompressedSize(`${sizeKB}KB (${reduction}% smaller)`);
+      setUploadProgress(30);
 
       // Prepare form data
       const formData = new FormData();
@@ -158,6 +181,7 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
       }));
 
       // Use edge function for reliable upload
+      setUploadProgress(50);
       const { data, error } = await (async () => {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
@@ -165,6 +189,8 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
         if (token) options.headers = { Authorization: `Bearer ${token}` };
         return supabase.functions.invoke('upload-guard-image', options);
       })();
+      
+      setUploadProgress(90);
  
       if (error) {
         try {
@@ -190,9 +216,11 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
         return false;
       }
 
+      setUploadProgress(100);
       return true;
     } catch (error) {
       console.error('Error uploading with edge function:', error);
+      setUploadProgress(0);
       return false;
     }
   };
@@ -233,6 +261,8 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
       setReportText("");
       setSelectedImage(null);
       setLocation(null);
+      setUploadProgress(0);
+      setCompressedSize("");
       onReportSubmitted();
 
     } catch (error) {
@@ -244,6 +274,7 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
       });
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -283,11 +314,34 @@ const HourlyReportForm = ({ userProfile, activeShift, onReportSubmitted }: Hourl
               Take Photo
             </Button>
             {selectedImage && (
-              <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                <Upload className="w-4 h-4 text-green-500" />
-                <p className="text-sm text-muted-foreground">
-                  Photo ready: {selectedImage.name}
-                </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <Upload className="w-4 h-4 text-green-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      Photo ready: {selectedImage.name}
+                    </p>
+                    {compressedSize && (
+                      <p className="text-xs text-muted-foreground">
+                        Optimized: {compressedSize}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
