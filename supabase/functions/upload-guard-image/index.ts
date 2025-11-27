@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
     const { error: reportError } = await supabaseClient
       .from('guard_reports')
       .insert({
-        guard_id: reportData.guard_id || profile.id,
+        guard_id: user.id,
         company_id: resolvedCompanyId,
         property_id: propertyId,
         shift_id: reportData.shift_id ?? null,
